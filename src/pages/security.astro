@@ -1,0 +1,530 @@
+---
+import {
+  Activity,
+  ArrowRight,
+  Ban,
+  Box,
+  Check,
+  CircleAlert,
+  Eye,
+  Fingerprint,
+  KeyRound,
+  LockKeyhole,
+  Network,
+  ScanSearch,
+  ShieldCheck,
+  Terminal
+} from "lucide-react";
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { GITHUB_URL } from "../data/site";
+---
+
+<BaseLayout
+  title="Security · PersonalClaw"
+  description="How PersonalClaw constrains agent autonomy with host approvals, command policy, guarded egress, scoped app tokens, scanning, and tamper-evident logs."
+>
+  <section class="security-hero">
+    <div class="shell">
+      <div class="hero-layout">
+        <div>
+          <p class="kicker">Security model</p>
+          <h1>The model proposes. The host decides.</h1>
+        </div>
+        <div class="hero-copy">
+          <p>
+            PersonalClaw assumes agents will request powerful actions. It keeps
+            enforceable policy in deterministic host code, outside the model and
+            outside spawned agent runtimes.
+          </p>
+          <a class="button button-primary" href="#controls">
+            Inspect the controls <ArrowRight size={18} aria-hidden="true" />
+          </a>
+        </div>
+      </div>
+
+      <div class="trust-boundary" aria-label="PersonalClaw trust boundary">
+        <div class="zone zone-user">
+          <span>Owner</span>
+          <Fingerprint size={28} aria-hidden="true" />
+          <strong>You approve the boundary</strong>
+        </div>
+        <span class="boundary-arrow" aria-hidden="true">→</span>
+        <div class="zone zone-host">
+          <span>Trusted host</span>
+          <ShieldCheck size={28} aria-hidden="true" />
+          <strong>Gateway · policy · state</strong>
+          <small>Deterministic enforcement</small>
+        </div>
+        <span class="boundary-arrow" aria-hidden="true">→</span>
+        <div class="zone zone-agent">
+          <span>Untrusted requests</span>
+          <Terminal size={28} aria-hidden="true" />
+          <strong>Models · tools · apps</strong>
+          <small>Bounded capabilities</small>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section controls section-rule" id="controls">
+    <div class="shell">
+      <div class="section-head">
+        <div>
+          <p class="kicker">Defense in depth</p>
+          <h2>Controls that do not depend on good prompting.</h2>
+        </div>
+        <p>
+          Each layer addresses a different path from agent intent to host
+          effect. No single toggle carries the whole security story.
+        </p>
+      </div>
+
+      <div class="control-grid">
+        <article>
+          <span>01</span>
+          <ShieldCheck size={25} aria-hidden="true" />
+          <h3>Approval modes</h3>
+          <p>Host policy determines when tool calls execute, pause for consent, or are rejected.</p>
+        </article>
+        <article>
+          <span>02</span>
+          <Ban size={25} aria-hidden="true" />
+          <h3>Command denylist</h3>
+          <p>Known-destructive shell patterns are blocked even when a model asks confidently.</p>
+        </article>
+        <article>
+          <span>03</span>
+          <Network size={25} aria-hidden="true" />
+          <h3>Guarded egress</h3>
+          <p>Network access passes through allow and deny host policy instead of ambient fetch.</p>
+        </article>
+        <article>
+          <span>04</span>
+          <KeyRound size={25} aria-hidden="true" />
+          <h3>Scoped app tokens</h3>
+          <p>Apps call the gateway with bounded credentials rather than receiving broad authority.</p>
+        </article>
+        <article>
+          <span>05</span>
+          <ScanSearch size={25} aria-hidden="true" />
+          <h3>Scanner gate</h3>
+          <p>Apps enter quarantine first. A dangerous verdict cannot be overridden into activation.</p>
+        </article>
+        <article>
+          <span>06</span>
+          <Activity size={25} aria-hidden="true" />
+          <h3>Tamper-evident log</h3>
+          <p>HMAC-linked security events make alteration visible during later review.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section request-path">
+    <div class="shell">
+      <div class="path-heading">
+        <div>
+          <p class="kicker">A tool request</p>
+          <h2>Every effect crosses the gate.</h2>
+        </div>
+        <p>
+          The decision path stays explicit whether the request came from native
+          chat, an autonomous loop, or an ACP coding agent.
+        </p>
+      </div>
+
+      <ol class="decision-path">
+        <li>
+          <span>Request</span>
+          <Terminal size={22} aria-hidden="true" />
+          <strong>Agent asks to use a tool</strong>
+        </li>
+        <li>
+          <span>Policy</span>
+          <LockKeyhole size={22} aria-hidden="true" />
+          <strong>Host evaluates mode and rules</strong>
+        </li>
+        <li>
+          <span>Consent</span>
+          <Eye size={22} aria-hidden="true" />
+          <strong>Owner reviews when required</strong>
+        </li>
+        <li>
+          <span>Effect</span>
+          <Check size={22} aria-hidden="true" />
+          <strong>Bounded action executes</strong>
+        </li>
+        <li>
+          <span>Record</span>
+          <Activity size={22} aria-hidden="true" />
+          <strong>Security event is linked</strong>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="section app-security section-rule">
+    <div class="shell app-security-grid">
+      <div class="app-title">
+        <p class="kicker">Supply chain</p>
+        <h2>An app is code, not a collectible.</h2>
+        <p>
+          PersonalClaw treats installation as a staged trust decision. The
+          package stays separate until inspection and consent are complete.
+        </p>
+      </div>
+      <div class="app-lifecycle">
+        <article>
+          <Box size={22} aria-hidden="true" />
+          <div><strong>Quarantine</strong><span>Inactive package boundary</span></div>
+        </article>
+        <article>
+          <ScanSearch size={22} aria-hidden="true" />
+          <div><strong>Scan</strong><span>Risk verdict and static checks</span></div>
+        </article>
+        <article>
+          <Eye size={22} aria-hidden="true" />
+          <div><strong>Consent</strong><span>Declared capabilities shown to owner</span></div>
+        </article>
+        <article>
+          <KeyRound size={22} aria-hidden="true" />
+          <div><strong>Scoped enablement</strong><span>Gateway-issued access</span></div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section honesty">
+    <div class="narrow">
+      <CircleAlert size={34} aria-hidden="true" />
+      <p class="kicker">Clear limits</p>
+      <h2>Security claims should name their boundary.</h2>
+      <p>
+        PersonalClaw documents one app permission that cannot currently be
+        enforced as a hard technical boundary and labels it honestly. It is a
+        pre-1.0 project, so breaking changes and security hardening continue.
+        Review the source and threat model before relying on it for sensitive,
+        irreplaceable workflows.
+      </p>
+      <a
+        class="button button-secondary"
+        href={`${GITHUB_URL}/blob/main/docs/architecture/security.md`}
+        target="_blank"
+        rel="noreferrer"
+      >
+        Read the full security document <ArrowRight size={18} aria-hidden="true" />
+      </a>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .security-hero {
+    padding: clamp(5rem, 10vw, 9rem) 0 clamp(4rem, 8vw, 7rem);
+    overflow: hidden;
+  }
+
+  .hero-layout {
+    display: grid;
+    grid-template-columns: 1.25fr 0.75fr;
+    gap: clamp(3rem, 9vw, 9rem);
+    align-items: end;
+  }
+
+  h1 {
+    max-width: 11ch;
+    margin: 0;
+    font-size: clamp(3.5rem, 8vw, 7.5rem);
+    font-weight: 330;
+    line-height: 0.94;
+  }
+
+  .hero-copy > p {
+    color: var(--ink-soft);
+    font-size: 1.14rem;
+  }
+
+  .trust-boundary {
+    display: grid;
+    margin-top: clamp(4rem, 9vw, 8rem);
+    grid-template-columns: 0.75fr auto 1.3fr auto 0.95fr;
+    align-items: stretch;
+    border-block: 1px solid var(--line-strong);
+  }
+
+  .zone {
+    display: flex;
+    min-height: 230px;
+    padding: 1.5rem;
+    flex-direction: column;
+  }
+
+  .zone > span {
+    color: var(--ink-muted);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+  }
+
+  .zone svg {
+    margin: auto 0 1.25rem;
+    color: var(--coral);
+  }
+
+  .zone strong {
+    font-size: 1.08rem;
+  }
+
+  .zone small {
+    margin-top: 0.25rem;
+    color: var(--ink-muted);
+  }
+
+  .zone-host {
+    border-inline: 1px solid rgba(255, 107, 91, 0.34);
+    background: rgba(255, 107, 91, 0.08);
+  }
+
+  .boundary-arrow {
+    display: grid;
+    width: 54px;
+    place-items: center;
+    color: var(--coral);
+  }
+
+  .controls {
+    background: var(--night-soft);
+  }
+
+  .control-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    border-top: 1px solid var(--line);
+    border-left: 1px solid var(--line);
+  }
+
+  .control-grid article {
+    position: relative;
+    min-height: 290px;
+    padding: 1.6rem;
+    border-right: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .control-grid article > span {
+    position: absolute;
+    top: 1.25rem;
+    right: 1.25rem;
+    color: var(--ink-muted);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+  }
+
+  .control-grid svg {
+    margin: 4rem 0 3rem;
+    color: var(--coral);
+  }
+
+  .control-grid h3 {
+    margin-bottom: 0.5rem;
+    font-size: 1.28rem;
+  }
+
+  .control-grid p {
+    margin: 0;
+    color: var(--ink-soft);
+  }
+
+  .path-heading {
+    display: grid;
+    margin-bottom: 4rem;
+    grid-template-columns: 1.2fr 0.8fr;
+    gap: 4rem;
+    align-items: end;
+  }
+
+  .path-heading h2,
+  .app-title h2,
+  .honesty h2 {
+    max-width: 12ch;
+    margin: 0;
+    font-size: clamp(2.5rem, 5.7vw, 5rem);
+    font-weight: 390;
+    line-height: 1;
+  }
+
+  .path-heading > p {
+    margin: 0;
+    color: var(--ink-soft);
+  }
+
+  .decision-path {
+    display: grid;
+    padding: 0;
+    grid-template-columns: repeat(5, 1fr);
+    border-block: 1px solid var(--line);
+    list-style: none;
+  }
+
+  .decision-path li {
+    display: flex;
+    min-height: 220px;
+    padding: 1.25rem;
+    flex-direction: column;
+    border-right: 1px solid var(--line);
+  }
+
+  .decision-path li:last-child {
+    border-right: 0;
+  }
+
+  .decision-path span {
+    color: var(--ink-muted);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+  }
+
+  .decision-path svg {
+    margin: auto 0 1rem;
+    color: var(--coral);
+  }
+
+  .decision-path strong {
+    font-size: 0.95rem;
+    font-weight: 600;
+  }
+
+  .app-security {
+    background: var(--night-soft);
+  }
+
+  .app-security-grid {
+    display: grid;
+    grid-template-columns: 0.75fr 1.25fr;
+    gap: clamp(3rem, 10vw, 10rem);
+    align-items: center;
+  }
+
+  .app-title h2 {
+    margin-bottom: 1.5rem;
+  }
+
+  .app-title > p:not(.kicker) {
+    color: var(--ink-soft);
+  }
+
+  .app-lifecycle {
+    border-top: 1px solid var(--line-strong);
+  }
+
+  .app-lifecycle article {
+    display: grid;
+    min-height: 96px;
+    padding-block: 1rem;
+    grid-template-columns: 54px 1fr;
+    align-items: center;
+    border-bottom: 1px solid var(--line-strong);
+  }
+
+  .app-lifecycle svg {
+    color: var(--coral);
+  }
+
+  .app-lifecycle div {
+    display: grid;
+    gap: 0.2rem;
+  }
+
+  .app-lifecycle span {
+    color: var(--ink-muted);
+    font-size: 0.87rem;
+  }
+
+  .honesty {
+    text-align: center;
+  }
+
+  .honesty > div > svg {
+    margin: 0 auto 1.6rem;
+    color: var(--amber);
+  }
+
+  .honesty .kicker {
+    justify-content: center;
+  }
+
+  .honesty h2 {
+    margin-inline: auto;
+  }
+
+  .honesty > div > p:not(.kicker) {
+    max-width: 48rem;
+    margin: 1.7rem auto 2rem;
+    color: var(--ink-soft);
+    font-size: 1.06rem;
+  }
+
+  @media (max-width: 900px) {
+    .hero-layout,
+    .path-heading,
+    .app-security-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .trust-boundary {
+      grid-template-columns: 1fr 1fr 1fr;
+    }
+
+    .boundary-arrow {
+      display: none;
+    }
+
+    .zone-host {
+      border-left: 1px solid rgba(255, 107, 91, 0.34);
+      border-right: 1px solid rgba(255, 107, 91, 0.34);
+    }
+
+    .control-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .decision-path {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    .decision-path li {
+      border-bottom: 1px solid var(--line);
+    }
+  }
+
+  @media (max-width: 620px) {
+    h1 {
+      font-size: 3.5rem;
+    }
+
+    .trust-boundary,
+    .control-grid,
+    .decision-path {
+      grid-template-columns: 1fr;
+    }
+
+    .zone {
+      min-height: 180px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .zone-host {
+      border-inline: 0;
+    }
+
+    .control-grid article {
+      min-height: 260px;
+    }
+
+    .decision-path li {
+      min-height: 150px;
+      border-right: 0;
+    }
+  }
+</style>

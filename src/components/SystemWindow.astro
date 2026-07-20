@@ -1,0 +1,35 @@
+---
+import { getImage } from "astro:assets";
+import dashboard from "../assets/dashboard.png";
+import chat from "../assets/chat.png";
+import loops from "../assets/loops.png";
+import knowledge from "../assets/knowledge.png";
+import apps from "../assets/apps.png";
+import { productViews } from "../data/site";
+import { SystemWindow } from "./SystemWindow";
+
+const images = [dashboard, chat, loops, knowledge, apps];
+const widths = [640, 960, 1280, 1600];
+
+const views = await Promise.all(
+  productViews.map(async (view, index) => {
+    const source = images[index];
+    const variants = await Promise.all(
+      widths.map((width) =>
+        getImage({ src: source, width, format: "webp", quality: 86 })
+      )
+    );
+
+    return {
+      ...view,
+      src: variants[2].src,
+      srcSet: variants.map((variant, variantIndex) => `${variant.src} ${widths[variantIndex]}w`).join(", "),
+      sizes: "(max-width: 720px) 96vw, (max-width: 1200px) 92vw, 1280px",
+      width: source.width,
+      height: source.height
+    };
+  })
+);
+---
+
+<SystemWindow views={views} client:load />

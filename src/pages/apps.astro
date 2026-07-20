@@ -1,0 +1,340 @@
+---
+import { ArrowRight, Box, KeyRound, ScanSearch, ShieldCheck } from "lucide-react";
+import { AppDirectory } from "../components/AppDirectory";
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { appCategories, apps } from "../data/apps";
+import { APPS_URL } from "../data/site";
+---
+
+<BaseLayout
+  title="Apps · PersonalClaw"
+  description="Browse the first-party PersonalClaw app ecosystem: models, search, agents, tools, speech, channels, actions, skills, and full product apps."
+>
+  <section class="apps-hero">
+    <div class="shell apps-intro">
+      <div>
+        <p class="kicker">First-party ecosystem</p>
+        <h1>Bring the providers you choose.</h1>
+      </div>
+      <div class="intro-copy">
+        <p>
+          Models, search, speech, channels, tools, agent runtimes, and complete
+          interfaces are apps. Install what you need. Replace it when your needs
+          change.
+        </p>
+        <a
+          class="text-link"
+          href={APPS_URL}
+          target="_blank"
+          rel="noreferrer"
+        >
+          Open the app repository <ArrowRight size={17} aria-hidden="true" />
+        </a>
+      </div>
+    </div>
+
+    <div class="shell app-ledger" aria-label="App ecosystem summary">
+      <div><strong>{apps.length}</strong><span>First-party apps</span></div>
+      <div><strong>9</strong><span>Capability types</span></div>
+      <div><strong>1</strong><span>Permission-aware contract</span></div>
+      <div><strong>0</strong><span>Required cloud vendors</span></div>
+    </div>
+  </section>
+
+  <section class="directory-section section-rule">
+    <div class="shell">
+      <AppDirectory apps={apps} categories={appCategories} client:load />
+    </div>
+  </section>
+
+  <section class="section install-model section-rule">
+    <div class="shell">
+      <div class="section-head">
+        <div>
+          <p class="kicker">The app boundary</p>
+          <h2>Installation is a security decision.</h2>
+        </div>
+        <p>
+          Apps do not become active the moment code arrives. PersonalClaw
+          separates acquisition, inspection, consent, and enablement.
+        </p>
+      </div>
+
+      <ol class="install-path">
+        <li>
+          <span>01</span>
+          <Box size={24} aria-hidden="true" />
+          <h3>Quarantine</h3>
+          <p>The package lands outside the active runtime while its manifest and contents are inspected.</p>
+        </li>
+        <li>
+          <span>02</span>
+          <ScanSearch size={24} aria-hidden="true" />
+          <h3>Scan</h3>
+          <p>Supply-chain checks assign a verdict. Dangerous findings cannot be overridden.</p>
+        </li>
+        <li>
+          <span>03</span>
+          <ShieldCheck size={24} aria-hidden="true" />
+          <h3>Consent</h3>
+          <p>The owner sees requested capabilities before deciding whether to continue.</p>
+        </li>
+        <li>
+          <span>04</span>
+          <KeyRound size={24} aria-hidden="true" />
+          <h3>Enable</h3>
+          <p>The app receives scoped access through the gateway and begins in a bounded state.</p>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="section build-app">
+    <div class="shell build-layout">
+      <div>
+        <p class="kicker">For builders</p>
+        <h2>The ecosystem is an open surface.</h2>
+      </div>
+      <div>
+        <p>
+          Provider apps can be small Python adapters. Full apps can ship a
+          backend, mounted React interface, storage, cron work, and event access
+          behind declared permissions.
+        </p>
+        <div class="manifest">
+          <span>app.json</span>
+          <code>{`{
+  "name": "your-app",
+  "provider": { "type": "tool" },
+  "permissions": { "network": false }
+}`}</code>
+        </div>
+        <a
+          class="button button-primary"
+          href={`${APPS_URL}/blob/main/docs/app-creation-guide.md`}
+          target="_blank"
+          rel="noreferrer"
+        >
+          Read the app creation guide <ArrowRight size={18} aria-hidden="true" />
+        </a>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .apps-hero {
+    padding: clamp(5rem, 10vw, 9rem) 0 0;
+  }
+
+  .apps-intro {
+    display: grid;
+    grid-template-columns: 1.2fr 0.8fr;
+    gap: clamp(3rem, 10vw, 10rem);
+    align-items: end;
+  }
+
+  h1 {
+    max-width: 12ch;
+    margin: 0;
+    font-size: clamp(3.5rem, 8vw, 7.5rem);
+    font-weight: 330;
+    line-height: 0.94;
+  }
+
+  .intro-copy > p {
+    color: var(--ink-soft);
+    font-size: 1.15rem;
+  }
+
+  .text-link {
+    display: inline-flex;
+    min-height: 44px;
+    gap: 0.45rem;
+    align-items: center;
+    color: var(--coral-bright);
+    font-weight: 650;
+  }
+
+  .app-ledger {
+    display: grid;
+    margin-top: clamp(4rem, 9vw, 8rem);
+    grid-template-columns: repeat(4, 1fr);
+    border-top: 1px solid var(--line);
+  }
+
+  .app-ledger div {
+    display: grid;
+    min-height: 142px;
+    padding: 1.25rem;
+    align-content: end;
+    border-right: 1px solid var(--line);
+  }
+
+  .app-ledger div:last-child {
+    border-right: 0;
+  }
+
+  .app-ledger strong {
+    color: var(--coral);
+    font-size: 2.5rem;
+    font-weight: 550;
+    line-height: 1;
+  }
+
+  .app-ledger span {
+    margin-top: 0.55rem;
+    color: var(--ink-muted);
+    font-size: 0.85rem;
+  }
+
+  .directory-section {
+    padding: 0 0 clamp(6rem, 10vw, 9rem);
+  }
+
+  .install-path {
+    display: grid;
+    padding: 0;
+    grid-template-columns: repeat(4, 1fr);
+    border-block: 1px solid var(--line);
+    list-style: none;
+  }
+
+  .install-path li {
+    position: relative;
+    min-height: 300px;
+    padding: 1.5rem;
+    border-right: 1px solid var(--line);
+  }
+
+  .install-path li:last-child {
+    border-right: 0;
+  }
+
+  .install-path li > span {
+    position: absolute;
+    top: 1.25rem;
+    right: 1.25rem;
+    color: var(--ink-muted);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+  }
+
+  .install-path svg {
+    margin: 4.5rem 0 2.8rem;
+    color: var(--coral);
+  }
+
+  .install-path h3 {
+    margin-bottom: 0.55rem;
+    font-size: 1.3rem;
+  }
+
+  .install-path p {
+    margin: 0;
+    color: var(--ink-soft);
+  }
+
+  .build-app {
+    background: var(--night-soft);
+  }
+
+  .build-layout {
+    display: grid;
+    grid-template-columns: 0.8fr 1.2fr;
+    gap: clamp(3rem, 10vw, 10rem);
+  }
+
+  .build-layout h2 {
+    max-width: 11ch;
+    margin: 0;
+    font-size: clamp(2.5rem, 5.7vw, 5rem);
+    font-weight: 390;
+    line-height: 1;
+  }
+
+  .build-layout > div:last-child > p {
+    max-width: 42rem;
+    color: var(--ink-soft);
+    font-size: 1.08rem;
+  }
+
+  .manifest {
+    margin: 2rem 0;
+    overflow: hidden;
+    border: 1px solid var(--line-strong);
+    border-radius: 8px;
+    background: #090a0b;
+  }
+
+  .manifest > span {
+    display: block;
+    padding: 0.65rem 1rem;
+    border-bottom: 1px solid var(--line);
+    color: var(--ink-muted);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+  }
+
+  .manifest code {
+    display: block;
+    padding: 1.2rem;
+    overflow-x: auto;
+    color: var(--ink-soft);
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    line-height: 1.8;
+    white-space: pre;
+  }
+
+  @media (max-width: 900px) {
+    .apps-intro,
+    .build-layout {
+      grid-template-columns: 1fr;
+    }
+
+    .app-ledger,
+    .install-path {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .app-ledger div:nth-child(2),
+    .install-path li:nth-child(2) {
+      border-right: 0;
+    }
+
+    .app-ledger div {
+      border-bottom: 1px solid var(--line);
+    }
+
+    .install-path li {
+      border-bottom: 1px solid var(--line);
+    }
+  }
+
+  @media (max-width: 560px) {
+    h1 {
+      font-size: 3.6rem;
+    }
+
+    .app-ledger,
+    .install-path {
+      grid-template-columns: 1fr;
+    }
+
+    .app-ledger div,
+    .app-ledger div:nth-child(2),
+    .install-path li,
+    .install-path li:nth-child(2) {
+      border-right: 0;
+    }
+
+    .app-ledger div {
+      min-height: 118px;
+    }
+
+    .install-path li {
+      min-height: 260px;
+    }
+  }
+</style>
