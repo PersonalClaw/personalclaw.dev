@@ -1,5 +1,5 @@
 import { ArrowUpRight, Search, X } from "lucide-react";
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import type { App, AppCategory } from "../data/apps";
 
 type Category = "All" | AppCategory;
@@ -13,7 +13,7 @@ export function AppDirectory({
 }) {
   const [category, setCategory] = useState<Category>("All");
   const [query, setQuery] = useState("");
-  const initialized = useRef(false);
+  const [initialized, setInitialized] = useState(false);
   const searchId = useId();
 
   useEffect(() => {
@@ -26,11 +26,11 @@ export function AppDirectory({
 
     setQuery(queryParam);
     setCategory(validCategory ?? "All");
-    initialized.current = true;
+    setInitialized(true);
   }, [categories]);
 
   useEffect(() => {
-    if (!initialized.current) return;
+    if (!initialized) return;
 
     const url = new URL(window.location.href);
     query ? url.searchParams.set("q", query) : url.searchParams.delete("q");
@@ -38,7 +38,7 @@ export function AppDirectory({
       ? url.searchParams.delete("category")
       : url.searchParams.set("category", category.toLowerCase());
     window.history.replaceState({}, "", url);
-  }, [category, query]);
+  }, [category, initialized, query]);
 
   const filtered = useMemo(() => {
     const normalized = query.trim().toLowerCase();

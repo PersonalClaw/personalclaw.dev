@@ -819,6 +819,7 @@ h3 {
     display: grid;
     max-height: 0;
     overflow: hidden;
+    pointer-events: none;
     border-bottom: 0 solid var(--line);
     background: rgba(11, 12, 13, 0.98);
     opacity: 0;
@@ -832,6 +833,7 @@ h3 {
     max-height: 320px;
     border-bottom-width: 1px;
     opacity: 1;
+    pointer-events: auto;
   }
 
   .mobile-menu nav {

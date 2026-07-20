@@ -1,6 +1,7 @@
 ---
 import "@fontsource-variable/dm-sans";
 import "@fontsource-variable/jetbrains-mono";
+import dmSansLatin from "@fontsource-variable/dm-sans/files/dm-sans-latin-wght-normal.woff2?url";
 import "../styles/global.css";
 import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
@@ -15,7 +16,22 @@ const {
   description = "A self-hosted agentic operating system for chat, autonomous goals, memory, knowledge, automation, and replaceable apps."
 } = Astro.props;
 const canonical = new URL(Astro.url.pathname, Astro.site);
+const socialImage = new URL("/brand/social-preview.png", Astro.site);
 const pathname = Astro.url.pathname.replace(/\/$/, "") || "/";
+const isPreview = import.meta.env.VERCEL_ENV === "preview";
+const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  name: title,
+  description,
+  url: canonical.toString(),
+  inLanguage: "en",
+  isPartOf: {
+    "@type": "WebSite",
+    name: "PersonalClaw",
+    url: Astro.site?.toString()
+  }
+};
 ---
 
 <!doctype html>
@@ -25,20 +41,37 @@ const pathname = Astro.url.pathname.replace(/\/$/, "") || "/";
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={description} />
     <meta name="theme-color" content="#0b0c0d" />
+    <meta name="robots" content={isPreview ? "noindex, nofollow" : "index, follow"} />
     <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="PersonalClaw" />
+    <meta property="og:locale" content="en_US" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
-    <meta property="og:image" content="/brand/social-preview.png" />
+    <meta property="og:image" content={socialImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="600" />
+    <meta property="og:image:alt" content="PersonalClaw · One agentic OS. Your machine. Your rules." />
     <meta property="og:url" content={canonical} />
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={socialImage} />
+    <link
+      rel="preload"
+      href={dmSansLatin}
+      as="font"
+      type="font/woff2"
+      crossorigin="anonymous"
+    />
     <link rel="canonical" href={canonical} />
     <link rel="icon" type="image/svg+xml" href="/brand/personalclaw-mark.svg" />
+    <script type="application/ld+json" is:inline set:html={JSON.stringify(structuredData)}></script>
     <title>{title}</title>
   </head>
   <body>
     <a class="skip-link" href="#main-content">Skip to content</a>
     <Header pathname={pathname} />
-    <main id="main-content">
+    <main id="main-content" tabindex="-1">
       <slot />
     </main>
     <Footer />

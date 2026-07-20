@@ -301,7 +301,7 @@ const featuredApps = [
         PersonalClaw requires Python 3.12. The dashboard opens at
         <code>localhost:10000</code> after the gateway starts.
       </p>
-      <CopyCommand command={INSTALL_COMMAND} client:load />
+      <CopyCommand command={INSTALL_COMMAND} client:idle />
       <div class="release-note">
         <strong>Currently v0.1.0.</strong>
         <p>
@@ -363,7 +363,6 @@ const featuredApps = [
     width: min(590px, 46vw);
     padding-bottom: 2rem;
     pointer-events: auto;
-    animation: copy-arrive 620ms both ease-out;
   }
 
   .hero-mark {
@@ -763,17 +762,6 @@ const featuredApps = [
 
   .final-cta {
     margin-top: 2.2rem;
-  }
-
-  @keyframes copy-arrive {
-    from {
-      opacity: 0;
-      transform: translateY(18px);
-    }
-    to {
-      opacity: 1;
-      transform: none;
-    }
   }
 
   @keyframes window-arrive {
