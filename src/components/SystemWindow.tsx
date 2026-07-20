@@ -52,7 +52,7 @@ export function SystemWindow({ views }: { views: View[] }) {
               id={`tab-${view.id}`}
               role="tab"
               aria-selected={index === activeIndex}
-              aria-controls={`panel-${view.id}`}
+              aria-controls="system-panel"
               tabIndex={index === activeIndex ? 0 : -1}
               onClick={() => setActiveIndex(index)}
               onKeyDown={(event) => handleKeys(event, index)}
@@ -69,25 +69,22 @@ export function SystemWindow({ views }: { views: View[] }) {
 
       <div
         className="system-frame"
-        id={`panel-${active.id}`}
+        id="system-panel"
         role="tabpanel"
         aria-labelledby={`tab-${active.id}`}
       >
-        {views.map((view, index) => (
-          <img
-            key={view.id}
-            className={`system-image ${index === activeIndex ? "is-active" : ""}`}
-            src={view.src}
-            srcSet={view.srcSet}
-            sizes={view.sizes}
-            width={view.width}
-            height={view.height}
-            alt={`${view.label} view in the PersonalClaw dashboard`}
-            loading={index === 0 ? "eager" : "lazy"}
-            fetchPriority={index === 0 ? "high" : "auto"}
-            aria-hidden={index !== activeIndex}
-          />
-        ))}
+        <img
+          key={active.id}
+          className="system-image is-active"
+          src={active.src}
+          srcSet={active.srcSet}
+          sizes={active.sizes}
+          width={active.width}
+          height={active.height}
+          alt={`${active.label} view in the PersonalClaw dashboard`}
+          loading="eager"
+          fetchPriority={activeIndex === 0 ? "high" : "auto"}
+        />
         <div className="system-caption">
           <p>{active.title}</p>
           <span>{active.description}</span>

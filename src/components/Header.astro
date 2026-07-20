@@ -51,7 +51,13 @@ const links = [
     </button>
   </div>
 
-  <div id="mobile-menu" class="mobile-menu" data-mobile-menu>
+  <div
+    id="mobile-menu"
+    class="mobile-menu"
+    data-mobile-menu
+    aria-hidden="true"
+    inert
+  >
     <nav class="shell" aria-label="Mobile navigation">
       {links.map((link) => (
         <a href={link.href} aria-current={pathname === link.href ? "page" : undefined}>
@@ -75,10 +81,27 @@ const links = [
   const menu = header?.querySelector<HTMLElement>("[data-mobile-menu]");
   const button = header?.querySelector<HTMLButtonElement>("[data-menu-button]");
 
-  button?.addEventListener("click", () => {
-    const open = !menu?.classList.contains("is-open");
-    menu?.classList.toggle("is-open", open);
+  const setMenuState = (open: boolean, restoreFocus = false) => {
+    if (!menu || !button) return;
+    menu.classList.toggle("is-open", open);
     button.setAttribute("aria-expanded", String(open));
     button.setAttribute("aria-label", open ? "Close navigation" : "Open navigation");
+    menu.setAttribute("aria-hidden", String(!open));
+    menu.toggleAttribute("inert", !open);
+    if (restoreFocus) button.focus();
+  };
+
+  button?.addEventListener("click", () => {
+    setMenuState(!menu?.classList.contains("is-open"));
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && button?.getAttribute("aria-expanded") === "true") {
+      setMenuState(false, true);
+    }
+  });
+
+  window.matchMedia("(min-width: 721px)").addEventListener("change", (event) => {
+    if (event.matches) setMenuState(false);
   });
 </script>
