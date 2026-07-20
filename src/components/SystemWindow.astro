@@ -9,7 +9,7 @@ import { productViews } from "../data/site";
 import { SystemWindow } from "./SystemWindow";
 
 const images = [dashboard, chat, loops, knowledge, apps];
-const widths = [640, 960, 1280, 1600];
+const widths = [480, 720, 960, 1280, 1600];
 
 const views = await Promise.all(
   productViews.map(async (view, index) => {
@@ -22,7 +22,7 @@ const views = await Promise.all(
 
     return {
       ...view,
-      src: variants[2].src,
+      src: variants[3].src,
       srcSet: variants.map((variant, variantIndex) => `${variant.src} ${widths[variantIndex]}w`).join(", "),
       sizes: "(max-width: 720px) 96vw, (max-width: 1200px) 92vw, 1280px",
       width: source.width,

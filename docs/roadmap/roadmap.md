@@ -1,6 +1,6 @@
 # PersonalClaw Website Evolution Roadmap
 
-**Last aligned:** 2026-07-19 | **Core roadmap baseline:** PersonalClaw rev 10, 52 plans
+**Last aligned:** 2026-07-20 | **Core roadmap baseline:** PersonalClaw rev 10, 52 plans
 
 Personalclaw.dev is the public release interface for PersonalClaw: marketing, documentation, installation, security, ecosystem discovery, and launch material. It must explain the product clearly without becoming an independent source of product truth.
 
@@ -64,11 +64,23 @@ PersonalClaw uses one canonical public origin and treats provider or owner domai
 
 **Core dependencies:** plans 27, 33, 35, and 36 Sessions 1-3.
 
+### Status
+
+The CI quality-floor slice was implemented locally on 2026-07-20:
+
+- GitHub Actions defines stable `static-contract`, `browser`, and `performance` jobs with locked npm installs, Chromium provisioning, concurrency cancellation, timeouts, and diagnostic artifacts.
+- Production and Vercel-preview builds validate exact route inventory, internal links and fragments, metadata, JSON-LD, canonical URLs, sitemap, robots policy, local runtime assets, explicit image dimensions, preview `noindex`, tracker signatures, and Vercel output/security-header configuration.
+- Playwright covers every current route across desktop, mobile, and reduced-motion projects with Axe, keyboard-only journeys, interaction state, layout/image integrity, same-origin-only network assertions, and committed responsive visual baselines.
+- Lighthouse enforces Core Web Vitals and transfer budgets on every route. The implementation run scored 99-100 in all four categories; homepage LCP measured 2.18s after critical-path optimization.
+- The first remote Actions run and branch-protection activation remain deployment-owner steps after these changes are pushed.
+
+The next engineering slice is the pinned-source manifest and human-readable provenance surface. Source provenance and content-schema checks remain planned until that source contract exists; they were not simulated with hand-authored placeholders.
+
 ### Deliverables
 
-- Establish required CI checks for build, type safety, Axe, keyboard-only critical flows, visual regression, and Lighthouse budgets.
-- Add automated checks for links, metadata, structured data, canonical URLs, sitemap, robots policy, source provenance, and content-schema compatibility.
-- Assert in browser tests that production pages make no tracker or adoption-analytics network requests.
+- **Implemented:** Establish required CI checks for build, type safety, Axe, keyboard-only critical flows, visual regression, and Lighthouse budgets.
+- **Partially implemented:** Add automated checks for links, metadata, structured data, canonical URLs, sitemap, and robots policy. Source provenance and content-schema compatibility begin with the pinned-source manifest.
+- **Implemented:** Assert in browser tests that production pages and meaningful interaction states make no tracker, analytics, or other third-party network requests.
 - Add reproducible preview and production deployments with a documented rollback procedure.
 - Authorize the Vercel GitHub App for the `PersonalClaw` organization and connect this repository so branch pushes create previews while the production branch follows the release gate.
 - Publish the release-truth build to `personalclaw.dev`, keeping `personalclaw.vercel.app` as the provider fallback rather than the canonical origin.
@@ -238,8 +250,8 @@ The following checks apply from the phase in which their prerequisite becomes av
 
 Complete one release-truth vertical slice spanning the core, apps, and website repositories:
 
-1. Add the website CI quality floor, including accessibility, keyboard, visual, performance, link, and no-tracker gates.
-2. Define the tagged-source manifest and generate version, capabilities, release notes, app count, and provenance from it.
+1. **Complete:** Add the website CI quality floor, including accessibility, keyboard, visual, performance, link, and no-tracker gates.
+2. **Next:** Define the tagged-source manifest and generate version, capabilities, release notes, app count, and provenance from it.
 3. Implement Starlight `/docs` with build-time core-doc synchronization, generated navigation, drift checks, `llms.txt`, and `llms-full.txt`.
 4. Synchronize the security overview, threat model, limitations, and explicit control statuses.
 5. Generate first-party app pages from pinned manifests.

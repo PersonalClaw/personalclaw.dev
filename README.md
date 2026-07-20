@@ -9,6 +9,12 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/PersonalClaw/personalclaw.dev/actions/workflows/ci.yml">
+    <img src="https://github.com/PersonalClaw/personalclaw.dev/actions/workflows/ci.yml/badge.svg" alt="Website CI status">
+  </a>
+</p>
+
+<p align="center">
   <a href="https://personalclaw.dev">Website</a>
   ·
   <a href="https://github.com/PersonalClaw/PersonalClaw">Core</a>
@@ -81,7 +87,8 @@ The site is a static Astro application with small React islands only where clien
 - **Lucide** for interface iconography.
 - **Local variable fonts** through Fontsource; no runtime font dependency.
 - **Plain CSS and design tokens** for the visual system; no utility framework or component runtime.
-- **Playwright** for responsive visual and interaction auditing.
+- **Playwright Test and Axe** for responsive behavior, accessibility, privacy, keyboard, and visual regression.
+- **Lighthouse** for mobile-simulated performance, accessibility, best-practice, SEO, and transfer budgets.
 
 ```mermaid
 flowchart LR
@@ -116,7 +123,7 @@ When implementation and those documents disagree, treat the disagreement as a de
 
 ### Prerequisites
 
-- Node.js `>=22.12.0`
+- Node.js `>=22.12.0 <23`
 - npm
 
 ### Local Development
@@ -147,57 +154,52 @@ The build runs Astro diagnostics before producing the static site in `dist/`.
 | `npm run check` | Runs Astro and TypeScript diagnostics |
 | `npm run build` | Runs diagnostics and creates the production static build |
 | `npm run preview` | Serves the production build locally |
+| `npm run test:static` | Validates production and preview publication artifacts |
+| `npm run test:browser` | Builds and runs the complete Playwright suite |
+| `npm run test:lighthouse` | Builds and enforces Lighthouse budgets on every route |
+| `npm run test:ci` | Runs the same aggregate quality floor used by CI |
+| `npm run test:visual:update` | Deliberately refreshes committed visual baselines |
 
 All scripts set `ASTRO_TELEMETRY_DISABLED=1`.
 
-## Visual Audit
+## Quality Floor
 
-The repository includes a Playwright audit covering the homepage and all primary routes across mobile, tablet, desktop, and wide viewports.
+The route contract in `tests/support/site-contract.mjs` is shared by static, browser, and performance gates. A new generated page fails validation until it is added to that contract and receives the same coverage as every existing route.
 
-Install Chromium once:
+The required checks are:
+
+- **Static publication contract:** Astro and TypeScript diagnostics, exact route inventory, internal links and fragments, local runtime assets, canonical URLs, descriptions, Open Graph and Twitter metadata, JSON-LD, sitemap, robots policy, explicit image dimensions, tracker signatures, preview `noindex`, and Vercel output/security-header configuration.
+- **Browser contract:** every route under desktop, mobile, and reduced-motion projects; Axe WCAG A/AA scans; keyboard-only critical journeys; app query/category URL state; tab behavior; command copy; focus-safe mobile navigation; image loading; horizontal overflow; 44px targets; console/page/request failures; and a same-origin-only network assertion through meaningful interaction states.
+- **Visual contract:** committed full-page desktop and mobile baselines for every route plus loop, app-filter, and mobile-menu states.
+- **Performance contract:** Lighthouse scores of at least 90 performance and 95 accessibility/best-practices/SEO, with LCP at most 2.5s, CLS at most 0.1, TBT at most 200ms, and explicit page, script, font, and image transfer budgets.
+
+Install the repository's Chromium build once, then run all gates:
 
 ```bash
 npx playwright install chromium
+npm run test:ci
 ```
 
-Start the site, then run the audit in a second terminal:
+Playwright HTML reports, traces, videos, screenshots from failed tests, and Lighthouse reports are generated locally but ignored. The reviewed visual baselines under `tests/browser/__screenshots__/` are source-controlled.
 
-```bash
-node scripts/visual-audit.mjs
-```
-
-The audit checks:
-
-- HTTP, browser console, page, and request failures.
-- Broken images.
-- Horizontal overflow.
-- Interactive targets smaller than 44px.
-- Product-view tab behavior.
-- App search results and URL state.
-- Mobile navigation behavior.
-- Full-page screenshots at the configured viewports.
-
-Screenshots are written to `/tmp/personalclaw-visual-audit` by default. Override the server or output path when needed:
-
-```bash
-BASE_URL=http://127.0.0.1:4322 \
-OUTPUT_DIR=/tmp/personalclaw-review \
-node scripts/visual-audit.mjs
-```
+GitHub Actions exposes three stable jobs that can be required by branch protection: `static-contract`, `browser`, and `performance`. Dependabot checks npm and action updates weekly.
 
 ## Repository Structure
 
 ```text
 .
+├── .github/             CI workflow and dependency update policy
 ├── docs/roadmap/        Website evolution and core-plan alignment
 ├── public/brand/        Public brand mark and social preview
-├── scripts/             Browser-based quality and capture tooling
+├── scripts/             Artifact and Lighthouse quality gates
 ├── src/assets/          Product captures optimized by Astro
 ├── src/components/      Astro components and focused React islands
 ├── src/data/            Transitional site and app content
 ├── src/layouts/         Shared document shell and metadata
 ├── src/pages/           Route entry points
 ├── src/styles/          Global styles and design tokens
+├── tests/browser/       User, accessibility, privacy, and visual coverage
+├── tests/support/       Shared public route contract
 ├── DESIGN.md            Visual and interaction specification
 └── PRODUCT.md           Audience, positioning, and product brief
 ```
@@ -220,7 +222,7 @@ Before changing public product copy:
 2. Determine whether it is shipped, preview, planned, or a documented limitation.
 3. Link the claim to canonical documentation or reproducible evidence.
 4. Refresh affected captures when the product UI has materially changed.
-5. Run the build and visual audit from a visitor's perspective.
+5. Run the complete quality floor from a visitor's perspective.
 
 Do not commit copied core documentation as an independent source. The planned docs pipeline synchronizes a pinned core checkout into an ignored build workspace.
 
@@ -233,21 +235,20 @@ Keep changes narrow and evidence-led:
 3. Use existing tokens, typography, and layout patterns before introducing new primitives.
 4. Import product images through Astro so responsive formats and dimensions remain stable.
 5. Validate keyboard behavior, reduced motion, narrow screens, and long text.
-6. Run `npm run build`.
-7. Run the Playwright visual audit for user-facing changes.
+6. Run `npm run test:ci`.
+7. Refresh visual baselines only after inspecting and accepting an intentional visual change.
 
-Generated output, dependency directories, reports, and audit screenshots are intentionally ignored.
+Generated output, dependency directories, and diagnostic reports are intentionally ignored. Reviewed visual baselines are committed.
 
 ## Roadmap
 
 The [website evolution roadmap](./docs/roadmap/roadmap.md) coordinates this repository with the PersonalClaw core program. Its immediate direction is:
 
-1. Establish the website CI and accessibility quality floor.
-2. Add tagged-source provenance.
-3. Synchronize canonical docs and machine-readable exports.
-4. Synchronize security status and limitations.
-5. Generate first-party app pages from manifests.
-6. Automate launch captures.
-7. Publish the one-line installer only after clean-machine distribution gates pass.
+1. Add tagged-source provenance.
+2. Synchronize canonical docs and machine-readable exports.
+3. Synchronize security status and limitations.
+4. Generate first-party app pages from manifests.
+5. Automate launch captures.
+6. Publish the one-line installer only after clean-machine distribution gates pass.
 
 The governing rule is simple: **personalclaw.dev should be the clearest projection of released PersonalClaw state, never a competing version of it.**

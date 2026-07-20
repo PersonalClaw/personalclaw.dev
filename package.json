@@ -3,14 +3,28 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=22.12.0 <23"
+  },
   "scripts": {
     "dev": "ASTRO_TELEMETRY_DISABLED=1 astro dev",
-    "build": "ASTRO_TELEMETRY_DISABLED=1 astro check && ASTRO_TELEMETRY_DISABLED=1 astro build",
+    "build": "npm run check && npm run build:site",
+    "build:site": "ASTRO_TELEMETRY_DISABLED=1 astro build",
+    "build:preview": "VERCEL_ENV=preview ASTRO_TELEMETRY_DISABLED=1 astro build --outDir .preview-dist",
     "preview": "ASTRO_TELEMETRY_DISABLED=1 astro preview",
-    "check": "ASTRO_TELEMETRY_DISABLED=1 astro check"
+    "check": "ASTRO_TELEMETRY_DISABLED=1 astro check",
+    "validate:build": "node scripts/validate-build.mjs",
+    "validate:preview": "DIST_DIR=.preview-dist EXPECT_NOINDEX=1 node scripts/validate-build.mjs",
+    "test:static": "npm run build && npm run validate:build && npm run build:preview && npm run validate:preview",
+    "test:browser": "npm run build && playwright test",
+    "test:browser:report": "playwright show-report",
+    "test:visual:update": "npm run build && playwright test tests/browser/visual.spec.ts --update-snapshots",
+    "test:lighthouse": "npm run build && node scripts/lighthouse-audit.mjs",
+    "test:ci": "npm run test:static && playwright test && node scripts/lighthouse-audit.mjs"
   },
   "dependencies": {
     "@astrojs/react": "^6.0.1",
+    "@astrojs/sitemap": "^3.7.3",
     "@fontsource-variable/dm-sans": "^5.2.6",
     "@fontsource-variable/jetbrains-mono": "^5.2.6",
     "astro": "^7.1.1",
@@ -20,9 +34,13 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.4",
+    "@axe-core/playwright": "^4.12.1",
+    "@playwright/test": "^1.61.1",
     "@types/react": "^19.1.9",
     "@types/react-dom": "^19.1.7",
-    "playwright": "^1.54.2",
+    "cheerio": "^1.2.0",
+    "chrome-launcher": "^1.2.1",
+    "lighthouse": "12.6.1",
     "typescript": "^5.8.3"
   }
 }
