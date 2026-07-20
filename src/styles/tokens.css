@@ -1,0 +1,20 @@
+:root {
+  --night: #0b0c0d;
+  --night-soft: #101112;
+  --surface: #171819;
+  --surface-high: #202224;
+  --line: #2b2d2f;
+  --line-strong: #3b3e41;
+  --ink: #f2f1ed;
+  --ink-soft: #c4c4bf;
+  --ink-muted: #92938f;
+  --coral: #ff6b5b;
+  --coral-bright: #ff937d;
+  --ember: #bd4537;
+  --amber: #ffb454;
+  --success: #57c989;
+  --font-sans: "DM Sans Variable", "DM Sans", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  --shell: 1440px;
+  --section-space: clamp(6rem, 11vw, 10rem);
+}

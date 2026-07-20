@@ -1,0 +1,697 @@
+---
+import { Image } from "astro:assets";
+import {
+  ArrowRight,
+  Bot,
+  Brain,
+  Check,
+  CirclePause,
+  Clock3,
+  Eye,
+  FileSearch,
+  GitFork,
+  MessagesSquare,
+  ShieldCheck,
+  Sparkles,
+  Workflow
+} from "lucide-react";
+import agentsCapture from "../assets/agents.png";
+import chatCapture from "../assets/chat.png";
+import knowledgeCapture from "../assets/knowledge.png";
+import memoryCapture from "../assets/memory.png";
+import triggersCapture from "../assets/triggers.png";
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { GITHUB_URL } from "../data/site";
+---
+
+<BaseLayout
+  title="Product · PersonalClaw"
+  description="Explore PersonalClaw's agentic chat, autonomous goal loops, memory, knowledge, automation, and agent runtimes."
+>
+  <section class="product-hero">
+    <Image
+      class="hero-image"
+      src={chatCapture}
+      alt="PersonalClaw agentic chat with conversation history, tools, and context"
+      widths={[800, 1200, 1600]}
+      sizes="100vw"
+      format="webp"
+      quality={88}
+      loading="eager"
+    />
+    <div class="shell hero-overlay">
+      <div>
+        <p class="kicker">The product</p>
+        <h1>The whole system, under one roof.</h1>
+        <p>
+          Move from conversation to autonomous work, durable context, and
+          scheduled action without splitting your personal operating layer
+          across five services.
+        </p>
+        <a class="button button-primary" href="#chat">
+          Start the tour <ArrowRight size={18} aria-hidden="true" />
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section product-promise section-rule">
+    <div class="shell promise-grid">
+      <div class="promise-statement">
+        <p class="kicker">Designed as a system</p>
+        <h2>Every mode of work shares the same context and controls.</h2>
+      </div>
+      <div class="promise-points">
+        <p>
+          Chat, goal loops, and automation use the same context engine,
+          approvals, skills, apps, and durable state.
+        </p>
+        <ul>
+          <li><Check size={18} aria-hidden="true" /> One local gateway</li>
+          <li><Check size={18} aria-hidden="true" /> One web dashboard</li>
+          <li><Check size={18} aria-hidden="true" /> One inspectable home directory</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="section feature-section" id="chat">
+    <div class="shell feature-grid">
+      <div class="feature-copy">
+        <span class="feature-icon"><MessagesSquare size={23} aria-hidden="true" /></span>
+        <p class="kicker">Agentic chat</p>
+        <h2>Conversation that can become work.</h2>
+        <p>
+          Run tools with approval controls, organize sessions, branch from
+          earlier turns, compare answer variants, and tune model or memory
+          behavior per conversation.
+        </p>
+        <ul class="feature-list">
+          <li>Session fork and undo</li>
+          <li>Folders, tags, and kanban</li>
+          <li>Temporary and incognito memory modes</li>
+          <li>Per-session model overrides</li>
+        </ul>
+      </div>
+      <div class="feature-media">
+        <Image
+          src={chatCapture}
+          alt="PersonalClaw chat session with tools and conversation controls"
+          widths={[640, 960, 1280]}
+          sizes="(max-width: 900px) 100vw, 62vw"
+          format="webp"
+          quality={86}
+        />
+      </div>
+    </div>
+  </section>
+
+  <section class="autonomy-band">
+    <div class="shell autonomy-grid">
+      <div class="autonomy-title">
+        <p class="kicker">Autonomous goals</p>
+        <h2>The agent keeps going. You keep the final say.</h2>
+      </div>
+      <div class="autonomy-points">
+        <article>
+          <Eye size={23} aria-hidden="true" />
+          <h3>Observe</h3>
+          <p>See the plan, active cycle, tool activity, and result as it happens.</p>
+        </article>
+        <article>
+          <CirclePause size={23} aria-hidden="true" />
+          <h3>Intervene</h3>
+          <p>Pause, nudge, resume, or stop without losing the accumulated run state.</p>
+        </article>
+        <article>
+          <ShieldCheck size={23} aria-hidden="true" />
+          <h3>Bound</h3>
+          <p>Deterministic supervisors and approval modes constrain autonomous action.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section context-section">
+    <div class="shell">
+      <div class="section-head">
+        <div>
+          <p class="kicker">Durable context</p>
+          <h2>Memory and knowledge do different jobs.</h2>
+        </div>
+        <p>
+          PersonalClaw keeps learned personal context separate from the source
+          material you deliberately add. Both remain inspectable.
+        </p>
+      </div>
+
+      <div class="context-grid">
+        <article>
+          <div class="context-copy">
+            <Brain size={23} aria-hidden="true" />
+            <div>
+              <h3>Memory learns how you work.</h3>
+              <p>
+                Semantic, episodic, and procedural layers support recall,
+                correction learning, and promotion of repeated facts.
+              </p>
+            </div>
+          </div>
+          <Image
+            src={memoryCapture}
+            alt="PersonalClaw memory view with layered learned context"
+            widths={[520, 760, 980]}
+            sizes="(max-width: 800px) 100vw, 50vw"
+            format="webp"
+            quality={84}
+          />
+        </article>
+        <article>
+          <div class="context-copy">
+            <FileSearch size={23} aria-hidden="true" />
+            <div>
+              <h3>Knowledge keeps the source.</h3>
+              <p>
+                Ingest documents, web pages, and media; enrich them with
+                entities and make them searchable from chat.
+              </p>
+            </div>
+          </div>
+          <Image
+            src={knowledgeCapture}
+            alt="PersonalClaw knowledge base with source documents and entity graph"
+            widths={[520, 760, 980]}
+            sizes="(max-width: 800px) 100vw, 50vw"
+            format="webp"
+            quality={84}
+          />
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section automation-section section-rule">
+    <div class="shell automation-grid">
+      <div class="automation-media">
+        <Image
+          src={triggersCapture}
+          alt="PersonalClaw automation triggers with schedules and status"
+          widths={[640, 960, 1280]}
+          sizes="(max-width: 900px) 100vw, 62vw"
+          format="webp"
+          quality={86}
+        />
+      </div>
+      <div class="feature-copy">
+        <span class="feature-icon"><Clock3 size={23} aria-hidden="true" /></span>
+        <p class="kicker">Automation</p>
+        <h2>Let the system notice first.</h2>
+        <p>
+          Schedule recurring work, react to webhooks, monitor connected
+          channels, and dispatch background subagents without building a second
+          automation stack.
+        </p>
+        <ul class="feature-list">
+          <li>Cron, interval, and webhook triggers</li>
+          <li>Channel inbox and drafted replies</li>
+          <li>Background subagents</li>
+          <li>Automatically matched workflow SOPs</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="section agents-section">
+    <div class="shell">
+      <div class="agents-copy">
+        <div>
+          <p class="kicker">Bring the right agent</p>
+          <h2>Native, ACP, or app-defined.</h2>
+        </div>
+        <div>
+          <p>
+            PersonalClaw can run its native agent or connect external coding
+            agents through ACP. Claude Code, OpenAI Codex, and Kiro CLI remain
+            behind the same host approval boundary.
+          </p>
+          <a class="text-link" href="/apps">
+            Explore agent apps <ArrowRight size={17} aria-hidden="true" />
+          </a>
+        </div>
+      </div>
+      <Image
+        src={agentsCapture}
+        alt="PersonalClaw agents view showing configured agent runtimes"
+        widths={[720, 1080, 1440]}
+        sizes="100vw"
+        format="webp"
+        quality={86}
+      />
+      <div class="agent-proof" aria-label="Agent runtime properties">
+        <span><Bot size={18} aria-hidden="true" /> Multiple runtimes</span>
+        <span><GitFork size={18} aria-hidden="true" /> ACP boundary</span>
+        <span><Workflow size={18} aria-hidden="true" /> Shared context</span>
+        <span><Sparkles size={18} aria-hidden="true" /> Replaceable providers</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="section product-cta">
+    <div class="narrow">
+      <p class="kicker">Open source · self-hosted</p>
+      <h2>Run the system on your machine.</h2>
+      <p>
+        Python 3.12, an aiohttp gateway, React dashboard, SQLite state, and no
+        product telemetry.
+      </p>
+      <div>
+        <a
+          class="button button-primary"
+          href={GITHUB_URL}
+          target="_blank"
+          rel="noreferrer"
+        >
+          View the source <ArrowRight size={18} aria-hidden="true" />
+        </a>
+        <a class="button button-secondary" href="/security">
+          Read the security model
+        </a>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .product-hero {
+    position: relative;
+    height: min(780px, calc(100dvh - 112px));
+    min-height: 620px;
+    overflow: hidden;
+    border-bottom: 1px solid var(--line);
+    background: var(--night-soft);
+  }
+
+  .product-hero::after {
+    position: absolute;
+    z-index: 1;
+    inset: 0;
+    background:
+      linear-gradient(90deg, rgba(11, 12, 13, 0.99) 0%, rgba(11, 12, 13, 0.92) 34%, rgba(11, 12, 13, 0.2) 76%),
+      linear-gradient(0deg, var(--night) 0%, transparent 42%);
+    content: "";
+  }
+
+  .product-hero :global(.hero-image) {
+    position: absolute;
+    width: min(1500px, 94vw);
+    height: auto;
+    top: 7%;
+    right: -9%;
+    border: 1px solid var(--line-strong);
+    border-radius: 8px;
+    box-shadow: 0 40px 100px rgba(0, 0, 0, 0.55);
+  }
+
+  .hero-overlay {
+    display: grid;
+    position: relative;
+    z-index: 2;
+    height: 100%;
+    align-items: center;
+  }
+
+  .hero-overlay > div {
+    max-width: 690px;
+  }
+
+  h1 {
+    max-width: 11ch;
+    margin-bottom: 1.5rem;
+    font-size: clamp(3.3rem, 7.5vw, 7.2rem);
+    font-weight: 330;
+    line-height: 0.94;
+  }
+
+  .hero-overlay p:not(.kicker) {
+    max-width: 42rem;
+    margin-bottom: 1.8rem;
+    color: var(--ink-soft);
+    font-size: 1.15rem;
+  }
+
+  .promise-grid {
+    display: grid;
+    grid-template-columns: 1.2fr 0.8fr;
+    gap: clamp(3rem, 10vw, 10rem);
+  }
+
+  .promise-statement h2,
+  .feature-copy h2,
+  .autonomy-title h2,
+  .agents-copy h2,
+  .product-cta h2 {
+    margin-bottom: 1.4rem;
+    font-size: clamp(2.5rem, 5.7vw, 5rem);
+    font-weight: 390;
+    line-height: 1;
+  }
+
+  .promise-statement h2 {
+    max-width: 13ch;
+    margin-bottom: 0;
+  }
+
+  .promise-points > p {
+    color: var(--ink-soft);
+    font-size: 1.08rem;
+  }
+
+  .promise-points ul,
+  .feature-list {
+    padding: 0;
+    margin: 2rem 0 0;
+    list-style: none;
+  }
+
+  .promise-points li {
+    display: flex;
+    min-height: 48px;
+    gap: 0.65rem;
+    align-items: center;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .promise-points svg {
+    color: var(--success);
+  }
+
+  .feature-grid,
+  .automation-grid {
+    display: grid;
+    grid-template-columns: minmax(280px, 0.68fr) minmax(600px, 1.32fr);
+    gap: clamp(3rem, 7vw, 7rem);
+    align-items: center;
+  }
+
+  .feature-section,
+  .automation-section {
+    overflow: hidden;
+  }
+
+  .feature-icon {
+    display: grid;
+    width: 48px;
+    height: 48px;
+    margin-bottom: 2rem;
+    place-items: center;
+    border: 1px solid var(--line-strong);
+    border-radius: 50%;
+    color: var(--coral);
+  }
+
+  .feature-copy > p:not(.kicker) {
+    color: var(--ink-soft);
+    font-size: 1.06rem;
+  }
+
+  .feature-list li {
+    min-height: 43px;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid var(--line);
+    color: var(--ink-soft);
+  }
+
+  .feature-media {
+    margin-right: min(-5vw, -2rem);
+  }
+
+  .feature-media :global(img),
+  .automation-media :global(img),
+  .context-grid :global(img),
+  .agents-section > .shell > :global(img) {
+    width: 100%;
+    border: 1px solid var(--line-strong);
+    border-radius: 8px;
+    box-shadow: 0 34px 90px rgba(0, 0, 0, 0.4);
+  }
+
+  .autonomy-band {
+    padding-block: clamp(5rem, 9vw, 8rem);
+    border-block: 1px solid rgba(255, 107, 91, 0.25);
+    background: var(--coral);
+    color: var(--night);
+  }
+
+  .autonomy-band .kicker {
+    color: var(--night);
+  }
+
+  .autonomy-grid {
+    display: grid;
+    grid-template-columns: 0.72fr 1.28fr;
+    gap: clamp(3rem, 8vw, 8rem);
+  }
+
+  .autonomy-title h2 {
+    max-width: 11ch;
+    margin: 0;
+  }
+
+  .autonomy-points {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .autonomy-points article {
+    padding: 0 1.6rem;
+    border-left: 1px solid rgba(11, 12, 13, 0.28);
+  }
+
+  .autonomy-points svg {
+    margin-bottom: 3rem;
+  }
+
+  .autonomy-points h3 {
+    margin-bottom: 0.45rem;
+    font-size: 1.2rem;
+  }
+
+  .autonomy-points p {
+    margin: 0;
+    color: rgba(11, 12, 13, 0.78);
+  }
+
+  .context-section {
+    background: var(--night-soft);
+  }
+
+  .context-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+
+  .context-grid article {
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--surface);
+  }
+
+  .context-grid article :global(img) {
+    border: 0;
+    border-top: 1px solid var(--line);
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .context-copy {
+    display: grid;
+    min-height: 200px;
+    padding: 2rem;
+    grid-template-columns: 42px 1fr;
+    gap: 1rem;
+  }
+
+  .context-copy > svg {
+    color: var(--coral);
+  }
+
+  .context-copy h3 {
+    font-size: 1.35rem;
+  }
+
+  .context-copy p {
+    margin: 0;
+    color: var(--ink-soft);
+  }
+
+  .automation-grid {
+    grid-template-columns: minmax(600px, 1.32fr) minmax(280px, 0.68fr);
+  }
+
+  .automation-media {
+    margin-left: min(-5vw, -2rem);
+  }
+
+  .agents-copy {
+    display: grid;
+    margin-bottom: 3.5rem;
+    grid-template-columns: 1fr 0.7fr;
+    gap: 4rem;
+    align-items: end;
+  }
+
+  .agents-copy h2 {
+    max-width: 12ch;
+    margin: 0;
+  }
+
+  .agents-copy > div:last-child p {
+    color: var(--ink-soft);
+  }
+
+  .text-link {
+    display: inline-flex;
+    min-height: 44px;
+    gap: 0.45rem;
+    align-items: center;
+    color: var(--coral-bright);
+    font-weight: 650;
+  }
+
+  .agent-proof {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .agent-proof span {
+    display: flex;
+    min-height: 92px;
+    padding: 1rem;
+    gap: 0.75rem;
+    align-items: center;
+    border-right: 1px solid var(--line);
+    color: var(--ink-soft);
+  }
+
+  .agent-proof span:last-child {
+    border-right: 0;
+  }
+
+  .agent-proof svg {
+    color: var(--coral);
+  }
+
+  .product-cta {
+    border-top: 1px solid var(--line);
+    text-align: center;
+  }
+
+  .product-cta .kicker {
+    justify-content: center;
+  }
+
+  .product-cta h2 {
+    margin-inline: auto;
+  }
+
+  .product-cta p {
+    max-width: 39rem;
+    margin: 0 auto 2rem;
+    color: var(--ink-soft);
+  }
+
+  .product-cta > div > div {
+    display: flex;
+    gap: 0.7rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  @media (max-width: 920px) {
+    .product-hero :global(.hero-image) {
+      width: 1120px;
+      max-width: none;
+      right: -32rem;
+    }
+
+    .promise-grid,
+    .feature-grid,
+    .automation-grid,
+    .autonomy-grid,
+    .agents-copy {
+      grid-template-columns: 1fr;
+    }
+
+    .feature-media,
+    .automation-media {
+      margin: 0;
+    }
+
+    .automation-media {
+      grid-row: 2;
+    }
+
+    .autonomy-points {
+      margin-top: 1rem;
+    }
+  }
+
+  @media (max-width: 720px) {
+    .product-hero {
+      min-height: 560px;
+      height: calc(100dvh - 112px);
+      max-height: 732px;
+    }
+
+    .product-hero::after {
+      background:
+        linear-gradient(180deg, var(--night) 0%, rgba(11, 12, 13, 0.92) 56%, rgba(11, 12, 13, 0.2) 100%);
+    }
+
+    .product-hero :global(.hero-image) {
+      width: 900px;
+      top: 44%;
+      right: -22rem;
+    }
+
+    h1 {
+      font-size: 3.5rem;
+    }
+
+    .hero-overlay {
+      align-items: start;
+      padding-top: 4rem;
+    }
+
+    .autonomy-points,
+    .context-grid,
+    .agent-proof {
+      grid-template-columns: 1fr;
+    }
+
+    .autonomy-points article {
+      min-height: 180px;
+      padding: 1.4rem 0;
+      border-top: 1px solid rgba(11, 12, 13, 0.28);
+      border-left: 0;
+    }
+
+    .autonomy-points svg {
+      margin-bottom: 2rem;
+    }
+
+    .context-copy {
+      min-height: 170px;
+      padding: 1.4rem;
+    }
+
+    .agent-proof span {
+      min-height: 68px;
+      border-right: 0;
+      border-bottom: 1px solid var(--line);
+    }
+  }
+</style>

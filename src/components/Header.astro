@@ -1,0 +1,84 @@
+---
+import { ArrowUpRight, Menu, X } from "lucide-react";
+
+interface Props {
+  pathname: string;
+}
+
+const { pathname } = Astro.props;
+const links = [
+  { href: "/product", label: "Product" },
+  { href: "/apps", label: "Apps" },
+  { href: "/security", label: "Security" }
+];
+---
+
+<header class="site-header" data-site-header>
+  <div class="shell header-inner">
+    <a class="brand-link" href="/" aria-label="PersonalClaw home">
+      <img src="/brand/personalclaw-mark.svg" alt="" width="30" height="30" />
+      <span translate="no">PersonalClaw</span>
+    </a>
+
+    <nav class="desktop-nav" aria-label="Primary navigation">
+      {links.map((link) => (
+        <a href={link.href} aria-current={pathname === link.href ? "page" : undefined}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+
+    <a
+      class="button button-quiet header-github"
+      href="https://github.com/PersonalClaw/PersonalClaw"
+      target="_blank"
+      rel="noreferrer"
+    >
+      <span>GitHub</span>
+      <ArrowUpRight size={16} aria-hidden="true" />
+    </a>
+
+    <button
+      class="icon-button menu-button"
+      type="button"
+      aria-label="Open navigation"
+      aria-expanded="false"
+      aria-controls="mobile-menu"
+      data-menu-button
+    >
+      <Menu className="menu-open-icon" size={22} aria-hidden="true" />
+      <X className="menu-close-icon" size={22} aria-hidden="true" />
+    </button>
+  </div>
+
+  <div id="mobile-menu" class="mobile-menu" data-mobile-menu>
+    <nav class="shell" aria-label="Mobile navigation">
+      {links.map((link) => (
+        <a href={link.href} aria-current={pathname === link.href ? "page" : undefined}>
+          {link.label}
+        </a>
+      ))}
+      <a
+        href="https://github.com/PersonalClaw/PersonalClaw"
+        target="_blank"
+        rel="noreferrer"
+      >
+        <span>GitHub</span>
+        <ArrowUpRight size={18} aria-hidden="true" />
+      </a>
+    </nav>
+  </div>
+</header>
+
+<script>
+  const header = document.querySelector<HTMLElement>("[data-site-header]");
+  const menu = header?.querySelector<HTMLElement>("[data-mobile-menu]");
+  const button = header?.querySelector<HTMLButtonElement>("[data-menu-button]");
+
+  button?.addEventListener("click", () => {
+    const open = !menu?.classList.contains("is-open");
+    menu?.classList.toggle("is-open", open);
+    button.setAttribute("aria-expanded", String(open));
+    button.setAttribute("aria-label", open ? "Close navigation" : "Open navigation");
+  });
+</script>

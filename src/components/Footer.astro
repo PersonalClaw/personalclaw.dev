@@ -1,0 +1,32 @@
+---
+import { GITHUB_URL, APPS_URL } from "../data/site";
+---
+
+<footer class="site-footer">
+  <div class="shell footer-grid">
+    <div class="footer-brand">
+      <a class="brand-link" href="/" aria-label="PersonalClaw home">
+        <img src="/brand/personalclaw-mark.svg" alt="" width="30" height="30" />
+        <span>PersonalClaw</span>
+      </a>
+      <p>One agentic OS. Your machine. Your rules.</p>
+    </div>
+
+    <nav class="footer-links" aria-label="Footer navigation">
+      <a href="/product">Product</a>
+      <a href="/apps">Apps</a>
+      <a href="/security">Security</a>
+      <a href={GITHUB_URL} target="_blank" rel="noreferrer">Source</a>
+      <a href={APPS_URL} target="_blank" rel="noreferrer">App repository</a>
+    </nav>
+
+    <div class="footer-meta">
+      <p>MIT licensed</p>
+      <p>Zero telemetry</p>
+      <p>v0.1.0 · Pre-1.0</p>
+    </div>
+  </div>
+  <div class="shell footer-bottom">
+    <p>Built in the open for people who want to own their agents.</p>
+  </div>
+</footer>
