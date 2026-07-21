@@ -42,7 +42,7 @@ It has a broader job than a conventional marketing site:
 The website should be persuasive because it is specific and checkable, not because it hides the product's maturity or tradeoffs.
 
 > [!IMPORTANT]
-> The current codebase is the initial pre-release website implementation. Its marketing routes and visual system are functional, but release-pinned content synchronization, canonical `/docs`, and the production `/install` contract are roadmap work. A package version or branch snapshot must not be presented as a tagged PersonalClaw release.
+> The current source manifest is explicitly `pre-release`: it pins exact core and apps commits but asserts no tags because neither repository has a tagged release yet. The site identifies this state as a pinned development snapshot. Canonical `/docs` and the production `/install` contract remain roadmap work.
 
 ## Experience Map
 
@@ -52,6 +52,7 @@ The website should be persuasive because it is specific and checkable, not becau
 | `/product` | Guided tour of chat, autonomous goals, memory, knowledge, automation, and agent runtimes |
 | `/apps` | Searchable first-party app directory and app-platform explanation |
 | `/security` | Trust boundaries, enforced controls, supply-chain lifecycle, and known limitations |
+| `/release` | Build channel, exact source commits, package/changelog facts, and manifest-derived ecosystem evidence |
 
 The next major public surfaces are synchronized documentation, release provenance, stable installation, changelog, and app detail routes. Their sequencing and acceptance gates are defined in the [website evolution roadmap](./docs/roadmap/roadmap.md).
 
@@ -104,7 +105,7 @@ flowchart LR
     Build --> Site
 ```
 
-This diagram is the target content flow. The initial implementation still contains transitional hand-authored data, notably `src/data/apps.ts` and version copy. The roadmap replaces those snapshots with pinned build-time inputs.
+This source flow is active. `sources/personalclaw.sources.json` pins full commits, `scripts/sync-sources.mjs` validates and reads only those revisions, and the ignored `.generated/release-facts.json` artifact feeds the site build. The app directory's descriptions remain curated in `src/data/apps.ts`, but its names and categories are checked against every pinned app manifest so drift fails the build.
 
 ## Design Direction
 
@@ -139,6 +140,8 @@ npm run dev
 
 Astro serves the site at [http://localhost:4321](http://localhost:4321) by default.
 
+Source synchronization first looks for exact matching sibling checkouts at `../PersonalClaw` and `../PersonalClawApps`. If either checkout is absent, points at another origin, or has a different HEAD, the synchronizer verifies the pinned commit with GitHub and fetches only the required files. `PERSONALCLAW_CORE_DIR` and `PERSONALCLAW_APPS_DIR` can provide explicit checkout paths; explicit mismatches fail instead of falling back.
+
 ### Production Build
 
 ```bash
@@ -152,6 +155,7 @@ The build runs Astro diagnostics before producing the static site in `dist/`.
 
 | Command | What it does |
 |---|---|
+| `npm run sync:sources` | Validates source pins and generates ignored release facts from exact revisions |
 | `npm run dev` | Starts the local Astro development server |
 | `npm run check` | Runs Astro and TypeScript diagnostics |
 | `npm run build` | Runs diagnostics and creates the production static build |
@@ -204,6 +208,7 @@ inspecting the rendered result on the platform that produced it.
 ├── docs/roadmap/        Website evolution and core-plan alignment
 ├── public/brand/        Public brand mark and social preview
 ├── scripts/             Artifact and Lighthouse quality gates
+├── sources/             Committed source manifest and JSON Schema
 ├── src/assets/          Product captures optimized by Astro
 ├── src/components/      Astro components and focused React islands
 ├── src/data/            Transitional site and app content
@@ -226,7 +231,12 @@ PersonalClaw spans three repositories, with deliberately separate ownership:
 | First-party app manifests, permissions, requirements, and compatibility | [PersonalClawApps](https://github.com/PersonalClaw/PersonalClawApps) |
 | Presentation, public routing, synchronized docs build, and `/install` endpoint | This repository |
 
-Production builds are expected to pin source tags and SHAs. Preview builds may follow `main`, but should be visibly identified and must not leak unreleased claims into production.
+Every build pins full source SHAs. The manifest supports two fail-closed channels:
+
+- `pre-release` requires both tags to be `null` and renders a pinned development snapshot.
+- `released` requires tags for both repositories, verifies that each tag resolves to its declared SHA, and requires the core tag to match the package version.
+
+The current manifest uses `pre-release` until real core and apps tags exist. Generated files and fetched source caches are ignored; copied source content is never committed to this repository.
 
 Before changing public product copy:
 
@@ -256,11 +266,10 @@ Generated output, dependency directories, and diagnostic reports are intentional
 
 The [website evolution roadmap](./docs/roadmap/roadmap.md) coordinates this repository with the PersonalClaw core program. Its immediate direction is:
 
-1. Add tagged-source provenance.
-2. Synchronize canonical docs and machine-readable exports.
-3. Synchronize security status and limitations.
-4. Generate first-party app pages from manifests.
-5. Automate launch captures.
-6. Publish the one-line installer only after clean-machine distribution gates pass.
+1. Synchronize canonical docs and machine-readable exports from the pinned core revision.
+2. Synchronize security status and limitations.
+3. Generate first-party app pages from manifests.
+4. Automate launch captures.
+5. Publish the one-line installer only after clean-machine distribution gates pass.
 
 The governing rule is simple: **personalclaw.dev should be the clearest projection of released PersonalClaw state, never a competing version of it.**

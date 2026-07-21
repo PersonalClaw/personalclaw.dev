@@ -15,7 +15,9 @@ Personalclaw.dev is the public release interface for PersonalClaw: marketing, do
 
 ## Source Of Truth And Release Channels
 
-Production builds use an explicit source manifest that pins the core and first-party apps repositories by release tag and commit SHA. Preview builds may follow `main`, but must be visibly identified as previews and must not publish unreleased claims into production.
+Every build uses an explicit source manifest that pins the core and first-party apps repositories by full commit SHA. A `released` build additionally pins and verifies release tags. A `pre-release` build asserts null tags and must identify itself visibly rather than presenting a branch snapshot as released behavior.
+
+The first source-contract slice landed on 2026-07-20. Until actual tags exist, the committed manifest uses a fail-closed `pre-release` channel with full core and apps SHAs and null tags. The public `/release` surface identifies it as a pinned development snapshot. Switching to `released` requires both tags to resolve to their declared commits and the core tag to match the package version.
 
 | Public surface | Canonical source | Publication rule |
 |---|---|---|
@@ -44,7 +46,7 @@ PersonalClaw uses one canonical public origin and treats provider or owner domai
 ### Domain Rollout
 
 1. **Provider baseline (complete):** Vercel project `personalclaw` serves a ready production deployment at `personalclaw.vercel.app`.
-2. **Canonical launch (planned):** authorize the Vercel GitHub App for the `PersonalClaw` organization, connect the repository, attach `personalclaw.dev`, configure its Vercel-provided DNS records, verify TLS, and promote only a release-truth build.
+2. **Canonical launch (complete):** the Vercel GitHub App is connected, `main` is the production branch, and `personalclaw.dev` serves the site with valid TLS while `personalclaw.vercel.app` remains available.
 3. **Secondary redirect (planned):** attach `personalclaw.keyurgolani.name`, configure its Vercel-provided Cloudflare DNS record, and enforce an HTTPS 308 redirect to the equivalent path and query on `personalclaw.dev`.
 
 ## Core Plan Dependency Map
@@ -66,26 +68,30 @@ PersonalClaw uses one canonical public origin and treats provider or owner domai
 
 ### Status
 
-The CI quality-floor slice was implemented locally on 2026-07-20:
+The CI quality-floor and first release-truth slices were implemented locally on 2026-07-20:
 
 - GitHub Actions defines stable `static-contract`, `browser`, and `performance` jobs with locked npm installs, Chromium provisioning, concurrency cancellation, timeouts, and diagnostic artifacts.
 - Production and Vercel-preview builds validate exact route inventory, internal links and fragments, metadata, JSON-LD, canonical URLs, sitemap, robots policy, local runtime assets, explicit image dimensions, preview `noindex`, tracker signatures, and Vercel output/security-header configuration.
 - Playwright covers every current route across desktop, mobile, and reduced-motion projects with Axe, keyboard-only journeys, interaction state, layout/image integrity, same-origin-only network assertions, and committed responsive visual baselines.
 - Lighthouse enforces Core Web Vitals and transfer budgets on every route. The implementation run scored 99-100 in all four categories; homepage LCP measured 2.18s after critical-path optimization.
-- The first remote Actions run and branch-protection activation remain deployment-owner steps after these changes are pushed.
+- A JSON-Schema-validated source manifest pins full core and apps SHAs and distinguishes `pre-release` from `released` publication. Local matching checkouts are preferred; clean builds verify and fetch exact files from GitHub.
+- Ignored generated facts derive the package version, matching changelog entries, 38 app manifests, nine app categories, 22 provider capabilities, source links, schema version, and build time.
+- `/release` exposes the source channel, exact commits, tag state, ecosystem evidence, and changelog provenance. Homepage, apps, and footer version/count claims consume the same artifact.
+- The build fails on invalid pins, tag/SHA mismatch in released mode, malformed source metadata, or public app-directory name/category drift.
+- Vercel Git integration, protected `main`, the canonical `personalclaw.dev` domain, and the `personalclaw.vercel.app` fallback are active.
 
-The next engineering slice is the pinned-source manifest and human-readable provenance surface. Source provenance and content-schema checks remain planned until that source contract exists; they were not simulated with hand-authored placeholders.
+The next engineering slice is synchronized canonical documentation and machine-readable exports from the same pinned core revision.
 
 ### Deliverables
 
 - **Implemented:** Establish required CI checks for build, type safety, Axe, keyboard-only critical flows, visual regression, and Lighthouse budgets.
-- **Partially implemented:** Add automated checks for links, metadata, structured data, canonical URLs, sitemap, and robots policy. Source provenance and content-schema compatibility begin with the pinned-source manifest.
+- **Implemented:** Add automated checks for links, metadata, structured data, canonical URLs, sitemap, robots policy, source provenance, and content-schema compatibility.
 - **Implemented:** Assert in browser tests that production pages and meaningful interaction states make no tracker, analytics, or other third-party network requests.
 - Add reproducible preview and production deployments with a documented rollback procedure.
-- Authorize the Vercel GitHub App for the `PersonalClaw` organization and connect this repository so branch pushes create previews while the production branch follows the release gate.
-- Publish the release-truth build to `personalclaw.dev`, keeping `personalclaw.vercel.app` as the provider fallback rather than the canonical origin.
+- **Implemented:** Authorize the Vercel GitHub App for the `PersonalClaw` organization and connect this repository so branch pushes create previews while `main` is production.
+- **Implemented:** Publish the website to `personalclaw.dev`, keeping `personalclaw.vercel.app` as the provider fallback rather than the canonical origin.
 - After canonical launch, route `personalclaw.keyurgolani.name` through Vercel and permanently redirect it to the same path and query on `personalclaw.dev`.
-- Build the pinned-source manifest and expose build provenance in a human-readable release surface.
+- **Implemented:** Build the pinned-source manifest and expose build provenance in a human-readable release surface.
 - Synchronize security content with the core security sources. Use the statuses `enforced`, `in progress (plan N)`, and `documented limitation`.
 - Add synthetic uptime and availability checks that do not identify or follow visitors.
 - Create a deterministic seeded demo home and scripted capture workflow for the five launch screenshots required by core plan 36.
@@ -242,7 +248,7 @@ The following checks apply from the phase in which their prerequisite becomes av
 - Canonical-host, preview `noindex`, TLS, and path-preserving redirect assertions for all public hostnames.
 - Documentation drift and generated-navigation validation.
 - Tracker/network-request assertions and privacy-header checks.
-- Tagged-source provenance and release-status validation.
+- Source provenance and release-status validation; tagged mode activates only when real tags exist.
 - Screenshot and video freshness checks tied to relevant product UI revisions.
 - Clean-machine smoke tests for every published installation path.
 
@@ -251,12 +257,12 @@ The following checks apply from the phase in which their prerequisite becomes av
 Complete one release-truth vertical slice spanning the core, apps, and website repositories:
 
 1. **Complete:** Add the website CI quality floor, including accessibility, keyboard, visual, performance, link, and no-tracker gates.
-2. **Next:** Define the tagged-source manifest and generate version, capabilities, release notes, app count, and provenance from it.
-3. Implement Starlight `/docs` with build-time core-doc synchronization, generated navigation, drift checks, `llms.txt`, and `llms-full.txt`.
+2. **Complete:** Define the source manifest and generate version, capabilities, release notes, app count, and provenance from exact commits. It remains explicitly pre-release until real tags are available.
+3. **Next:** Implement Starlight `/docs` with build-time core-doc synchronization, generated navigation, drift checks, `llms.txt`, and `llms-full.txt`.
 4. Synchronize the security overview, threat model, limitations, and explicit control statuses.
 5. Generate first-party app pages from pinned manifests.
 6. Automate the seeded launch screenshots and silent product capture.
 7. Prepare `/install`, but keep the one-line installer non-canonical until core plan 34's clean-machine distribution gates pass.
-8. Complete Vercel Git integration, then launch `personalclaw.dev` as canonical and add the path-preserving `personalclaw.keyurgolani.name` redirect.
+8. **Partially complete:** Vercel Git integration and the canonical `personalclaw.dev` launch are live. Add the path-preserving `personalclaw.keyurgolani.name` redirect.
 
 This milestone establishes the website as a trustworthy projection of released PersonalClaw state before expanding discoverability, community registry features, or future-product surfaces.
