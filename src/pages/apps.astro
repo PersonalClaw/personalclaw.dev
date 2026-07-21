@@ -3,6 +3,7 @@ import { ArrowRight, Box, KeyRound, ScanSearch, ShieldCheck } from "lucide-react
 import { AppDirectory } from "../components/AppDirectory";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { appCategories, apps } from "../data/apps";
+import { releaseFacts } from "../data/release";
 import { APPS_URL } from "../data/site";
 ---
 
@@ -34,8 +35,8 @@ import { APPS_URL } from "../data/site";
     </div>
 
     <div class="shell app-ledger" aria-label="App ecosystem summary">
-      <div><strong>{apps.length}</strong><span>First-party apps</span></div>
-      <div><strong>9</strong><span>Capability types</span></div>
+      <div><strong>{releaseFacts.apps.total}</strong><span>Manifest-backed apps</span></div>
+      <div><strong>{releaseFacts.apps.categoryCount}</strong><span>App categories</span></div>
       <div><strong>1</strong><span>Permission-aware contract</span></div>
       <div><strong>0</strong><span>Required cloud vendors</span></div>
     </div>

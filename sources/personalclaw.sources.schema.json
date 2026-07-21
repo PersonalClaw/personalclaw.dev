@@ -1,0 +1,186 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://personalclaw.dev/schemas/personalclaw.sources.schema.json",
+  "title": "PersonalClaw website source manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "schemaVersion",
+    "channel",
+    "sources"
+  ],
+  "properties": {
+    "$schema": {
+      "const": "./personalclaw.sources.schema.json"
+    },
+    "schemaVersion": {
+      "const": 1
+    },
+    "channel": {
+      "enum": [
+        "pre-release",
+        "released"
+      ]
+    },
+    "sources": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "core",
+        "apps"
+      ],
+      "properties": {
+        "core": {
+          "$ref": "#/$defs/coreSource"
+        },
+        "apps": {
+          "$ref": "#/$defs/appsSource"
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "channel": {
+            "const": "pre-release"
+          }
+        },
+        "required": [
+          "channel"
+        ]
+      },
+      "then": {
+        "properties": {
+          "sources": {
+            "type": "object",
+            "properties": {
+              "core": {
+                "type": "object",
+                "properties": {
+                  "tag": {
+                    "const": null
+                  }
+                }
+              },
+              "apps": {
+                "type": "object",
+                "properties": {
+                  "tag": {
+                    "const": null
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "channel": {
+            "const": "released"
+          }
+        },
+        "required": [
+          "channel"
+        ]
+      },
+      "then": {
+        "properties": {
+          "sources": {
+            "type": "object",
+            "properties": {
+              "core": {
+                "type": "object",
+                "properties": {
+                  "tag": {
+                    "$ref": "#/$defs/tag"
+                  }
+                }
+              },
+              "apps": {
+                "type": "object",
+                "properties": {
+                  "tag": {
+                    "$ref": "#/$defs/tag"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "commit": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "tag": {
+      "type": "string",
+      "pattern": "^v[0-9]+\\.[0-9]+\\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?$"
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository",
+        "commit",
+        "tag"
+      ],
+      "properties": {
+        "repository": {
+          "type": "string"
+        },
+        "commit": {
+          "$ref": "#/$defs/commit"
+        },
+        "tag": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/tag"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "coreSource": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/source"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "repository": {
+              "const": "PersonalClaw/PersonalClaw"
+            }
+          }
+        }
+      ]
+    },
+    "appsSource": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/source"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "repository": {
+              "const": "PersonalClaw/PersonalClawApps"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

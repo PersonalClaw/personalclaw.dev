@@ -1,5 +1,9 @@
 ---
 import { GITHUB_URL, APPS_URL } from "../data/site";
+import { releaseFacts } from "../data/release";
+
+const releaseState =
+  releaseFacts.channel === "released" ? "verified release" : "pinned snapshot";
 ---
 
 <footer class="site-footer">
@@ -16,6 +20,7 @@ import { GITHUB_URL, APPS_URL } from "../data/site";
       <a href="/product">Product</a>
       <a href="/apps">Apps</a>
       <a href="/security">Security</a>
+      <a href="/release">Release</a>
       <a href={GITHUB_URL} target="_blank" rel="noreferrer">Source</a>
       <a href={APPS_URL} target="_blank" rel="noreferrer">App repository</a>
     </nav>
@@ -23,7 +28,7 @@ import { GITHUB_URL, APPS_URL } from "../data/site";
     <div class="footer-meta">
       <p>MIT licensed</p>
       <p>Zero telemetry</p>
-      <p>v0.1.0 · Pre-1.0</p>
+      <p>{releaseFacts.core.versionLabel} · {releaseState}</p>
     </div>
   </div>
   <div class="shell footer-bottom">
