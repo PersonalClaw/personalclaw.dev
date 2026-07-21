@@ -89,3 +89,41 @@ test("mobile navigation exposes state and restores focus on Escape", async ({
   await expect(button).toBeFocused();
   runtime.assertClean();
 });
+
+test("release provenance exposes exact pinned source evidence", async ({
+  page,
+  baseURL
+}) => {
+  const runtime = monitorRuntime(page, baseURL!);
+  await openPage(page, "/release");
+
+  const provenance = page.locator("[data-release-provenance]");
+  const channel = await provenance.getAttribute("data-source-channel");
+  expect(channel).toMatch(/^(?:pre-release|released)$/);
+  await expect(provenance).toHaveAttribute("data-content-schema", /^\d+$/);
+  const coreCommit = await provenance.getAttribute("data-core-commit");
+  const appsCommit = await provenance.getAttribute("data-apps-commit");
+  expect(coreCommit).toMatch(/^[0-9a-f]{40}$/);
+  expect(appsCommit).toMatch(/^[0-9a-f]{40}$/);
+  if (channel === "pre-release") {
+    await expect(
+      page.getByText("Pinned development snapshot", { exact: true })
+    ).toBeVisible();
+    await expect(
+      page.getByText("This is a development snapshot, not a release claim.", {
+        exact: true
+      })
+    ).toBeVisible();
+  } else {
+    await expect(page.getByText("Verified release", { exact: true })).toBeVisible();
+  }
+  await expect(page.getByRole("link", { name: coreCommit!.slice(0, 12) })).toHaveAttribute(
+    "href",
+    new RegExp(coreCommit!)
+  );
+  await expect(page.getByRole("link", { name: appsCommit!.slice(0, 12) })).toHaveAttribute(
+    "href",
+    new RegExp(appsCommit!)
+  );
+  runtime.assertClean();
+});

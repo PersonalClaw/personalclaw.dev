@@ -12,6 +12,9 @@ const root = process.cwd();
 const distDir = path.resolve(root, process.env.DIST_DIR ?? "dist");
 const expectNoIndex = process.env.EXPECT_NOINDEX === "1";
 const failures = [];
+const releaseFacts = JSON.parse(
+  await readFile(path.join(root, ".generated", "release-facts.json"), "utf8")
+);
 
 const fail = (message) => failures.push(message);
 
@@ -209,6 +212,42 @@ for (const route of routes) {
       await validateInternalUrl(candidate, route.path, "srcset resource");
     }
   }
+}
+
+const release$ = await readHtml("/release");
+const provenance = release$("[data-release-provenance]");
+if (provenance.length !== 1) {
+  fail("/release: expected one release provenance root");
+} else {
+  const expectedAttributes = {
+    "data-source-channel": releaseFacts.channel,
+    "data-content-schema": String(releaseFacts.schemaVersion),
+    "data-core-commit": releaseFacts.core.source.commit,
+    "data-apps-commit": releaseFacts.apps.source.commit,
+    "data-generated-at": releaseFacts.generatedAt
+  };
+  for (const [attribute, expected] of Object.entries(expectedAttributes)) {
+    if (provenance.attr(attribute) !== expected) {
+      fail(`/release: ${attribute} must match generated release facts`);
+    }
+  }
+}
+if (!release$.text().includes(releaseFacts.core.versionLabel)) {
+  fail("/release: core version is missing from rendered provenance");
+}
+if (!release$.text().includes(`${releaseFacts.apps.total}`)) {
+  fail("/release: app count is missing from rendered provenance");
+}
+
+for (const routePath of ["/", "/apps"]) {
+  const $ = await readHtml(routePath);
+  if (!$.text().includes(`${releaseFacts.apps.total}`)) {
+    fail(`${routePath}: generated app count is missing`);
+  }
+}
+const home$ = await readHtml("/");
+if (!home$.text().includes(releaseFacts.core.versionLabel)) {
+  fail("/: generated core version is missing");
 }
 
 const sitemapIndexPath = path.join(distDir, "sitemap-index.xml");

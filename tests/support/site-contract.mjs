@@ -28,6 +28,13 @@ export const routes = [
     title: "Security \u00b7 PersonalClaw",
     description:
       "How PersonalClaw constrains agent autonomy with host approvals, command policy, guarded egress, scoped app tokens, scanning, and tamper-evident logs."
+  },
+  {
+    name: "release",
+    path: "/release",
+    title: "Release provenance \u00b7 PersonalClaw",
+    description:
+      "Trace the PersonalClaw version, changelog, app catalog, capabilities, and website claims to exact source commits."
   }
 ];
 

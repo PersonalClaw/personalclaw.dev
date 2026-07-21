@@ -1,0 +1,17 @@
+{
+  "$schema": "./personalclaw.sources.schema.json",
+  "schemaVersion": 1,
+  "channel": "pre-release",
+  "sources": {
+    "core": {
+      "repository": "PersonalClaw/PersonalClaw",
+      "commit": "2dd907f47e7f6e0144ff18da64abe67c717c1f7b",
+      "tag": null
+    },
+    "apps": {
+      "repository": "PersonalClaw/PersonalClawApps",
+      "commit": "8362685057ed0712dd814f00f5048df2d2d2814a",
+      "tag": null
+    }
+  }
+}

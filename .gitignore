@@ -8,3 +8,5 @@ test-results/
 .preview-dist/
 .vercel/
 .env*.local
+.generated/
+.source-cache/

@@ -12,7 +12,8 @@ for (const route of routes) {
     );
     await openPage(page, route.path);
     await expect(page).toHaveScreenshot(`${route.name}-page.png`, {
-      fullPage: true
+      fullPage: true,
+      mask: route.name === "release" ? [page.locator("[data-build-time]")] : []
     });
   });
 }

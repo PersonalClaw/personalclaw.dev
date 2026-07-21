@@ -21,7 +21,7 @@ import loopsCapture from "../assets/loops.png";
 import SystemWindow from "../components/SystemWindow.astro";
 import { CopyCommand } from "../components/CopyCommand";
 import BaseLayout from "../layouts/BaseLayout.astro";
-import { apps } from "../data/apps";
+import { releaseFacts } from "../data/release";
 import { GITHUB_URL, INSTALL_COMMAND } from "../data/site";
 
 const featuredApps = [
@@ -207,7 +207,7 @@ const featuredApps = [
       <div class="ecosystem-intro">
         <div>
           <p class="kicker">First-party ecosystem</p>
-          <h2>{apps.length} apps. No permanent provider.</h2>
+          <h2>{releaseFacts.apps.total} apps. No permanent provider.</h2>
         </div>
         <a class="button button-secondary" href="/apps">
           Browse all apps <ArrowRight size={18} aria-hidden="true" />
@@ -228,12 +228,12 @@ const featuredApps = [
           </p>
           <dl>
             <div>
-              <dt>{apps.length}</dt>
+              <dt>{releaseFacts.apps.total}</dt>
               <dd>First-party apps</dd>
             </div>
             <div>
-              <dt>9</dt>
-              <dd>Capability types</dd>
+              <dt>{releaseFacts.apps.categoryCount}</dt>
+              <dd>App categories</dd>
             </div>
             <div>
               <dt>1</dt>
@@ -303,10 +303,10 @@ const featuredApps = [
       </p>
       <CopyCommand command={INSTALL_COMMAND} client:idle />
       <div class="release-note">
-        <strong>Currently v0.1.0.</strong>
+        <strong>Package version {releaseFacts.core.versionLabel}.</strong>
         <p>
-          Breaking changes are expected before 1.0. Snapshot before updates and
-          keep important data reproducible or backed up elsewhere.
+          {releaseFacts.status.summary}{" "}
+          <a href="/release">Inspect the exact sources.</a>
         </p>
       </div>
       <a
@@ -758,6 +758,21 @@ const featuredApps = [
   .release-note p {
     margin: 0;
     color: var(--ink-muted);
+  }
+
+  .release-note a {
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
+    color: var(--coral-bright);
+    text-decoration: underline;
+    text-decoration-color: rgba(255, 147, 125, 0.4);
+    text-underline-offset: 0.2em;
+    vertical-align: middle;
+  }
+
+  .release-note a:hover {
+    color: var(--ink);
   }
 
   .final-cta {
