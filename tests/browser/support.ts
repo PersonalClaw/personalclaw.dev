@@ -17,6 +17,61 @@ export async function settlePage(page: Page) {
   await page.waitForTimeout(50);
 }
 
+export async function settleSystemWindow(page: Page) {
+  await page.locator(".system-window").evaluate(async (element) => {
+    // Decode the freshly mounted panel image (React remounts it per tab via
+    // `key`), so the frame is painted before the shot.
+    const image = element.querySelector("img");
+    if (image) {
+      image.loading = "eager";
+      await image.decode().catch(() => undefined);
+    }
+
+    // Let every FINITE animation/transition in the subtree finish. The ::after
+    // activity trace is infinite — its `finished` promise never fulfils; the
+    // screenshot's `animations: "disabled"` rewinds it deterministically instead.
+    await Promise.all(
+      element.getAnimations({ subtree: true }).map((animation) => {
+        const timing = animation.effect?.getTiming();
+        return timing?.iterations === Infinity
+          ? Promise.resolve()
+          : animation.finished.catch(() => undefined);
+      })
+    );
+
+    // Frame the tab strip identically on every run: on mobile it overflows and
+    // scrolls (`overflow-x: auto`), and a click-focus-driven scroll offset must
+    // not leak into the shot.
+    const tabs = element.querySelector(".system-tabs");
+    if (tabs) tabs.scrollLeft = 0;
+
+    // Hold until layout is identical across two consecutive frames.
+    const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve));
+    const snapshot = () => {
+      const rect = element.getBoundingClientRect();
+      const strip = tabs?.getBoundingClientRect();
+      return [
+        rect.x,
+        rect.y,
+        rect.width,
+        rect.height,
+        strip?.x,
+        strip?.width,
+        tabs?.scrollLeft ?? 0
+      ].join();
+    };
+    let previous = "";
+    let current = snapshot();
+    let spins = 0;
+    while (previous !== current && spins < 120) {
+      previous = current;
+      await nextFrame();
+      current = snapshot();
+      spins += 1;
+    }
+  });
+}
+
 export function monitorRuntime(page: Page, baseURL: string) {
   const consoleErrors: string[] = [];
   const pageErrors: string[] = [];

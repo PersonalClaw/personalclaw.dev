@@ -1,0 +1,48 @@
+# Regenerates the committed Playwright visual baselines on the SAME platform CI
+# compares against (ubuntu/linux). Snapshots are platform-qualified
+# (…-{projectName}-{platform}.png), so a Darwin dev machine cannot produce the
+# linux baselines the browser job asserts — this manual job closes that gap.
+#
+# Flow: dispatch on the branch that changes visuals → download the artifact →
+# inspect the diffs → commit only the intentional updates (README rule: refresh
+# baselines only after inspecting and accepting an intentional visual change).
+name: Refresh visual baselines
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  regenerate:
+    name: Regenerate linux baselines
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GITHUB_TOKEN: ${{ github.token }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version-file: .node-version
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Regenerate visual baselines
+        run: npm run test:visual:update
+
+      - name: Upload regenerated baselines
+        uses: actions/upload-artifact@v7
+        with:
+          name: visual-baselines
+          path: tests/browser/__screenshots__/
+          retention-days: 7
