@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { routes } from "../support/site-contract.mjs";
-import { openPage } from "./support";
+import { openPage, settleSystemWindow } from "./support";
 
 for (const route of routes) {
   test(`${route.name} matches its responsive visual baseline`, async ({
@@ -22,6 +22,10 @@ test("home loop state matches its visual baseline", async ({ page }, testInfo) =
   test.skip(testInfo.project.name === "reduced-motion");
   await openPage(page, "/");
   await page.getByRole("tab", { name: "Loops" }).click();
+  // The click swaps the panel image (opacity/transform transitions) and re-lays-out
+  // the tab pill; on mobile the tab strip also scrolls. Settle all of it before the
+  // shot — this baseline was flaky when captured mid-transition.
+  await settleSystemWindow(page);
   await expect(page.locator(".system-window")).toHaveScreenshot("home-loops-state.png");
 });
 
