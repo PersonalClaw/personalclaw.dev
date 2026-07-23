@@ -62,8 +62,7 @@ test("copy command writes the complete install command", async ({
   await expect(copy).toHaveAccessibleName("Install command copied");
   await expect(page.getByRole("status")).toHaveText("Install command copied");
   const clipboard = await page.evaluate(() => navigator.clipboard.readText());
-  expect(clipboard).toContain("git clone https://github.com/PersonalClaw/PersonalClaw.git");
-  expect(clipboard).toContain("personalclaw gateway");
+  expect(clipboard).toBe("curl -fsSL https://personalclaw.dev/install | sh");
   runtime.assertClean();
 });
 

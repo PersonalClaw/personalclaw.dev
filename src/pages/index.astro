@@ -296,10 +296,17 @@ const featuredApps = [
   <section class="section quickstart">
     <div class="narrow">
       <p class="kicker">Run it yourself</p>
-      <h2>From source to local gateway.</h2>
+      <h2>One command to a local gateway.</h2>
       <p class="quickstart-lede">
-        PersonalClaw requires Python 3.12. The dashboard opens at
-        <code>localhost:10000</code> after the gateway starts.
+        The installer brings its own Python 3.12 via <code>uv</code> — nothing to
+        set up first. The dashboard opens at <code>localhost:10000</code> after
+        the gateway starts. Prefer <code>uv</code> directly, pipx, pip, or Docker
+        Compose? Every path installs the same release artifact — see the
+        <a
+          href="https://github.com/PersonalClaw/PersonalClaw/blob/main/docs/guides/getting-started.md"
+          target="_blank"
+          rel="noreferrer">install guide</a
+        >.
       </p>
       <CopyCommand command={INSTALL_COMMAND} client:idle />
       <div class="release-note">
@@ -729,6 +736,21 @@ const featuredApps = [
     max-width: 38rem;
     margin: 0 auto 2.5rem;
     color: var(--ink-soft);
+  }
+
+  .quickstart-lede a {
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
+    color: var(--coral-bright);
+    text-decoration: underline;
+    text-decoration-color: rgba(255, 147, 125, 0.4);
+    text-underline-offset: 0.2em;
+    vertical-align: middle;
+  }
+
+  .quickstart-lede a:hover {
+    color: var(--ink);
   }
 
   .quickstart-lede code {

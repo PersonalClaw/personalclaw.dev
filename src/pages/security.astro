@@ -200,20 +200,40 @@ import { GITHUB_URL } from "../data/site";
       <p class="kicker">Clear limits</p>
       <h2>Security claims should name their boundary.</h2>
       <p>
-        PersonalClaw documents one app permission that cannot currently be
-        enforced as a hard technical boundary and labels it honestly. It is a
-        pre-1.0 project, so breaking changes and security hardening continue.
-        Review the source and threat model before relying on it for sensitive,
-        irreplaceable workflows.
+        PersonalClaw publishes a full threat model — five trust boundaries, an
+        OWASP Agentic Top-10 mapping where every enforced claim cites the module
+        that enforces it, and an honest statement of what is deliberately out of
+        scope. The limitations it can't yet enforce as hard technical boundaries
+        are documented in the code's own words, not softened. It is a pre-1.0
+        project, so breaking changes and security hardening continue. Review the
+        threat model before relying on it for sensitive, irreplaceable workflows.
       </p>
-      <a
-        class="button button-secondary"
-        href={`${GITHUB_URL}/blob/main/docs/architecture/security.md`}
-        target="_blank"
-        rel="noreferrer"
-      >
-        Read the full security document <ArrowRight size={18} aria-hidden="true" />
-      </a>
+      <div class="honesty-links">
+        <a
+          class="button button-secondary"
+          href={`${GITHUB_URL}/blob/main/docs/security/threat-model.md`}
+          target="_blank"
+          rel="noreferrer"
+        >
+          Read the threat model <ArrowRight size={18} aria-hidden="true" />
+        </a>
+        <a
+          class="button button-secondary"
+          href={`${GITHUB_URL}/blob/main/docs/security/limitations.md`}
+          target="_blank"
+          rel="noreferrer"
+        >
+          Known limitations <ArrowRight size={18} aria-hidden="true" />
+        </a>
+        <a
+          class="button button-secondary"
+          href={`${GITHUB_URL}/blob/main/SECURITY.md`}
+          target="_blank"
+          rel="noreferrer"
+        >
+          Report a vulnerability <ArrowRight size={18} aria-hidden="true" />
+        </a>
+      </div>
     </div>
   </section>
 </BaseLayout>
@@ -463,6 +483,13 @@ import { GITHUB_URL } from "../data/site";
     margin: 1.7rem auto 2rem;
     color: var(--ink-soft);
     font-size: 1.06rem;
+  }
+
+  .honesty-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.85rem;
+    justify-content: center;
   }
 
   @media (max-width: 900px) {
