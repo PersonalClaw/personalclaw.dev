@@ -48,6 +48,6 @@
     "chrome-launcher": "^1.2.1",
     "lighthouse": "13.4.1",
     "smol-toml": "^1.7.0",
-    "typescript": "^5.8.3"
+    "typescript": "^7.0.2"
   }
 }
