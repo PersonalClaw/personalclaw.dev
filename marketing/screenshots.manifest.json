@@ -1,0 +1,202 @@
+{
+  "$schema": "./screenshots.schema.json",
+  "schemaVersion": 1,
+  "targetRelease": "0.1.2",
+  "capture": {
+    "instance": "Clone the working dev home to an isolated screenshot home and run a SECOND gateway on a free port (e.g. cp -R .dev-home .screenshot-home; PERSONALCLAW_HOME=$PWD/.screenshot-home <gateway> --port 10001). Cloning inherits the already-configured providers (ollama chat, faster-whisper stt, bindings) rather than re-wiring them, and keeps marketing data out of the :10000 validation instance. Seed the per-shot scenarios (below) via the real UI/API before capturing.",
+    "theme": "dark",
+    "aspectRatio": "8:5",
+    "notes": "faster-whisper may be a per-instance sidecar; if a voice surface is ever shot and contends, briefly stop the :10000 instance for that one capture. Chat (ollama) is shared-service safe. Capture against a RELEASED tag build, never an unmerged branch."
+  },
+  "shots": [
+    {
+      "id": "dashboard",
+      "asset": "src/assets/dashboard.png",
+      "appView": "Dashboard home (the landing view)",
+      "minWidth": 1200,
+      "minHeight": 750,
+      "scenario": "A lived-in home: 2-3 recent chat conversations with real titles (e.g. 'Refactor the ingest pipeline', 'Weekly research digest'), one active goal loop shown running, a couple of scheduled runs due, and the bottom System Health rail green. Nothing empty — this is the 'whole system at a glance' shot.",
+      "value": "One home surfaces current work, recent conversations, scheduled runs, and system state.",
+      "placements": [
+        {
+          "file": "src/data/site.ts",
+          "kind": "hero-system-window",
+          "caption": "See the whole system — Current work, recent conversations, scheduled runs, and system state stay visible from one home.",
+          "alt": "Home view in the PersonalClaw dashboard"
+        }
+      ],
+      "status": "shipping"
+    },
+    {
+      "id": "chat",
+      "asset": "src/assets/chat.png",
+      "appView": "Agentic chat session (with tool use + approval visible)",
+      "minWidth": 1600,
+      "minHeight": 1000,
+      "scenario": "A real multi-turn conversation where the agent moved from discussion into a tool call (e.g. reading a file or running a search), with the approval boundary / tool result visible in-thread. Believable developer topic. This is the product-page HERO (largest shot) — must look substantive.",
+      "value": "Move from conversation to tools and durable work without surrendering the approval boundary.",
+      "placements": [
+        {
+          "file": "src/data/site.ts",
+          "kind": "hero-system-window",
+          "caption": "Work with the right agent — Move from conversation to tools and durable work without surrendering the approval boundary.",
+          "alt": "Chat view in the PersonalClaw dashboard"
+        },
+        {
+          "file": "src/pages/product.astro",
+          "kind": "product-image",
+          "caption": "Product hero + Agentic chat feature section (#chat)",
+          "alt": "PersonalClaw agentic chat with conversation history, tools, and context."
+        }
+      ],
+      "status": "shipping"
+    },
+    {
+      "id": "loops",
+      "asset": "src/assets/loops.png",
+      "appView": "Goal loop cockpit (a loop mid-run)",
+      "minWidth": 1280,
+      "minHeight": 800,
+      "scenario": "An autonomous goal loop mid-execution: a clear goal statement, 2-3 completed steps, one live step in progress, findings/output accumulating, and the pause/observe controls visible. Shows delegation-of-a-goal, not a prompt.",
+      "value": "Autonomous loops plan, act, and report against a goal while remaining observable and pausable.",
+      "placements": [
+        {
+          "file": "src/data/site.ts",
+          "kind": "hero-system-window",
+          "caption": "Delegate goals, not prompts — Autonomous loops plan, act, and report against a goal while remaining observable and pausable.",
+          "alt": "Loops view in the PersonalClaw dashboard"
+        },
+        {
+          "file": "src/pages/index.astro",
+          "kind": "index-image",
+          "caption": "Goal loops story section",
+          "alt": "A PersonalClaw autonomous goal loop with its progress, steps, and controls visible."
+        }
+      ],
+      "status": "shipping"
+    },
+    {
+      "id": "knowledge",
+      "asset": "src/assets/knowledge.png",
+      "appView": "Knowledge base (source documents + entity graph)",
+      "minWidth": 1440,
+      "minHeight": 900,
+      "scenario": "A populated knowledge base: several real source documents/notes ingested, with the entity graph showing linked entities. Distinct from memory — this is explicit, inspectable reference material.",
+      "value": "Knowledge is explicit, inspectable source material; personal memory remains a separate system.",
+      "placements": [
+        {
+          "file": "src/data/site.ts",
+          "kind": "hero-system-window",
+          "caption": "Keep reference material distinct — Knowledge is explicit, inspectable source material. Personal memory remains a separate system.",
+          "alt": "Knowledge view in the PersonalClaw dashboard"
+        },
+        {
+          "file": "src/pages/product.astro",
+          "kind": "product-image",
+          "alt": "PersonalClaw knowledge base with source documents and entity graph."
+        }
+      ],
+      "status": "shipping"
+    },
+    {
+      "id": "apps",
+      "asset": "src/assets/apps.png",
+      "appView": "App directory / Store (Settings -> Apps)",
+      "minWidth": 1440,
+      "minHeight": 900,
+      "scenario": "The Store showing the first-party app catalog across categories (models: OpenAI/Anthropic/Bedrock/Ollama, search, speech, channels, tools) — a mix of installed + available, so the 'replace any provider' boundary is legible. v0.1.2 ships first-party apps in the Store on a plain install, so this should look full.",
+      "value": "Models, search, speech, channels, tools, and complete interfaces install through one app boundary.",
+      "placements": [
+        {
+          "file": "src/data/site.ts",
+          "kind": "hero-system-window",
+          "caption": "Replace any provider — Models, search, speech, channels, tools, and complete interfaces install through one app boundary.",
+          "alt": "Apps view in the PersonalClaw dashboard"
+        },
+        {
+          "file": "src/pages/index.astro",
+          "kind": "index-image",
+          "caption": "Apps section",
+          "alt": "PersonalClaw app directory"
+        }
+      ],
+      "status": "shipping"
+    },
+    {
+      "id": "agents",
+      "asset": "src/assets/agents.png",
+      "appView": "Agents / runtimes (Settings -> Providers, runtimes view)",
+      "minWidth": 1440,
+      "minHeight": 900,
+      "scenario": "Configured agent runtimes shown ready — a couple of runtimes bound, so the 'configured agents' story reads as a working setup.",
+      "value": "Configured agent runtimes are explicit and swappable.",
+      "placements": [
+        {
+          "file": "src/pages/product.astro",
+          "kind": "product-image",
+          "caption": "Agents section",
+          "alt": "PersonalClaw agents view showing configured agent runtimes."
+        }
+      ],
+      "status": "shipping"
+    },
+    {
+      "id": "memory",
+      "asset": "src/assets/memory.png",
+      "appView": "Memory view (Settings -> Memory, layered learned context)",
+      "minWidth": 980,
+      "minHeight": 613,
+      "scenario": "Memory showing layered learned context: some semantic facts + episodic entries the assistant has captured over time, so the 'it remembers, distinct from knowledge' story is visible with real-feeling entries.",
+      "value": "Layered, learned personal context — a separate system from knowledge.",
+      "placements": [
+        {
+          "file": "src/pages/product.astro",
+          "kind": "product-image",
+          "caption": "Memory section",
+          "alt": "PersonalClaw memory view with layered learned context."
+        }
+      ],
+      "status": "shipping"
+    },
+    {
+      "id": "triggers",
+      "asset": "src/assets/triggers.png",
+      "appView": "Automation triggers / schedules",
+      "minWidth": 1280,
+      "minHeight": 800,
+      "scenario": "A few real automations: a scheduled daily digest, a watched-source trigger, each with a schedule + last-run status visible, so the automation story reads as genuinely in use.",
+      "value": "Scheduled and event-driven automation with visible schedules and status.",
+      "placements": [
+        {
+          "file": "src/pages/product.astro",
+          "kind": "product-image",
+          "caption": "Automation triggers section",
+          "alt": "PersonalClaw automation triggers with schedules and status."
+        }
+      ],
+      "status": "shipping"
+    },
+    {
+      "id": "doctor",
+      "asset": "src/assets/doctor.png",
+      "appView": "Settings -> Doctor (health probes + maintenance)",
+      "minWidth": 1280,
+      "minHeight": 800,
+      "scenario": "The v0.1.2 Doctor tab: capability cards mostly green (memory, channels, local-models, apps, serving-fs, model-providers), the overall 'All systems healthy' banner, and the Maintenance section showing a recent remediation run. A NEW capability shipped in v0.1.2 — showcases the resilience story.",
+      "value": "PersonalClaw diagnoses itself: tiered health probes, degraded-mode honesty, and one health-scored maintenance engine.",
+      "placements": [],
+      "status": "new-needs-placement"
+    },
+    {
+      "id": "guardrails",
+      "asset": "src/assets/guardrails.png",
+      "appView": "Settings -> Guardrails (safety floor)",
+      "minWidth": 1280,
+      "minHeight": 800,
+      "scenario": "The v0.1.2 Guardrails panel: the incident kill switch (off/normal), daily spend budgets set to sensible ceilings, outbound scan mode = redact, and the provider-health view with a couple of providers listed. Showcases the autonomy-safety story.",
+      "value": "Autonomy with a safety floor: kill switch, spend budgets, outbound scanning, provider health.",
+      "placements": [],
+      "status": "new-needs-placement"
+    }
+  ]
+}

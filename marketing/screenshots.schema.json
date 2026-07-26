@@ -1,0 +1,125 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://personalclaw.dev/marketing/screenshots.schema.json",
+  "title": "PersonalClaw marketing screenshot + content manifest",
+  "description": "The single source of truth binding each marketing screenshot to the real-world scenario it must depict, the app view it is captured from, the exact image spec, and the site placements + copy it drives. Update this FIRST for a release, then let it drive the re-capture + content refresh (see marketing/README.md).",
+  "type": "object",
+  "required": ["schemaVersion", "capture", "shots"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "targetRelease": {
+      "type": "string",
+      "description": "The core version these shots depict, e.g. '0.1.2'. Screenshots must be captured against this RELEASED build (a tag), never an unmerged branch.",
+      "pattern": "^\\d+\\.\\d+\\.\\d+(?:[-+][0-9A-Za-z.-]+)?$"
+    },
+    "capture": {
+      "type": "object",
+      "description": "How the seeded screenshot instance is stood up (see the runbook). Documented here so a fresh operator/subagent reproduces the same environment.",
+      "required": ["instance", "theme", "aspectRatio"],
+      "additionalProperties": false,
+      "properties": {
+        "instance": {
+          "type": "string",
+          "description": "How to obtain the seeded gateway (e.g. 'clone .dev-home -> .screenshot-home, run a second gateway on port 10001'). Inherits the existing provider config rather than re-wiring."
+        },
+        "theme": {
+          "type": "string",
+          "enum": ["dark", "light"],
+          "description": "Must match the site's rendering context (the site renders app imagery on a dark surface; playwright.config colorScheme is 'dark')."
+        },
+        "aspectRatio": {
+          "type": "string",
+          "const": "8:5",
+          "description": "Every app screenshot is a strict 8:5 crop (DESIGN.md). A replacement that breaks this forces layout/CSS changes."
+        },
+        "notes": { "type": "string" }
+      }
+    },
+    "shots": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/shot" }
+    }
+  },
+  "$defs": {
+    "shot": {
+      "type": "object",
+      "required": [
+        "id",
+        "asset",
+        "appView",
+        "minWidth",
+        "minHeight",
+        "scenario",
+        "placements",
+        "status"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9-]+$",
+          "description": "Stable slug (matches the asset basename without extension)."
+        },
+        "asset": {
+          "type": "string",
+          "pattern": "^src/assets/[a-z0-9-]+\\.png$",
+          "description": "Repo-relative path to the committed PNG source. Astro derives all responsive WebP variants from it at build."
+        },
+        "appView": {
+          "type": "string",
+          "description": "Which PersonalClaw UI surface/route to capture (e.g. 'Dashboard home', 'Settings -> Doctor'). Human instruction for the capture operator."
+        },
+        "minWidth": {
+          "type": "integer",
+          "description": "The capture must be AT LEAST this wide so no responsive variant upscales (>= the largest width requested by the placement's <Image>/getImage call). At 8:5, height follows."
+        },
+        "minHeight": { "type": "integer" },
+        "scenario": {
+          "type": "string",
+          "description": "The real-world use-case data that MUST be visibly present in this shot — the narrative to seed before capturing (e.g. 'a goal loop mid-run with 3 completed steps + a live step, findings visible'). This is what makes the shot show PersonalClaw at its best."
+        },
+        "value": {
+          "type": "string",
+          "description": "The product value this shot is meant to communicate (the 'why we show this')."
+        },
+        "placements": {
+          "type": "array",
+          "description": "Every site location that renders this asset, with the copy that goes alongside. Editing copy here is a checklist for the actual edit at the cited file. May be empty ONLY for a 'new-needs-placement' shot (the validator enforces that a shipping shot names at least one placement).",
+          "items": { "$ref": "#/$defs/placement" }
+        },
+        "status": {
+          "type": "string",
+          "enum": ["shipping", "new-needs-placement", "retired"],
+          "description": "shipping = has a site placement and is RE-CAPTURED EVERY RELEASE (there is no 'still current, skip it' — even small UI shifts change a shot, so all shipping shots are re-shot against each targetRelease); new-needs-placement = a candidate shot with no site home yet (owner decides placement before it ships); retired = to be removed from the site + this manifest."
+        }
+      }
+    },
+    "placement": {
+      "type": "object",
+      "required": ["file", "kind"],
+      "additionalProperties": false,
+      "properties": {
+        "file": {
+          "type": "string",
+          "description": "Repo-relative site file that renders the asset (e.g. 'src/pages/product.astro')."
+        },
+        "kind": {
+          "type": "string",
+          "enum": ["hero-system-window", "product-image", "index-image"],
+          "description": "Rendering mechanism: the tabbed hero (getImage) vs an Astro <Image> on a page."
+        },
+        "caption": {
+          "type": "string",
+          "description": "The visible caption/title copy (hero tabs source this from src/data/site.ts productViews)."
+        },
+        "alt": {
+          "type": "string",
+          "description": "The alt text at the call site."
+        }
+      }
+    }
+  }
+}
