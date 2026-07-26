@@ -85,6 +85,10 @@
           "type": "string",
           "description": "The product value this shot is meant to communicate (the 'why we show this')."
         },
+        "captureBlockedBy": {
+          "type": "string",
+          "description": "Optional: a tracking reference (e.g. a GitHub issue URL) for a bug that PREVENTS re-capturing this shot for the current targetRelease. The shot still ships with its existing (prior-release) asset; it is re-captured once the blocker clears. Its presence means 'known-stale, deliberately not re-shot this release'."
+        },
         "placements": {
           "type": "array",
           "description": "Every site location that renders this asset, with the copy that goes alongside. Editing copy here is a checklist for the actual edit at the cited file. May be empty ONLY for a 'new-needs-placement' shot (the validator enforces that a shipping shot names at least one placement).",

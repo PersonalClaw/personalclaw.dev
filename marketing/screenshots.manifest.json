@@ -83,6 +83,7 @@
       "minHeight": 900,
       "scenario": "A populated knowledge base: several real source documents/notes ingested, with the entity graph showing linked entities. Distinct from memory — this is explicit, inspectable reference material.",
       "value": "Knowledge is explicit, inspectable source material; personal memory remains a separate system.",
+      "captureBlockedBy": "https://github.com/PersonalClaw/PersonalClaw/issues/47 — embedding registry is empty in the knowledge/memory embed path, so a freshly-seeded knowledge base won't show a populated entity graph. Ships with the prior-release asset until #47 is fixed, then re-capture.",
       "placements": [
         {
           "file": "src/data/site.ts",
@@ -148,6 +149,7 @@
       "minHeight": 613,
       "scenario": "Memory showing layered learned context: some semantic facts + episodic entries the assistant has captured over time, so the 'it remembers, distinct from knowledge' story is visible with real-feeling entries.",
       "value": "Layered, learned personal context — a separate system from knowledge.",
+      "captureBlockedBy": "https://github.com/PersonalClaw/PersonalClaw/issues/47 — the memory semantic layer can't embed (empty LLM registry in the embed path), so a seeded memory view won't render the semantic layer convincingly. Ships with the prior-release asset until #47 is fixed, then re-capture.",
       "placements": [
         {
           "file": "src/pages/product.astro",
@@ -184,8 +186,15 @@
       "minHeight": 800,
       "scenario": "The v0.1.2 Doctor tab: capability cards mostly green (memory, channels, local-models, apps, serving-fs, model-providers), the overall 'All systems healthy' banner, and the Maintenance section showing a recent remediation run. A NEW capability shipped in v0.1.2 — showcases the resilience story.",
       "value": "PersonalClaw diagnoses itself: tiered health probes, degraded-mode honesty, and one health-scored maintenance engine.",
-      "placements": [],
-      "status": "new-needs-placement"
+      "placements": [
+        {
+          "file": "src/pages/product.astro",
+          "kind": "product-image",
+          "caption": "Diagnoses itself — See what's healthy, and fix what isn't. (the 'runs safely on its own' section)",
+          "alt": "PersonalClaw Doctor showing tiered health probes across every subsystem, all systems healthy"
+        }
+      ],
+      "status": "shipping"
     },
     {
       "id": "guardrails",
@@ -195,8 +204,15 @@
       "minHeight": 800,
       "scenario": "The v0.1.2 Guardrails panel: the incident kill switch (off/normal), daily spend budgets set to sensible ceilings, outbound scan mode = redact, and the provider-health view with a couple of providers listed. Showcases the autonomy-safety story.",
       "value": "Autonomy with a safety floor: kill switch, spend budgets, outbound scanning, provider health.",
-      "placements": [],
-      "status": "new-needs-placement"
+      "placements": [
+        {
+          "file": "src/pages/product.astro",
+          "kind": "product-image",
+          "caption": "Runs safely on its own — Autonomy with a floor under it. (the 'runs safely on its own' section)",
+          "alt": "PersonalClaw Guardrails settings with the incident kill switch, daily spend budgets, and outbound scan mode"
+        }
+      ],
+      "status": "shipping"
     }
   ]
 }
