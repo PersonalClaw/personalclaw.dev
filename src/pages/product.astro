@@ -13,10 +13,13 @@ import {
   MessagesSquare,
   ShieldCheck,
   Sparkles,
+  Stethoscope,
   Workflow
 } from "lucide-react";
 import agentsCapture from "../assets/agents.png";
 import chatCapture from "../assets/chat.png";
+import doctorCapture from "../assets/doctor.png";
+import guardrailsCapture from "../assets/guardrails.png";
 import knowledgeCapture from "../assets/knowledge.png";
 import memoryCapture from "../assets/memory.png";
 import triggersCapture from "../assets/triggers.png";
@@ -252,6 +255,71 @@ import { GITHUB_URL } from "../data/site";
         <span><GitFork size={18} aria-hidden="true" /> ACP boundary</span>
         <span><Workflow size={18} aria-hidden="true" /> Shared context</span>
         <span><Sparkles size={18} aria-hidden="true" /> Replaceable providers</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="section automation-section section-rule">
+    <div class="shell automation-grid">
+      <div class="feature-copy">
+        <span class="feature-icon"><ShieldCheck size={23} aria-hidden="true" /></span>
+        <p class="kicker">Runs safely on its own</p>
+        <h2>Autonomy with a floor under it.</h2>
+        <p>
+          Before you hand the system unattended work, it gives you the controls
+          to trust it: a kill switch that suspends every automation at once, daily
+          spend ceilings, outbound secret scanning, and per-provider circuit
+          breakers. Interactive chat is never affected.
+        </p>
+        <ul class="feature-list">
+          <li>Incident kill switch, explicit resume</li>
+          <li>Token and dollar budgets per day and per run</li>
+          <li>Outbound prompt scanning: warn, redact, or block</li>
+          <li>Named safety profiles for unattended runs</li>
+        </ul>
+      </div>
+      <div class="automation-media">
+        <Image
+          src={guardrailsCapture}
+          alt="PersonalClaw Guardrails settings with the incident kill switch, daily spend budgets, and outbound scan mode"
+          widths={[640, 960, 1280]}
+          sizes="(max-width: 900px) 100vw, 62vw"
+          format="webp"
+          quality={86}
+        />
+      </div>
+    </div>
+  </section>
+
+  <section class="section automation-section section-rule">
+    <div class="shell automation-grid">
+      <div class="automation-media">
+        <Image
+          src={doctorCapture}
+          alt="PersonalClaw Doctor showing tiered health probes across every subsystem, all systems healthy"
+          widths={[640, 960, 1280]}
+          sizes="(max-width: 900px) 100vw, 62vw"
+          format="webp"
+          quality={86}
+        />
+      </div>
+      <div class="feature-copy">
+        <span class="feature-icon"><Stethoscope size={23} aria-hidden="true" /></span>
+        <p class="kicker">Diagnoses itself</p>
+        <h2>See what's healthy, and fix what isn't.</h2>
+        <p>
+          The Doctor runs read-only health probes across every subsystem —
+          memory, channels, local models, app backends, the SPA, model-provider
+          breakers. A degraded capability is never mistaken for a dead gateway,
+          confirm-gated fixes repair the common faults, and a health-scored engine
+          keeps the stores tidy on its own.
+        </p>
+        <ul class="feature-list">
+          <li>Tiered probes with per-capability evidence</li>
+          <li>No-model degraded mode, stated plainly</li>
+          <li>Confirm-gated repairs and crash capture</li>
+          <li>Health-scored self-maintenance</li>
+        </ul>
       </div>
     </div>
   </section>
