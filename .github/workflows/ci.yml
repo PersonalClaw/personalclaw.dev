@@ -18,6 +18,31 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  release-parity:
+    # The website is the public projection of a RELEASED core version, so its own
+    # version, its pinned source manifest, and the newest published core release
+    # tag must agree. Strict mode (REQUIRE_REMOTE) makes an unreachable GitHub API
+    # a failure rather than a skip: staleness is exactly what this job exists to
+    # catch, so it must never pass by being unable to look.
+    name: Release version parity with core
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Validate release parity (strict)
+        run: npm run validate:release-parity:strict
+
   static-contract:
     name: Static build and publication contract
     runs-on: ubuntu-latest
