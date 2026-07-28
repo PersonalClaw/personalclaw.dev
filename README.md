@@ -42,7 +42,7 @@ It has a broader job than a conventional marketing site:
 The website should be persuasive because it is specific and checkable, not because it hides the product's maturity or tradeoffs.
 
 > [!IMPORTANT]
-> The current source manifest is explicitly `pre-release`: it pins exact core and apps commits but asserts no tags because neither repository has a tagged release yet. The site identifies this state as a pinned development snapshot. Canonical `/docs` and the production `/install` contract remain roadmap work.
+> The source manifest is on the `released` channel: it pins the exact core and apps commits of a **tagged** release, and the site identifies itself as a verified release of that version. The website's own `package.json` version tracks the core release it publishes, and that agreement is enforced mechanically — see [Release parity](#release-parity) and [docs/release-runbook.md](./docs/release-runbook.md). Canonical `/docs` and the production `/install` contract remain roadmap work.
 
 ## Experience Map
 
@@ -160,6 +160,7 @@ The build runs Astro diagnostics before producing the static site in `dist/`.
 | `npm run check` | Runs Astro and TypeScript diagnostics |
 | `npm run build` | Runs diagnostics and creates the production static build |
 | `npm run preview` | Serves the production build locally |
+| `npm run validate:release-parity` | Checks the website version against the pinned + newest published core release (see [Release parity](#release-parity)) |
 | `npm run test:static` | Validates production and preview publication artifacts |
 | `npm run test:browser` | Builds and runs the complete Playwright suite |
 | `npm run test:lighthouse` | Builds and enforces Lighthouse budgets on every route |
@@ -236,7 +237,16 @@ Every build pins full source SHAs. The manifest supports two fail-closed channel
 - `pre-release` requires both tags to be `null` and renders a pinned development snapshot.
 - `released` requires tags for both repositories, verifies that each tag resolves to its declared SHA, and requires the core tag to match the package version.
 
-The current manifest uses `pre-release` until real core and apps tags exist. Generated files and fetched source caches are ignored; copied source content is never committed to this repository.
+The manifest is currently on `released`. Generated files and fetched source caches are ignored; copied source content is never committed to this repository.
+
+### <a name="release-parity"></a>Release parity
+
+Because the site publishes a released version, its own release identity must match core's: **`package.json` version == the pinned core tag == core's `pyproject.toml` version.** `npm run validate:release-parity` enforces that, plus two things a schema can't:
+
+- **Truthful pins** — each tag must dereference to the pinned commit (these repositories use annotated tags, so a tag object's SHA is not the commit).
+- **Freshness** — if core has published a newer release tag than the manifest pins, the check FAILS. A published core release is an obligation on this repository, not an optional follow-up.
+
+It runs inside `test:static` (so `test:ci` and the pre-push hook include it) and as a dedicated strict CI job; a daily **Release follow** workflow re-checks freshness between pushes and files a tracking issue when the site falls behind. Strict runs treat an unreachable GitHub API as a failure rather than a skip. The step-by-step release sequence is [docs/release-runbook.md](./docs/release-runbook.md).
 
 Before changing public product copy:
 

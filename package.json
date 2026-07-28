@@ -1,6 +1,6 @@
 {
   "name": "personalclaw.dev",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "type": "module",
   "engines": {
@@ -19,7 +19,10 @@
     "validate:preview": "DIST_DIR=.preview-dist EXPECT_NOINDEX=1 node scripts/validate-build.mjs",
     "validate:visual-baselines": "node scripts/validate-visual-baselines.mjs",
     "validate:marketing-manifest": "node scripts/validate-marketing-manifest.mjs",
-    "test:static": "npm run validate:visual-baselines && npm run validate:marketing-manifest && npm run build && npm run validate:build && npm run build:preview && npm run validate:preview",
+    "validate:release-parity": "node scripts/validate-release-parity.mjs",
+    "validate:release-parity:offline": "RELEASE_PARITY_OFFLINE=1 node scripts/validate-release-parity.mjs",
+    "validate:release-parity:strict": "RELEASE_PARITY_REQUIRE_REMOTE=1 node scripts/validate-release-parity.mjs",
+    "test:static": "npm run validate:visual-baselines && npm run validate:marketing-manifest && npm run validate:release-parity && npm run build && npm run validate:build && npm run build:preview && npm run validate:preview",
     "test:browser": "npm run build && playwright test",
     "test:browser:report": "playwright show-report",
     "test:visual:update": "npm run build && playwright test tests/browser/visual.spec.ts --update-snapshots",
