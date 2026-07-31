@@ -10,3 +10,7 @@ test-results/
 .env*.local
 .generated/
 .source-cache/
+
+# Raw screenshot captures staged for review before promotion into src/assets/
+# (scripts/capture-app-shots.mjs). Review artifacts, not release content.
+marketing/.captures/

@@ -225,6 +225,13 @@ export const apps: App[] = [
     tags: ["Tools", "REST"]
   },
   {
+    slug: "openrouter-models",
+    name: "OpenRouter",
+    category: "Models",
+    description: "One key for hundreds of models across providers — chat with image input, embedding, image, and video.",
+    tags: ["Chat", "Vision", "Embedding", "Image", "Video"]
+  },
+  {
     slug: "perplexity-search",
     name: "Perplexity Sonar",
     category: "Search",
