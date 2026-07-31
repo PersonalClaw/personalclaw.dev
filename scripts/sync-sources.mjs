@@ -1,6 +1,7 @@
 import { execFile } from "node:child_process";
 import { access, mkdir, readFile, readdir, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 import { promisify } from "node:util";
 import Ajv2020 from "ajv/dist/2020.js";
 import { parse as parseToml } from "smol-toml";
@@ -615,8 +616,18 @@ async function main() {
   );
 }
 
-main().catch(async (error) => {
-  await rm(`${generatedPath}.${process.pid}.tmp`, { force: true });
-  console.error(error instanceof Error ? error.message : error);
-  process.exitCode = 1;
-});
+// Reused by scripts/sync-docs.mjs. Exported rather than duplicated: source
+// resolution carries the local-checkout-vs-pinned-remote rules, the commit
+// verification, and the released-tag validation — a second copy of that is a
+// second place for the pin contract to drift.
+export { loadManifest, resolveSource, validateReleaseTags, writeAtomically };
+
+// Only run the generator when invoked directly (`node scripts/sync-sources.mjs`),
+// so importing this module for its resolvers does not regenerate release facts.
+if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
+  main().catch(async (error) => {
+    await rm(`${generatedPath}.${process.pid}.tmp`, { force: true });
+    console.error(error instanceof Error ? error.message : error);
+    process.exitCode = 1;
+  });
+}
