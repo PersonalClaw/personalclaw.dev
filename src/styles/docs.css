@@ -1,0 +1,57 @@
+/* Brand the Starlight docs to match the marketing site.
+ *
+ * Starlight ships an accessible purple/blue default. Left alone, /docs reads as a
+ * different product than personalclaw.dev — so this maps Starlight's accent and gray
+ * scales onto the same tokens the marketing pages use (src/styles/tokens.css).
+ *
+ * Deliberately limited to COLOR. Starlight's layout, type scale, focus rings and
+ * contrast relationships are its own accessibility work; overriding those would mean
+ * re-earning what it already guarantees. The site's a11y gate (axe on every route,
+ * including these) is what holds this honest.
+ */
+
+:root {
+  /* Dark mode (Starlight's default). Measured against --night #0b0c0d:
+   *   --coral #ff6b5b        → 7.00:1  ✓ (the brand token, used as-is)
+   *   --coral-bright #ff937d → 9.06:1  ✓
+   * An earlier draft used a darker #d4432f here and measured 4.33:1 — below AA. The
+   * brand colour was already the right answer; darkening it was the mistake. */
+  --sl-color-accent-low: #3a1611;
+  --sl-color-accent: #ff6b5b;
+  --sl-color-accent-high: #ff937d;
+
+  /* Neutral ramp from the marketing tokens: --night #0b0c0d → --ink #f2f1ed. */
+  --sl-color-white: #ffffff;
+  --sl-color-gray-1: #f2f1ed;
+  --sl-color-gray-2: #c4c4bf;
+  --sl-color-gray-3: #92938f;
+  --sl-color-gray-4: #5c5e5b;
+  --sl-color-gray-5: #3b3e41;
+  --sl-color-gray-6: #2b2d2f;
+  --sl-color-gray-7: #1a1c1d;
+  --sl-color-black: #0b0c0d;
+}
+
+/* Light mode: Starlight inverts the ramp itself, but the accent needs a darker coral
+ * to stay ≥4.5:1 on white — #ff6b5b as link text on white is ~2.9:1, which fails. */
+:root[data-theme="light"] {
+  --sl-color-accent-low: #ffe4de;
+  --sl-color-accent: #b8351f;
+  --sl-color-accent-high: #7a2415;
+}
+
+/* The docs are generated from core's markdown, where a fenced block is often a long
+ * command. Wrapping beats a horizontal scrollbar inside an already-narrow column. */
+.expressive-code .frame pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Starlight makes each table its own scroll container, which axe rates
+ * `scrollable-region-focusable` (serious) unless it is keyboard-reachable. The rehype
+ * plugin in astro.config.mjs adds the tab stop; this gives it a visible focus ring,
+ * because a focusable element with no focus state is its own a11y failure. */
+.sl-markdown-content table:focus-visible {
+  outline: 2px solid var(--sl-color-accent-high);
+  outline-offset: 2px;
+}

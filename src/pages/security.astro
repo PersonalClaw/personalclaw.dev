@@ -116,6 +116,16 @@ import { GITHUB_URL } from "../data/site";
           <h3>Tamper-evident log</h3>
           <p>HMAC-linked security events make alteration visible during later review.</p>
         </article>
+        <article>
+          <span>07</span>
+          <Fingerprint size={25} aria-hidden="true" />
+          <h3>Optional sign-in</h3>
+          <p>
+            Password and 2FA for reaching the dashboard from outside your
+            network. Off by default, and additive &mdash; the local token stays
+            available, so a misconfigured login cannot lock you out.
+          </p>
+        </article>
       </div>
     </div>
   </section>

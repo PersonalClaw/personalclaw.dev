@@ -4,6 +4,8 @@ import { load } from "cheerio";
 import {
   canonicalUrl,
   routeOutputPath,
+  allRoutePaths,
+  docsRoutes,
   routes,
   siteOrigin
 } from "../tests/support/site-contract.mjs";
@@ -106,12 +108,38 @@ const generatedHtml = new Set(
     path.relative(distDir, filePath)
   )
 );
-const contractedHtml = new Set(routes.map((route) => routeOutputPath(route.path)));
+const contractedHtml = new Set(allRoutePaths.map((routePath) => routeOutputPath(routePath)));
+// Starlight emits its own 404 page; it is a real published artifact, not drift.
+contractedHtml.add("404.html");
 for (const filePath of generatedHtml) {
   if (!contractedHtml.has(filePath)) fail(`generated route ${filePath} is missing from the route contract`);
 }
 for (const filePath of contractedHtml) {
   if (!generatedHtml.has(filePath)) fail(`route contract references missing generated page ${filePath}`);
+}
+
+// Docs pages are generated from core, so their WORDS are not contracted — but their
+// existence and their having real metadata are. A doc that renders with an empty
+// title is a sync bug, and it would otherwise ship silently.
+for (const routePath of docsRoutes) {
+  const filePath = path.join(distDir, routeOutputPath(routePath));
+  if (!(await exists(filePath))) {
+    fail(`${routePath}: missing generated docs page`);
+    continue;
+  }
+  const $ = load(await readFile(filePath, "utf8"));
+  const title = $("title").text().trim();
+  const description = metaContent($, 'meta[name="description"]');
+  if (!title) fail(`${routePath}: docs page has no title`);
+  if (title && !title.includes("PersonalClaw")) {
+    fail(`${routePath}: docs title "${title}" is missing the site suffix`);
+  }
+  if (!description) fail(`${routePath}: docs page has no meta description`);
+  if ($("html").attr("lang") !== "en") fail(`${routePath}: html lang must be "en"`);
+  const robots = metaContent($, 'meta[name="robots"]');
+  if (expectNoIndex && robots !== "noindex, nofollow") {
+    fail(`${routePath}: preview docs page must be noindex (got ${robots ?? "none"})`);
+  }
 }
 
 for (const route of routes) {
@@ -274,8 +302,10 @@ if (!(await exists(sitemapIndexPath))) {
     }
   }
 
+  // Docs pages are indexable and belong in the sitemap — that is the point of
+  // publishing them for search and for LLM crawlers.
   const expectedUrls = new Set(
-    routes.map((route) => canonicalUrl(route.path).replace(/\/$/, "") || siteOrigin)
+    allRoutePaths.map((routePath) => canonicalUrl(routePath).replace(/\/$/, "") || siteOrigin)
   );
   if (
     publishedUrls.size !== expectedUrls.size ||
@@ -354,6 +384,7 @@ if (failures.length > 0) {
   process.exitCode = 1;
 } else {
   console.log(
-    `Validated ${routes.length} routes in ${path.relative(root, distDir)} (${expectNoIndex ? "preview" : "production"} policy).`
+    `Validated ${routes.length} marketing routes + ${docsRoutes.length} docs pages in ` +
+      `${path.relative(root, distDir)} (${expectNoIndex ? "preview" : "production"} policy).`
   );
 }
