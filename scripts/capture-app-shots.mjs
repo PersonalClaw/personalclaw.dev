@@ -47,7 +47,16 @@ const SHOTS = [
   // resolve to the dashboard, which would have produced 13 copies of the same shot.
   { id: "dashboard", hash: "#/dashboard", settle: 2800 },
   { id: "inbox", hash: "#/inbox", settle: 2400 },
-  { id: "chat", hash: "#/chat", settle: 2800 },
+  {
+    // `#/chat` with no sub-route is the NEW-CHAT launcher, which photographs an empty
+    // prompt. The manifest wants a real multi-turn thread with a visible tool call, and
+    // that lives at `#/chat/<sessionKey>`. Pass SESSION_KEY to select it.
+    id: "chat",
+    hash: process.env.SESSION_KEY
+      ? `#/chat/${encodeURIComponent(process.env.SESSION_KEY)}`
+      : "#/chat",
+    settle: 3200,
+  },
   { id: "knowledge", hash: "#/knowledge", settle: 2600 },
   { id: "artifacts", hash: "#/artifacts", settle: 2600 },
   {
@@ -118,9 +127,13 @@ for (const shot of wanted) {
     }
     loaded = true;
   } else {
+    // Set the hash, then RELOAD. A same-document hash change re-renders from whatever the
+    // SPA already has in memory, so a shot taken after the underlying data changed can show
+    // a stale view — which is exactly how a chat capture missed two turns that were on disk.
     await page.evaluate((h) => {
       window.location.hash = h;
     }, shot.hash);
+    await page.reload({ waitUntil: "domcontentloaded", timeout: 60000 });
   }
   await page.waitForTimeout(shot.settle);
 
