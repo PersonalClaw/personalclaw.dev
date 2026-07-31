@@ -2,6 +2,7 @@
 import { Image } from "astro:assets";
 import {
   ArrowRight,
+  BellRing,
   Bot,
   Brain,
   Check,
@@ -10,6 +11,8 @@ import {
   Eye,
   FileSearch,
   GitFork,
+  Inbox,
+  Layers,
   MessagesSquare,
   ShieldCheck,
   Sparkles,
@@ -17,11 +20,14 @@ import {
   Workflow
 } from "lucide-react";
 import agentsCapture from "../assets/agents.png";
+import artifactsCapture from "../assets/artifacts.png";
 import chatCapture from "../assets/chat.png";
 import doctorCapture from "../assets/doctor.png";
 import guardrailsCapture from "../assets/guardrails.png";
+import inboxCapture from "../assets/inbox.png";
 import knowledgeCapture from "../assets/knowledge.png";
 import memoryCapture from "../assets/memory.png";
+import notificationRulesCapture from "../assets/notification-rules.png";
 import triggersCapture from "../assets/triggers.png";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { GITHUB_URL } from "../data/site";
@@ -222,6 +228,96 @@ import { GITHUB_URL } from "../data/site";
           <li>Delivery per kind: notify, badge, digest, or never</li>
           <li>Background subagents</li>
           <li>Automatically matched workflow SOPs</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="section context-section section-rule">
+    <div class="shell">
+      <div class="section-head">
+        <div>
+          <p class="kicker">One place to answer</p>
+          <h2>Work that waits on you, in one queue.</h2>
+        </div>
+        <p>
+          A loop needing a decision, a proposed skill, an approval you walked
+          away from &mdash; these used to be toasts that scrolled past while the
+          work stayed stalled. Now they are items you answer in place.
+        </p>
+      </div>
+
+      <div class="context-grid">
+        <article>
+          <div class="context-copy">
+            <Inbox size={23} aria-hidden="true" />
+            <div>
+              <h3>Everything waiting, together.</h3>
+              <p>
+                Decisions, proposals, approvals, and messages share one inbox.
+                Each row deep-links to the loop or chat it came from.
+              </p>
+            </div>
+          </div>
+          <Image
+            src={inboxCapture}
+            alt="PersonalClaw inbox showing loop decisions, proposals, approvals, and messages"
+            widths={[520, 760, 980]}
+            sizes="(max-width: 800px) 100vw, 50vw"
+            format="webp"
+            quality={84}
+          />
+        </article>
+        <article>
+          <div class="context-copy">
+            <BellRing size={23} aria-hidden="true" />
+            <div>
+              <h3>You choose what interrupts.</h3>
+              <p>
+                Per kind of notification: notify, badge, batch into a daily
+                digest, or never. Quietening one noisy kind no longer raises the
+                bar for everything.
+              </p>
+            </div>
+          </div>
+          <Image
+            src={notificationRulesCapture}
+            alt="PersonalClaw per-kind notification delivery rules"
+            widths={[520, 760, 980]}
+            sizes="(max-width: 800px) 100vw, 50vw"
+            format="webp"
+            quality={84}
+          />
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section automation-section section-rule">
+    <div class="shell automation-grid">
+      <div class="automation-media">
+        <Image
+          src={artifactsCapture}
+          alt="PersonalClaw artifacts library with live previews and collections"
+          widths={[640, 960, 1280]}
+          sizes="(max-width: 900px) 100vw, 62vw"
+          format="webp"
+          quality={86}
+        />
+      </div>
+      <div class="feature-copy">
+        <span class="feature-icon"><Layers size={23} aria-hidden="true" /></span>
+        <p class="kicker">What it produced</p>
+        <h2>Output you can find again.</h2>
+        <p>
+          Documents, spreadsheets, charts, and diagrams the agent made stay in a
+          library with live previews &mdash; searchable, versioned, and grouped
+          into collections instead of scattered through a chat log.
+        </p>
+        <ul class="feature-list">
+          <li>Live previews, not placeholder tiles</li>
+          <li>Version history and diffs between revisions</li>
+          <li>Collections, and dedup at save time</li>
         </ul>
       </div>
     </div>

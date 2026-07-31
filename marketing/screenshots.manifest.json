@@ -222,8 +222,15 @@
       "minHeight": 750,
       "scenario": "A real morning queue with a MIX of item kinds, because the whole point is that these used to live in different places: a goal loop asking a decision (with its answer affordance visible in-row), a proposed skill awaiting approval, a tool approval someone walked away from, and one channel message that matched an alert keyword. Filter chips visible along the top showing the kinds present. At least one row should show its deep-link to the loop/chat it came from. NOT an empty or single-kind inbox — a one-kind inbox looks like the old notification list and tells the reader nothing.",
       "value": "Everything waiting on you — loop decisions, proposals, approvals, alerts — in one place you can answer in, instead of a toast that scrolls past while the work stays stalled.",
-      "placements": [],
-      "status": "new-needs-placement"
+      "placements": [
+        {
+          "file": "src/pages/product.astro",
+          "kind": "product-image",
+          "caption": "Everything waiting, together.",
+          "alt": "PersonalClaw inbox showing loop decisions, proposals, approvals, and messages"
+        }
+      ],
+      "status": "shipping"
     },
     {
       "id": "notification-rules",
@@ -233,8 +240,15 @@
       "minHeight": 750,
       "scenario": "The rules matrix with a REALISTIC spread of choices rather than all-defaults, so the four modes are legible: something noisy set to digest (heartbeats), something important on notify (loop needs input), something on badge, and one set to never. If a keyword/name-mention condition is configured, show it — that is the part that now works for loop requests and proposals, not just channel messages.",
       "value": "A row per kind of notification with four choices — notify, badge, digest, never — so quietening one noisy kind no longer means raising the bar for everything.",
-      "placements": [],
-      "status": "new-needs-placement"
+      "placements": [
+        {
+          "file": "src/pages/product.astro",
+          "kind": "product-image",
+          "caption": "You choose what interrupts.",
+          "alt": "PersonalClaw per-kind notification delivery rules"
+        }
+      ],
+      "status": "shipping"
     },
     {
       "id": "artifacts",
@@ -244,8 +258,15 @@
       "minHeight": 750,
       "scenario": "A populated library showing a MIX of artifact types with live previews rendering (not placeholder tiles) — e.g. a generated document, a spreadsheet, a chart/diagram, an image — plus at least one collection grouping some of them. The variety is the point: it should be obvious these are real outputs the agent produced, not stock thumbnails.",
       "value": "Everything the agent produced, previewable and searchable, grouped into collections — instead of files scattered through a chat log.",
-      "placements": [],
-      "status": "new-needs-placement"
+      "placements": [
+        {
+          "file": "src/pages/product.astro",
+          "kind": "product-image",
+          "caption": "Output you can find again.",
+          "alt": "PersonalClaw artifacts library with live previews and collections"
+        }
+      ],
+      "status": "shipping"
     }
   ]
 }
