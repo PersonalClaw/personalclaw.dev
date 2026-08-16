@@ -31,12 +31,13 @@ export default defineConfig({
     trace: "retain-on-failure",
     video: "retain-on-failure"
   },
-  webServer: {
-    command: "npm run preview -- --host 127.0.0.1 --port 4321",
-    url: baseURL,
-    reuseExistingServer: !process.env.CI,
-    timeout: 120_000
-  },
+  // The preview server is started and stopped by these two hooks rather than by
+  // Playwright's `webServer`, which aborts the run when the process it spawned exits.
+  // `astro preview` returns immediately after handing off to a detached daemon, so
+  // `webServer` reported `exited early` against a server that was live and answering.
+  // Setup also asserts the server is serving the build currently on disk. See issue #25.
+  globalSetup: "./tests/global-setup.mjs",
+  globalTeardown: "./tests/global-teardown.mjs",
   projects: [
     {
       name: "desktop",
