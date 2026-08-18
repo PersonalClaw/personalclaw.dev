@@ -30,5 +30,32 @@ export const KNOWN_DOCS = {
     "security.md",
     "tasks-triggers.md"
   ],
-  security: ["limitations.md", "threat-model.md"]
+  security: ["limitations.md", "threat-model.md"],
+  // The research-learnings corpus. Keyed by its SOURCE path, not by its site tree:
+  // these files live two levels down in core (docs/research/learnings/) and are
+  // published one level up on the site (/docs/research/), so the two identifiers
+  // genuinely differ — see the `sourceDir` field in sync-docs.mjs.
+  //
+  // FOURTEEN topics, not fifteen files. The directory also holds README.md, which is
+  // the corpus INDEX (a topic table plus a cross-corpus findings summary), not a
+  // topic. The site replaces it with its own section index — an owner-voiced preface
+  // over a generated topic table (src/prose/research-preface.md) — so republishing
+  // README.md too would ship two indexes that disagree the moment one changes.
+  // README.md is instead linked from the preface at the pinned commit.
+  "research/learnings": [
+    "agent-harness-engineering.md",
+    "automation-and-triggers.md",
+    "ecosystem-and-interop.md",
+    "knowledge-pipelines.md",
+    "local-models-and-inference.md",
+    "memory-architectures.md",
+    "multi-agent-orchestration.md",
+    "planning-and-decomposition.md",
+    "product-surfaces-and-ux.md",
+    "security-and-guardrails.md",
+    "self-improvement-loops.md",
+    "skills-and-prompt-craft.md",
+    "verification-and-judging.md",
+    "workflow-engine-design.md"
+  ]
 };

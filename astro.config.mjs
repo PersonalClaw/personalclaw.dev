@@ -44,7 +44,11 @@ export default defineConfig({
         { label: "Guides", items: [{ autogenerate: { directory: "docs/guides" } }] },
         { label: "Reference", items: [{ autogenerate: { directory: "docs/reference" } }] },
         { label: "Architecture", items: [{ autogenerate: { directory: "docs/architecture" } }] },
-        { label: "Security", items: [{ autogenerate: { directory: "docs/security" } }] }
+        { label: "Security", items: [{ autogenerate: { directory: "docs/security" } }] },
+        // Last in the sidebar on purpose: the research corpus is background on how the
+        // product was designed, not instructions for using it, and its own index page
+        // says so before a reader gets to a topic.
+        { label: "Research", items: [{ autogenerate: { directory: "docs/research" } }] }
       ],
       // Starlight does not use BaseLayout.astro, so it needs the same robots policy
       // stated here: a Vercel PREVIEW deployment must never be indexable, or a
