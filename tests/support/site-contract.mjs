@@ -69,8 +69,44 @@ export const docsRoutes = [
   "/docs/architecture/security",
   "/docs/architecture/tasks-triggers",
   "/docs/security/limitations",
-  "/docs/security/threat-model"
+  "/docs/security/threat-model",
+  // The research corpus: an owner-voiced section index authored HERE, over fourteen
+  // topics synced from core's docs/research/learnings/. Fourteen, not fifteen: that
+  // directory's README.md is its index and is superseded by the preface below.
+  "/docs/research",
+  "/docs/research/agent-harness-engineering",
+  "/docs/research/automation-and-triggers",
+  "/docs/research/ecosystem-and-interop",
+  "/docs/research/knowledge-pipelines",
+  "/docs/research/local-models-and-inference",
+  "/docs/research/memory-architectures",
+  "/docs/research/multi-agent-orchestration",
+  "/docs/research/planning-and-decomposition",
+  "/docs/research/product-surfaces-and-ux",
+  "/docs/research/security-and-guardrails",
+  "/docs/research/self-improvement-loops",
+  "/docs/research/skills-and-prompt-craft",
+  "/docs/research/verification-and-judging",
+  "/docs/research/workflow-engine-design"
 ];
+
+/**
+ * Doc routes that republish a cross-linked corpus. Their in-site links are swept
+ * individually by validate-build.mjs, with a floor on how many it must find: a
+ * link sweep that happens to check nothing passes just as quietly as a clean one.
+ */
+export const crossLinkedDocsRoutes = docsRoutes.filter((route) =>
+  route.startsWith("/docs/research/")
+);
+
+/**
+ * The observed number of in-site cross-links across the research corpus at the pinned
+ * commit: 117 relative links across the 14 topic files (the excluded README.md holds a
+ * further 14). Contracted as a FLOOR, not an equality — core rewording a paragraph
+ * should not red the website — but a floor this specific still fails loudly if the
+ * rewriter degrades, which is the failure that renders as ordinary-looking 404s.
+ */
+export const RESEARCH_CROSS_LINK_FLOOR = 100;
 
 /** Every published path: the contracted marketing routes plus the docs corpus. */
 export const allRoutePaths = [...routes.map((r) => r.path), ...docsRoutes];

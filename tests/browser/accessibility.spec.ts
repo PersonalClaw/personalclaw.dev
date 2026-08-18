@@ -25,7 +25,9 @@ const DOCS_SAMPLE = [
   "/docs/guides/getting-started", // prose + tables + code fences
   "/docs/reference/cli", // the largest table-heavy page
   "/docs/architecture/overview", // diagrams and nested lists
-  "/docs/security/threat-model" // long-form with many headings
+  "/docs/security/threat-model", // long-form with many headings
+  "/docs/research", // the one hand-authored docs page: the section preface
+  "/docs/research/verification-and-judging" // the most cross-linked topic (23 inbound)
 ];
 
 for (const routePath of DOCS_SAMPLE) {

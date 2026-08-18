@@ -5,7 +5,9 @@ import {
   canonicalUrl,
   routeOutputPath,
   allRoutePaths,
+  crossLinkedDocsRoutes,
   docsRoutes,
+  RESEARCH_CROSS_LINK_FLOOR,
   routes,
   siteOrigin
 } from "../tests/support/site-contract.mjs";
@@ -140,6 +142,47 @@ for (const routePath of docsRoutes) {
   if (expectNoIndex && robots !== "noindex, nofollow") {
     fail(`${routePath}: preview docs page must be noindex (got ${robots ?? "none"})`);
   }
+}
+
+// Republished cross-links are the one thing about a synced corpus that can be wrong
+// while looking right: `verification-and-judging.md` left un-rewritten renders as a
+// normal link and 404s. So every in-site link on those pages is resolved against the
+// built output — and the sweep is required to have found a real number of them, because
+// a rewriter that silently matched nothing produces a page with no links to break and
+// would otherwise pass this check clean.
+let researchLinksChecked = 0;
+for (const routePath of crossLinkedDocsRoutes) {
+  const filePath = path.join(distDir, routeOutputPath(routePath));
+  if (!(await exists(filePath))) continue; // already reported by the docs loop above
+  const $ = load(await readFile(filePath, "utf8"));
+  // `.sl-markdown-content` is the rendered document ONLY. Sweeping `main` instead reads
+  // 144 links where the corpus has 117: Starlight's prev/next pagination adds 27 in-site
+  // links of its own, so the floor would then be satisfiable by chrome the sync does not
+  // produce — which is the difference between measuring the corpus and measuring Starlight.
+  for (const anchor of $(".sl-markdown-content a[href]").toArray()) {
+    const href = $(anchor).attr("href");
+    if (!href) continue;
+    // An un-rewritten cross-link renders RELATIVE (`href="memory-architectures.md"`),
+    // so the check is scoped to relative hrefs. Absolute `.md` URLs are Starlight's own
+    // "Edit page" links, which are wrong on every docs page for an unrelated,
+    // pre-existing reason (editLink.baseUrl + the generated collection path) and are
+    // not this sweep's business.
+    if (!/^(?:[a-z][a-z0-9+.-]*:)?\/\//i.test(href) && /\.mdx?($|[#?])/.test(href)) {
+      fail(`${routePath}: un-rewritten markdown link "${href}" — it will 404`);
+      continue;
+    }
+    if (!href.startsWith("/docs/")) continue;
+    researchLinksChecked += 1;
+    await validateInternalUrl(href, routePath, "research cross-link", true);
+  }
+}
+if (researchLinksChecked < RESEARCH_CROSS_LINK_FLOOR) {
+  fail(
+    `research cross-link sweep checked only ${researchLinksChecked} in-site links ` +
+      `(floor ${RESEARCH_CROSS_LINK_FLOOR}) — the corpus cross-references itself ` +
+      `heavily, so a low count means the link rewriter degraded, not that the corpus ` +
+      `changed shape`
+  );
 }
 
 for (const route of routes) {
@@ -385,6 +428,8 @@ if (failures.length > 0) {
 } else {
   console.log(
     `Validated ${routes.length} marketing routes + ${docsRoutes.length} docs pages in ` +
-      `${path.relative(root, distDir)} (${expectNoIndex ? "preview" : "production"} policy).`
+      `${path.relative(root, distDir)} (${expectNoIndex ? "preview" : "production"} policy); ` +
+      `resolved ${researchLinksChecked} research cross-links across ` +
+      `${crossLinkedDocsRoutes.length} republished topics.`
   );
 }
