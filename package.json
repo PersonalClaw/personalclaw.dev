@@ -40,14 +40,14 @@
     "@astrojs/starlight": "^0.41.7",
     "@fontsource-variable/dm-sans": "^5.2.6",
     "@fontsource-variable/jetbrains-mono": "^5.2.6",
-    "astro": "^7.2.0",
-    "lucide-react": "^1.30.0",
+    "astro": "^7.2.2",
+    "lucide-react": "^1.31.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.10",
-    "@axe-core/playwright": "^4.12.1",
+    "@axe-core/playwright": "^4.13.0",
     "@playwright/test": "^1.62.1",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
@@ -55,7 +55,7 @@
     "cheerio": "^1.2.0",
     "chrome-launcher": "^1.2.1",
     "lighthouse": "13.4.1",
-    "smol-toml": "^1.7.1",
+    "smol-toml": "^1.8.0",
     "typescript": "^6.0.3"
   },
   "//overrides": "sharp: Astro 7 allows ^0.34 || ^0.35 and npm resolved 0.34.5, which carries the libvips advisory GHSA-f88m-g3jw-g9cj (4 CVEs, high). Astro already permits the patched line, so this pins the resolution up rather than adding sharp as a direct dependency the site does not import. Drop when Astro floors it itself.",
