@@ -36,6 +36,13 @@ import { GITHUB_URL } from "../data/site";
             enforceable policy in deterministic host code, outside the model and
             outside spawned agent runtimes.
           </p>
+          <p>
+            That boundary is an approval and policy gate, plus credential paths
+            hidden from spawned agents &mdash; not an operating-system jail. An
+            approved command still runs with your user&rsquo;s filesystem and
+            network reach. Stronger confinement is designed and not yet shipped,
+            so nothing here claims it.
+          </p>
           <a class="button button-primary" href="#controls">
             Inspect the controls <ArrowRight size={18} aria-hidden="true" />
           </a>
@@ -60,7 +67,7 @@ import { GITHUB_URL } from "../data/site";
           <span>Untrusted requests</span>
           <Terminal size={28} aria-hidden="true" />
           <strong>Models · tools · apps</strong>
-          <small>Bounded capabilities</small>
+          <small>Gated by host policy</small>
         </div>
       </div>
     </div>
