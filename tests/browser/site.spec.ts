@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { routes } from "../support/site-contract.mjs";
+import { qualityRoutes } from "../support/site-contract.mjs";
 import {
   assertImageIntegrity,
   assertLayoutIntegrity,
@@ -8,7 +8,7 @@ import {
   openPage
 } from "./support";
 
-for (const route of routes) {
+for (const route of qualityRoutes) {
   test(`${route.name} satisfies the runtime quality contract`, async ({
     page,
     baseURL

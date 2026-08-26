@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-08-26T00:00:00.000Z",
+  "source": {
+    "repository": "PersonalClaw/PersonalClaw",
+    "commit": "0000000000000000000000000000000000000000",
+    "tag": "v9.9.9-fixture",
+    "path": "scratch/registry/registry.json"
+  },
+  "availability": {
+    "status": "present"
+  },
+  "registry": {
+    "apps": [
+      {
+        "name": "registry-fixture-clean",
+        "repo": "https://github.com/personalclaw/registry-fixture-clean",
+        "types": ["search"],
+        "permissions_declared": ["network"],
+        "license": "MIT",
+        "maintainer": "personalclaw",
+        "added": "2026-08-18",
+        "last_validated": "2026-08-19",
+        "last_scan_verdict": "clean"
+      },
+      {
+        "name": "registry-fixture-unscanned",
+        "repo": "https://github.com/personalclaw/registry-fixture-unscanned",
+        "types": ["tool", "action"],
+        "permissions_declared": ["filesystem", "network", "shell"],
+        "license": "Apache-2.0",
+        "maintainer": "not-personalclaw",
+        "added": "2026-08-20"
+      },
+      {
+        "name": "registry-fixture-warning",
+        "repo": "https://example.invalid/personalclaw/registry-fixture-warning",
+        "types": ["search"],
+        "permissions_declared": ["storage", "network"],
+        "license": "MIT",
+        "maintainer": "personalclaw",
+        "added": "2026-08-18",
+        "last_validated": "2026-08-19",
+        "last_scan_verdict": "warning"
+      },
+      {
+        "name": "Registry_Fixture_Clean",
+        "repo": "https://github.com/personalclaw/registry-fixture-clean",
+        "types": ["telepathy"],
+        "permissions_declared": "network",
+        "license": "",
+        "maintainer": "personalclaw",
+        "added": "18 August 2026",
+        "notes": "a field the schema does not define"
+      },
+      {
+        "name": "registry-fixture-badperms",
+        "repo": "https://github.com/personalclaw/registry-fixture-badperms",
+        "types": ["search"],
+        "permissions_declared": "network",
+        "license": "MIT",
+        "maintainer": "personalclaw",
+        "added": "2026-08-18"
+      }
+    ]
+  },
+  "readmes": {
+    "registry-fixture-clean": {
+      "status": "fetched",
+      "url": "https://raw.githubusercontent.com/personalclaw/registry-fixture-clean/HEAD/README.md",
+      "truncated": false,
+      "text": "# registry-fixture-clean\n\nA fixture listing used by the website's registry render check.\n"
+    },
+    "registry-fixture-unscanned": {
+      "status": "unavailable",
+      "url": "https://raw.githubusercontent.com/personalclaw/registry-fixture-unscanned/HEAD/README.md",
+      "reason": "The repository's README could not be read (HTTP 404)."
+    },
+    "registry-fixture-warning": {
+      "status": "unsupported-host",
+      "reason": "Only GitHub repositories are read at build time, so this README was not fetched."
+    }
+  }
+}

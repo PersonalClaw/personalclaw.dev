@@ -25,3 +25,6 @@ public/llms-full.txt
 # Owner-provided local secrets — the real file lives at the workspace root (outside
 # every repo); this rule is belt-and-braces.
 .secrets.env
+
+# Throwaway build the registry render check produces (scripts/validate-registry-render.mjs).
+.registry-probe-dist/
