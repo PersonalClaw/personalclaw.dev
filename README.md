@@ -156,11 +156,13 @@ The build runs Astro diagnostics before producing the static site in `dist/`.
 | Command | What it does |
 |---|---|
 | `npm run sync:sources` | Validates source pins and generates ignored release facts from exact revisions |
+| `npm run sync:registry` | Reads the community app registry, and one README per listing, from the pinned core commit |
 | `npm run dev` | Starts the local Astro development server |
 | `npm run check` | Runs Astro and TypeScript diagnostics |
 | `npm run build` | Runs diagnostics and creates the production static build |
 | `npm run preview` | Serves the production build locally |
 | `npm run validate:release-parity` | Checks the website version against the pinned + newest published core release (see [Release parity](#release-parity)) |
+| `npm run validate:registry` | Rebuilds `/registry` against fixture registries that carry listings and asserts what it renders |
 | `npm run test:static` | Validates production and preview publication artifacts |
 | `npm run test:browser` | Builds and runs the complete Playwright suite |
 | `npm run test:lighthouse` | Builds and enforces Lighthouse budgets on every route |
@@ -174,6 +176,16 @@ All scripts set `ASTRO_TELEMETRY_DISABLED=1`.
 ## Quality Floor
 
 The route contract in `tests/support/site-contract.mjs` is shared by static, browser, and performance gates. A new generated page fails validation until it is added to that contract and receives the same coverage as every existing route.
+
+Two tiers are contracted differently, and the contract says why in place: the generated
+`/docs` corpus (core owns its words) and the community **registry** tier. `/registry` is
+held to the metadata, runtime, accessibility and Lighthouse contracts like every other
+route, but carries **no pixel baseline** — it renders a registry owned by another
+repository, so a committed screenshot would be invalidated by a registry pull request
+rather than by a change here. What replaces the baseline is `npm run validate:registry`,
+which rebuilds the page against fixture registries that carry listings. That check exists
+because the production registry is empty — a listing surface built against it renders
+nothing, looks clean, and passes every other gate vacuously.
 
 The required checks are:
 
@@ -217,6 +229,7 @@ inspecting the rendered result on the platform that produced it.
 ├── src/pages/           Route entry points
 ├── src/styles/          Global styles and design tokens
 ├── tests/browser/       User, accessibility, privacy, and visual coverage
+├── tests/fixtures/      Registry inputs the render check rebuilds against
 ├── tests/support/       Shared public route contract
 ├── DESIGN.md            Visual and interaction specification
 └── PRODUCT.md           Audience, positioning, and product brief
@@ -230,6 +243,7 @@ PersonalClaw spans three repositories, with deliberately separate ownership:
 |---|---|
 | Product capabilities, version, docs, security posture, and changelog | [PersonalClaw](https://github.com/PersonalClaw/PersonalClaw) |
 | First-party app manifests, permissions, requirements, and compatibility | [PersonalClawApps](https://github.com/PersonalClaw/PersonalClawApps) |
+| Community app listings, their declared permissions, and their scan verdicts | [PersonalClaw](https://github.com/PersonalClaw/PersonalClaw) `scratch/registry/` |
 | Presentation, public routing, synchronized docs build, and `/install` endpoint | This repository |
 
 Every build pins full source SHAs. The manifest supports two fail-closed channels:
@@ -238,6 +252,8 @@ Every build pins full source SHAs. The manifest supports two fail-closed channel
 - `released` requires tags for both repositories, verifies that each tag resolves to its declared SHA, and requires the core tag to match the package version.
 
 The manifest is currently on `released`. Generated files and fetched source caches are ignored; copied source content is never committed to this repository.
+
+That rule has a visible consequence today. The community registry landed in core **after** the pinned release, so there is no registry file to read at the pinned commit and `/registry` says so rather than reading core's default branch — which would publish unreleased core state as released state. The listing surface starts showing listings when the pin moves to a release that contains the registry; nothing about the page changes then.
 
 ### <a name="release-parity"></a>Release parity
 

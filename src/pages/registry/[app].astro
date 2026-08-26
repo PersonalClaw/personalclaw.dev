@@ -1,0 +1,306 @@
+---
+import { ArrowLeft, ArrowUpRight } from "lucide-react";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { readmeFor, registryListing } from "../../data/registry.mjs";
+
+// One page per readable listing. With no listings, this emits nothing — and
+// scripts/validate-build.mjs derives the contracted route set from the same normalizer,
+// so the generated pages and the route contract cannot disagree about how many there are.
+export function getStaticPaths() {
+  return registryListing().apps.map((app) => ({
+    params: { app: app.name },
+    props: { app }
+  }));
+}
+
+const { app } = Astro.props;
+const readme = readmeFor(app.name);
+const { source } = registryListing();
+---
+
+<BaseLayout
+  title={`${app.name} · Community registry · PersonalClaw`}
+  description={`What the ${app.name} community app declares before you install it: its permissions, capability types, license, maintainer, and last recorded scan verdict.`}
+>
+  <section class="listing">
+    <div class="shell">
+      <a class="text-link back-link" href="/registry">
+        <ArrowLeft size={17} aria-hidden="true" /> Community registry
+      </a>
+
+      <p class="kicker">{app.types.join(" · ")}</p>
+      <h1 translate="no">{app.name}</h1>
+
+      <p class:list={["registry-verdict", `verdict-${app.verdict.tone}`]}>
+        <span>{app.verdict.label}</span>
+      </p>
+      <p class="verdict-detail">{app.verdict.detail}</p>
+
+      <div class="listing-grid">
+        <section class="permissions" aria-labelledby="declared-permissions">
+          <h2 id="declared-permissions">Declared permissions</h2>
+          <p class="lede">
+            Exactly what this app's manifest asks for, as the registry records it. These
+            are the capabilities you would be consenting to at install time.
+          </p>
+          {app.permissions.length > 0 ? (
+            <ul class="permission-list">
+              {app.permissions.map((permission) => (
+                <li translate="no">{permission}</li>
+              ))}
+            </ul>
+          ) : (
+            <p class="none">This app declares no permissions.</p>
+          )}
+        </section>
+
+        <section class="facts" aria-labelledby="listing-facts">
+          <h2 id="listing-facts">Listing</h2>
+          <dl>
+            <div>
+              <dt>Capability types</dt>
+              <dd translate="no">{app.types.join(", ")}</dd>
+            </div>
+            <div>
+              <dt>License</dt>
+              <dd translate="no">{app.license}</dd>
+            </div>
+            <div>
+              <dt>Maintainer</dt>
+              <dd translate="no">{app.maintainer}</dd>
+            </div>
+            <div>
+              <dt>Listed</dt>
+              <dd><time datetime={app.added}>{app.added}</time></dd>
+            </div>
+            <div>
+              <dt>Last validated</dt>
+              <dd>
+                {app.lastValidated ? (
+                  <time datetime={app.lastValidated}>{app.lastValidated}</time>
+                ) : (
+                  "Never"
+                )}
+              </dd>
+            </div>
+          </dl>
+          <a class="text-link" href={app.repo} target="_blank" rel="noreferrer">
+            Open the repository <ArrowUpRight size={17} aria-hidden="true" />
+          </a>
+        </section>
+      </div>
+
+      <section class="readme" aria-labelledby="readme-heading">
+        <h2 id="readme-heading">README</h2>
+        {readme.status === "fetched" ? (
+          <>
+            <p class="lede">
+              Fetched at build time from the repository's default branch, and shown as
+              written rather than rendered: this is a third party's document, and
+              personalclaw.dev does not execute or interpret its markup.
+              {readme.truncated ? " Long READMEs are shown truncated." : ""}
+            </p>
+            <pre
+              class="readme-body"
+              tabindex="0"
+              role="region"
+              aria-label={`README for ${app.name}, as written`}
+            >{readme.text}</pre>
+          </>
+        ) : (
+          <p class="none">
+            {readme.reason} Read it on the repository instead.
+          </p>
+        )}
+      </section>
+
+      <p class="provenance">
+        Listing read from <span translate="no">{source.repository}</span>
+        {source.tag ? ` ${source.tag}` : ""} · <span translate="no">{source.path}</span>
+      </p>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .listing {
+    padding: clamp(4rem, 8vw, 7rem) 0 clamp(6rem, 10vw, 9rem);
+  }
+
+  /* See the note in src/pages/registry.astro: `.text-link` is declared per page across
+     this site, and these are apps.astro's declarations verbatim. */
+  .text-link {
+    display: inline-flex;
+    min-height: 44px;
+    gap: 0.45rem;
+    align-items: center;
+    color: var(--coral-bright);
+    font-weight: 650;
+  }
+
+  .back-link {
+    margin-bottom: clamp(2rem, 5vw, 3.5rem);
+  }
+
+  h1 {
+    max-width: 22ch;
+    margin: 0.4rem 0 1.5rem;
+    font-size: clamp(2.5rem, 5.7vw, 5rem);
+    font-weight: 390;
+    line-height: 1;
+    overflow-wrap: anywhere;
+  }
+
+  /* Same four treatments as the index, for the same reason: an absent verdict must not
+     be able to read as a pass. Kept in step with src/pages/registry.astro. */
+  .registry-verdict {
+    display: inline-flex;
+    margin: 0;
+    padding: 0.28rem 0.62rem;
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+    color: var(--ink-soft);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+  }
+
+  .verdict-pass {
+    border-color: var(--success);
+    color: var(--success);
+  }
+
+  .verdict-caution {
+    border-color: var(--line-strong);
+    background: var(--surface-high);
+    color: var(--ink);
+  }
+
+  .verdict-blocked {
+    border-color: var(--ember);
+    background: var(--ember);
+    color: var(--ink);
+  }
+
+  .verdict-unscanned {
+    border-style: dashed;
+  }
+
+  .verdict-detail {
+    margin: 0.9rem 0 0;
+    max-width: 58ch;
+    color: var(--ink-soft);
+    font-size: 1.08rem;
+  }
+
+  .listing-grid {
+    display: grid;
+    margin-top: clamp(3rem, 7vw, 5rem);
+    grid-template-columns: 1fr 1fr;
+    gap: clamp(2rem, 6vw, 5rem);
+    border-top: 1px solid var(--line);
+    padding-top: clamp(2rem, 5vw, 3rem);
+  }
+
+  h2 {
+    margin: 0 0 0.8rem;
+    font-size: clamp(1.4rem, 2.5vw, 2rem);
+    font-weight: 500;
+  }
+
+  .lede {
+    margin: 0 0 1.3rem;
+    max-width: 54ch;
+    color: var(--ink-soft);
+    font-size: 0.95rem;
+  }
+
+  .permission-list {
+    display: flex;
+    margin: 0;
+    padding: 0;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    list-style: none;
+  }
+
+  .permission-list li {
+    padding: 0.4rem 0.7rem;
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+    color: var(--ink);
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+  }
+
+  .none {
+    margin: 0;
+    max-width: 54ch;
+    color: var(--ink-soft);
+    font-size: 0.95rem;
+  }
+
+  .facts dl {
+    display: grid;
+    margin: 0 0 1.4rem;
+    gap: 0.45rem;
+    border-top: 1px solid var(--line);
+  }
+
+  .facts div {
+    display: flex;
+    padding-top: 0.45rem;
+    gap: 0.75rem;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 0.45rem;
+  }
+
+  .facts dt {
+    color: var(--ink-muted);
+    font-size: 0.85rem;
+  }
+
+  .facts dd {
+    margin: 0;
+    color: var(--ink-soft);
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    text-align: right;
+  }
+
+  .readme {
+    margin-top: clamp(3rem, 7vw, 5rem);
+    padding-top: clamp(2rem, 5vw, 3rem);
+    border-top: 1px solid var(--line);
+  }
+
+  .readme-body {
+    max-width: 100%;
+    max-height: 34rem;
+    margin: 0;
+    padding: 1.25rem;
+    overflow: auto;
+    border: 1px solid var(--line-strong);
+    border-radius: 8px;
+    background: #090a0b;
+    color: var(--ink-soft);
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  .provenance {
+    margin: clamp(3rem, 7vw, 5rem) 0 0;
+    color: var(--ink-muted);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+  }
+
+  @media (max-width: 900px) {
+    .listing-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

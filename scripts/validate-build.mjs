@@ -7,10 +7,13 @@ import {
   allRoutePaths,
   crossLinkedDocsRoutes,
   docsRoutes,
+  qualityRoutes,
+  registryAppRoutePaths,
   RESEARCH_CROSS_LINK_FLOOR,
   routes,
   siteOrigin
 } from "../tests/support/site-contract.mjs";
+import { registryArtifactExists, registryListing } from "../src/data/registry.mjs";
 
 const root = process.cwd();
 const distDir = path.resolve(root, process.env.DIST_DIR ?? "dist");
@@ -110,7 +113,20 @@ const generatedHtml = new Set(
     path.relative(distDir, filePath)
   )
 );
-const contractedHtml = new Set(allRoutePaths.map((routePath) => routeOutputPath(routePath)));
+// The registry artifact must EXIST by the time a build is validated. Without this the
+// listing surface degrades into a clean-looking empty page and every check below it
+// passes while measuring nothing — the failure mode this whole tier is written against.
+if (!registryArtifactExists()) {
+  fail(
+    ".generated/registry.json is missing: the registry pages rendered without their " +
+      "source, which is indistinguishable from an empty registry. Run `npm run sync`."
+  );
+}
+
+const registryAppPaths = registryArtifactExists() ? await registryAppRoutePaths() : [];
+const contractedHtml = new Set(
+  [...allRoutePaths, ...registryAppPaths].map((routePath) => routeOutputPath(routePath))
+);
 // Starlight emits its own 404 page; it is a real published artifact, not drift.
 contractedHtml.add("404.html");
 for (const filePath of generatedHtml) {
@@ -185,7 +201,7 @@ if (researchLinksChecked < RESEARCH_CROSS_LINK_FLOOR) {
   );
 }
 
-for (const route of routes) {
+for (const route of qualityRoutes) {
   const filePath = path.join(distDir, routeOutputPath(route.path));
   if (!(await exists(filePath))) {
     fail(`${route.path}: missing generated page ${filePath}`);
@@ -348,7 +364,9 @@ if (!(await exists(sitemapIndexPath))) {
   // Docs pages are indexable and belong in the sitemap — that is the point of
   // publishing them for search and for LLM crawlers.
   const expectedUrls = new Set(
-    allRoutePaths.map((routePath) => canonicalUrl(routePath).replace(/\/$/, "") || siteOrigin)
+    [...allRoutePaths, ...registryAppPaths].map(
+      (routePath) => canonicalUrl(routePath).replace(/\/$/, "") || siteOrigin
+    )
   );
   if (
     publishedUrls.size !== expectedUrls.size ||
@@ -427,7 +445,9 @@ if (failures.length > 0) {
   process.exitCode = 1;
 } else {
   console.log(
-    `Validated ${routes.length} marketing routes + ${docsRoutes.length} docs pages in ` +
+    `Validated ${routes.length} marketing routes + ${docsRoutes.length} docs pages + ` +
+      `the registry index and ${registryAppPaths.length} per-listing page(s) ` +
+      `(registry ${registryListing().state}) in ` +
       `${path.relative(root, distDir)} (${expectNoIndex ? "preview" : "production"} policy); ` +
       `resolved ${researchLinksChecked} research cross-links across ` +
       `${crossLinkedDocsRoutes.length} republished topics.`

@@ -87,6 +87,11 @@ import { APPS_URL } from "../data/site";
           <p>The app receives scoped access through the gateway and begins in a bounded state.</p>
         </li>
       </ol>
+
+      <a class="text-link registry-link" href="/registry">
+        See declared permissions and scan verdicts before you install
+        <ArrowRight size={17} aria-hidden="true" />
+      </a>
     </div>
   </section>
 
@@ -234,6 +239,13 @@ import { APPS_URL } from "../data/site";
   .install-path p {
     margin: 0;
     color: var(--ink-soft);
+  }
+
+  /* The community registry is the surface where the "Consent" step above actually
+     happens — a reader decides from declared permissions and a scan verdict — so the
+     route to it belongs at the end of this path, not in the site nav. */
+  .registry-link {
+    margin-top: 2rem;
   }
 
   .build-app {

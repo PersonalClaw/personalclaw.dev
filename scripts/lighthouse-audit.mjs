@@ -5,7 +5,7 @@ import { preview } from "astro";
 import { launch } from "chrome-launcher";
 import lighthouse from "lighthouse";
 import { chromium } from "playwright";
-import { routes } from "../tests/support/site-contract.mjs";
+import { qualityRoutes } from "../tests/support/site-contract.mjs";
 
 const reportDir = path.resolve(".lighthouse");
 const categoryBudgets = {
@@ -139,7 +139,7 @@ try {
     typeof b.actual === "number" &&
     (b.direction === HIGHER_IS_BETTER ? b.actual >= b.expected : b.actual <= b.expected);
 
-  for (const route of routes) {
+  for (const route of qualityRoutes) {
     let best = null;
     let lastResult = null;
 

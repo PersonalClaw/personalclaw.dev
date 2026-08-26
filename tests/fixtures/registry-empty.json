@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-08-26T00:00:00.000Z",
+  "source": {
+    "repository": "PersonalClaw/PersonalClaw",
+    "commit": "0000000000000000000000000000000000000000",
+    "tag": "v9.9.9-fixture",
+    "path": "scratch/registry/registry.json"
+  },
+  "availability": {
+    "status": "present"
+  },
+  "registry": {
+    "$schema": "./registry.schema.json",
+    "apps": []
+  },
+  "readmes": {}
+}

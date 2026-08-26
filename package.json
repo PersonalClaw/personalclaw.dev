@@ -8,6 +8,7 @@
   },
   "scripts": {
     "sync:sources": "node scripts/sync-sources.mjs",
+    "sync:registry": "node scripts/sync-registry.mjs",
     "dev": "npm run sync && ASTRO_TELEMETRY_DISABLED=1 astro dev",
     "build": "npm run sync && npm run check:astro && npm run build:site",
     "build:site": "ASTRO_TELEMETRY_DISABLED=1 astro build",
@@ -16,13 +17,14 @@
     "check": "npm run sync && npm run check:astro",
     "check:astro": "ASTRO_TELEMETRY_DISABLED=1 astro check",
     "validate:build": "node scripts/validate-build.mjs",
+    "validate:registry": "node scripts/validate-registry-render.mjs",
     "validate:preview": "DIST_DIR=.preview-dist EXPECT_NOINDEX=1 node scripts/validate-build.mjs",
     "validate:visual-baselines": "node scripts/validate-visual-baselines.mjs",
     "validate:marketing-manifest": "node scripts/validate-marketing-manifest.mjs",
     "validate:release-parity": "node scripts/validate-release-parity.mjs",
     "validate:release-parity:offline": "RELEASE_PARITY_OFFLINE=1 node scripts/validate-release-parity.mjs",
     "validate:release-parity:strict": "RELEASE_PARITY_REQUIRE_REMOTE=1 node scripts/validate-release-parity.mjs",
-    "test:static": "npm run validate:visual-baselines && npm run validate:marketing-manifest && npm run validate:release-parity && npm run build && npm run validate:build && npm run build:preview && npm run validate:preview",
+    "test:static": "npm run validate:visual-baselines && npm run validate:marketing-manifest && npm run validate:release-parity && npm run build && npm run validate:build && npm run build:preview && npm run validate:preview && npm run validate:registry",
     "test:browser": "npm run build && playwright test",
     "test:browser:report": "playwright show-report",
     "test:visual:update": "npm run build && playwright test tests/browser/visual.spec.ts --update-snapshots",
@@ -31,7 +33,7 @@
     "test:prepush": "sh scripts/run-prepush.sh",
     "hooks:install": "sh scripts/install-git-hooks.sh",
     "sync:docs": "node scripts/sync-docs.mjs",
-    "sync": "npm run sync:sources && npm run sync:docs"
+    "sync": "npm run sync:sources && npm run sync:docs && npm run sync:registry"
   },
   "dependencies": {
     "@astrojs/markdown-remark": "^7.2.4",

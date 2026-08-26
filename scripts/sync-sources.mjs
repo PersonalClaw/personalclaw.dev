@@ -166,7 +166,13 @@ async function fetchText(url) {
     headers: { "User-Agent": githubHeaders["User-Agent"] }
   });
   if (!response.ok) {
-    throw new Error(`Pinned source request failed (${response.status}) for ${url}`);
+    const error = new Error(`Pinned source request failed (${response.status}) for ${url}`);
+    // Carried so a caller can tell "this file is not in the pinned tree" (404) from
+    // "GitHub is unhappy" (everything else) without matching on the message text.
+    // scripts/sync-registry.mjs needs that distinction: a registry that does not exist
+    // at the pinned release is a state to render, not a build failure.
+    /** @type {Error & { status?: number }} */ (error).status = response.status;
+    throw error;
   }
   return response.text();
 }
