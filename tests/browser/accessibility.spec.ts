@@ -1,11 +1,11 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
-import { docsRoutes, routes } from "../support/site-contract.mjs";
+import { docsRoutes, qualityRoutes } from "../support/site-contract.mjs";
 import { openPage } from "./support";
 
 const WCAG = ["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"];
 
-for (const route of routes) {
+for (const route of qualityRoutes) {
   test(`${route.name} has no automated WCAG A or AA violations`, async ({ page }) => {
     await openPage(page, route.path);
     const results = await new AxeBuilder({ page }).withTags(WCAG).analyze();
