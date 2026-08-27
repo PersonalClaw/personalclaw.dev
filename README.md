@@ -54,6 +54,7 @@ The website should be persuasive because it is specific and checkable, not becau
 | `/security` | Trust boundaries, enforced controls, supply-chain lifecycle, and known limitations |
 | `/release` | Build channel, exact source commits, package/changelog facts, and manifest-derived ecosystem evidence |
 | `/blog` | Posts written here, each naming the release its claims were verified against |
+| `/compare` | Row-by-row account of what PersonalClaw does and does not do at the released version, each row sourced to a file at the tag |
 
 The next major public surfaces are synchronized documentation, release provenance, stable installation, changelog, and app detail routes. Their sequencing and acceptance gates are defined in the [website evolution roadmap](./docs/roadmap/roadmap.md).
 
@@ -165,6 +166,7 @@ The build runs Astro diagnostics before producing the static site in `dist/`.
 | `npm run validate:release-parity` | Checks the website version against the pinned + newest published core release (see [Release parity](#release-parity)) |
 | `npm run validate:registry` | Rebuilds `/registry` against fixture registries that carry listings and asserts what it renders |
 | `npm run validate:blog` | Asserts `/blog` renders one listing item per readable post, and that each post is published, contracted, and not an empty body |
+| `npm run validate:compare` | Refuses a `/compare` matrix that renders no rows, drifts from its data, sources a row to a branch instead of the pinned release, or stops carrying the rows that do not hold |
 | `npm run test:static` | Validates production and preview publication artifacts |
 | `npm run test:browser` | Builds and runs the complete Playwright suite |
 | `npm run test:lighthouse` | Builds and enforces Lighthouse budgets on every route |
@@ -266,6 +268,35 @@ Every build pins full source SHAs. The manifest supports two fail-closed channel
 The manifest is currently on `released`. Generated files and fetched source caches are ignored; copied source content is never committed to this repository.
 
 That rule has a visible consequence today. The community registry landed in core **after** the pinned release, so there is no registry file to read at the pinned commit and `/registry` says so rather than reading core's default branch — which would publish unreleased core state as released state. The listing surface starts showing listings when the pin moves to a release that contains the registry; nothing about the page changes then.
+
+### Claims about our own capabilities
+
+`/compare` is the site's densest concentration of capability claims, so it runs on a
+stricter rule than prose elsewhere. It states what PersonalClaw does **and does not** do,
+and it is held to the release, not to the branch.
+
+- **Every row cites a file at the pinned release tag, with the ISO date it was read.**
+  `npm run validate:compare` fails if a row's link does not point into that tag — a row
+  sourced to a branch can be true in development and false in the release a reader can
+  actually install. That is not hypothetical: the launch post had to cut ten claim families
+  for exactly this reason, one of them a field declared on a policy object with zero
+  consumers, which would have shipped an inert control as a security feature.
+- **`partial` is a first-class verdict.** Most overclaims are not inventions; they are true
+  readings stated wider than the release supports. A two-state matrix forces each of those
+  into a `yes` that overstates or a `no` that undersells, and the overstatement is the one
+  that gets picked. A `partial` row must write out the narrower truth.
+- **The rows that do not hold are the point.** The check fails if the matrix stops carrying
+  `no` rows or stops carrying `partial` rows. A page where everything passes renders
+  perfectly and is a brochure, so its honesty is a gate rather than an intention.
+- **A declared knob is not a capability.** A field with no consumer at the tag is reported
+  as not shipped, and named as declared-and-inert so a reader who greps and finds it is not
+  misled.
+- **No claims about other projects.** Comparing peers responsibly means auditing somebody
+  else's software to this same standard, and that is deliberately out of scope while this
+  project is still finding overstatements in its own drafts. An accurate account of our own
+  scope serves a reader better than our characterisation of anyone else's.
+- **Corrections outrank the page.** A row that cannot be re-sourced gets removed rather than
+  defended.
 
 ### <a name="release-parity"></a>Release parity
 
