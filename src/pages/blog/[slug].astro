@@ -1,0 +1,168 @@
+---
+import { ArrowLeft } from "lucide-react";
+import { getCollection, render } from "astro:content";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+
+export async function getStaticPaths() {
+  const posts = await getCollection("blog");
+  return posts.map((post) => ({ params: { slug: post.id }, props: { post } }));
+}
+
+const { post } = Astro.props;
+const { Content } = await render(post);
+
+const readableDate = new Intl.DateTimeFormat("en-GB", {
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+  timeZone: "UTC"
+}).format(post.data.publishDate);
+---
+
+<BaseLayout title={`${post.data.title} · PersonalClaw`} description={post.data.description}>
+  <article class="post">
+    <div class="narrow">
+      <a class="text-link back-link" href="/blog">
+        <ArrowLeft size={17} aria-hidden="true" /> All posts
+      </a>
+
+      <p class="kicker">Writing</p>
+      <h1>{post.data.title}</h1>
+      <p class="post-meta">
+        <time datetime={post.data.publishDate.toISOString().slice(0, 10)}>{readableDate}</time>
+        <span class="verified" translate="no">
+          Verified against {post.data.verifiedAgainst}
+        </span>
+      </p>
+
+      <div class="post-body">
+        <Content />
+      </div>
+    </div>
+  </article>
+</BaseLayout>
+
+<style>
+  .post {
+    padding: clamp(3rem, 6vw, 5rem) 0 clamp(6rem, 10vw, 9rem);
+  }
+
+  /* See the note in src/pages/registry.astro: `.text-link` is declared per page across
+     this site, and these are apps.astro's declarations verbatim. */
+  .text-link {
+    display: inline-flex;
+    min-height: 44px;
+    gap: 0.45rem;
+    align-items: center;
+    color: var(--coral-bright);
+    font-weight: 650;
+  }
+
+  .back-link {
+    margin-bottom: clamp(2rem, 5vw, 3.5rem);
+  }
+
+  h1 {
+    max-width: 26ch;
+    margin: 0.4rem 0 1rem;
+    font-size: clamp(2.5rem, 5.7vw, 5rem);
+    font-weight: 390;
+    line-height: 1;
+  }
+
+  .post-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 0.9rem;
+    margin: 0 0 clamp(2.5rem, 5vw, 3.5rem);
+    color: var(--ink-muted);
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+  }
+
+  .verified {
+    color: var(--coral-bright);
+  }
+
+  /* The prose block. Two rules here are load-bearing rather than decorative:
+     every link is sized to the site's 44px target floor (tests/browser/support.ts
+     asserts it on every route in `qualityRoutes`, and an inline text link fails that
+     by roughly twenty pixels), and `overflow-wrap: anywhere` keeps a long file path in
+     a link or a code span from overflowing a 320px viewport, which the same assertion
+     also checks. Do not "tidy" either one away. */
+  .post-body {
+    max-width: 68ch;
+    color: var(--ink-soft);
+  }
+
+  .post-body :global(h2) {
+    margin: clamp(3rem, 6vw, 4.5rem) 0 1rem;
+    padding-top: clamp(1.5rem, 3vw, 2rem);
+    border-top: 1px solid var(--line);
+    color: var(--ink);
+    font-size: clamp(1.4rem, 2.5vw, 2rem);
+    font-weight: 500;
+    line-height: 1.15;
+  }
+
+  .post-body :global(h3) {
+    margin: 2.25rem 0 0.5rem;
+    color: var(--ink-muted);
+    font-size: 0.9375rem;
+    font-weight: 550;
+    line-height: 1.3;
+  }
+
+  .post-body :global(p) {
+    margin: 0 0 1.15rem;
+  }
+
+  .post-body :global(strong) {
+    color: var(--ink);
+    font-weight: 600;
+  }
+
+  .post-body :global(ul),
+  .post-body :global(ol) {
+    margin: 0 0 1.15rem;
+    padding-left: 1.35rem;
+  }
+
+  .post-body :global(li) {
+    margin-bottom: 0.35rem;
+  }
+
+  .post-body :global(li)::marker {
+    color: var(--ink-muted);
+  }
+
+  .post-body :global(code) {
+    color: var(--ink);
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+    overflow-wrap: anywhere;
+  }
+
+  .post-body :global(a) {
+    display: inline-block;
+    max-width: 100%;
+    min-width: 44px;
+    padding-block: 0.6rem;
+    color: var(--coral-bright);
+    font-weight: 600;
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+    overflow-wrap: anywhere;
+  }
+
+  .post-body :global(a:hover) {
+    color: var(--coral);
+  }
+
+  .post-body :global(hr) {
+    margin: clamp(3rem, 6vw, 4.5rem) 0;
+    border: 0;
+    border-top: 1px solid var(--line);
+  }
+</style>
