@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { appFactLabels, appFacts, apps } from "../../src/data/apps";
 import { monitorRuntime, openPage, settlePage } from "./support";
 
 test("system window exposes one coherent selected view", async ({ page, baseURL }) => {
@@ -44,6 +45,75 @@ test("app directory preserves deep-linked filters and can recover from no result
   // Tracks the first-party app count of the pinned release (39 at v0.1.3).
   await expect(page.locator(".app-card")).toHaveCount(39);
   await expect(page).toHaveURL("/apps");
+  runtime.assertClean();
+});
+
+// The floor for the two derived chips. Two failures are possible and both used to ship
+// silently: a flagged app rendering no chip (the `local`/`keyless` fields had zero
+// consumers), and someone hand-copying "Local"/"Keyless" back into `tags`, which would
+// double the chip and spend a tag slot on it.
+test("every declared local and keyless app renders its derived chip, once", async ({
+  page,
+  baseURL
+}) => {
+  const runtime = monitorRuntime(page, baseURL!);
+  await openPage(page, "/apps");
+
+  for (const label of appFactLabels) {
+    expect(
+      apps.filter((app) => app.tags.includes(label)).map((app) => app.slug),
+      `"${label}" is derived from a registry field and must not be repeated in tags`
+    ).toEqual([]);
+  }
+
+  for (const app of apps) {
+    const characteristics = page.getByRole("list", { name: `${app.name} characteristics` });
+    await expect(characteristics.getByRole("listitem")).toHaveText([
+      ...appFacts(app),
+      ...app.tags
+    ]);
+  }
+
+  // ── The pill budget, which used to be a silent runtime slice ──────────────────────────
+  //
+  // `AppDirectory` rendered `tags.slice(0, 4)`, so a card with five tags simply lost one. Censused
+  // across all 39 apps, that cap's entire effect was to drop `openrouter-models`' `Video` — while the
+  // search haystack indexes every tag, so the app was findable by a word its card refused to show.
+  //
+  // The slice is gone and the bound lives here instead: a card that would need more pills than the
+  // layout can carry now fails THIS, with the app named, instead of truncating without saying so. The
+  // numbers are measured, not chosen — 5 is the widest card in the catalogue today (5 tags + 0 facts),
+  // and 6 is the ceiling the two-fact case would reach at four tags.
+  const PILL_BUDGET = 6;
+  const widest = Math.max(...apps.map((app) => appFacts(app).length + app.tags.length));
+  expect(widest, "the widest card in the catalogue grew — re-measure before raising the budget").toBe(5);
+  for (const app of apps) {
+    const pills = appFacts(app).length + app.tags.length;
+    expect(
+      pills,
+      `${app.name} needs ${pills} pills; the card budget is ${PILL_BUDGET}. Reduce its tags, or raise ` +
+        `the budget deliberately after checking the card still reads at 390px — do NOT re-add a slice, ` +
+        `which drops a real capability silently.`
+    ).toBeLessThanOrEqual(PILL_BUDGET);
+  }
+
+  // The two Diarization cards are the sharpest case: they differ (only ONNX is keyless)
+  // but their tags were the same two words in a different order, so the cards read as
+  // identical. The chips are what makes the difference visible.
+  await expect(
+    page.getByRole("list", { name: "Diarization (ONNX) characteristics" }).getByRole("listitem")
+  ).toHaveText(["Local", "Keyless", "Diarization"]);
+  await expect(
+    page
+      .getByRole("list", { name: "Diarization (pyannote) characteristics" })
+      .getByRole("listitem")
+  ).toHaveText(["Local", "Diarization"]);
+
+  // Searching a fact now reaches the field rather than the copy of it in `tags`.
+  await page.getByRole("searchbox", { name: "Search first-party apps" }).fill("keyless");
+  await expect(page.locator(".app-card")).toHaveCount(
+    apps.filter((app) => app.keyless).length
+  );
   runtime.assertClean();
 });
 

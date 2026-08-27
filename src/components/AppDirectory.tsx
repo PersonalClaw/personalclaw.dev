@@ -1,5 +1,6 @@
 import { ArrowUpRight, Search, X } from "lucide-react";
 import { useEffect, useId, useMemo, useState } from "react";
+import { appFacts } from "../data/apps";
 import type { App, AppCategory } from "../data/apps";
 
 type Category = "All" | AppCategory;
@@ -46,7 +47,10 @@ export function AppDirectory({
       const inCategory = category === "All" || app.category === category;
       const matchesQuery =
         !normalized ||
-        `${app.name} ${app.description} ${app.tags.join(" ")}`
+        // The derived facts are searchable text too. They used to reach this haystack
+        // only for the apps that happened to also carry the matching tag, so "keyless"
+        // found 3 of the 9 keyless apps; it now finds all 9.
+        `${app.name} ${app.description} ${appFacts(app).join(" ")} ${app.tags.join(" ")}`
           .toLowerCase()
           .includes(normalized);
       return inCategory && matchesQuery;
@@ -119,7 +123,26 @@ export function AppDirectory({
               <h2>{app.name}</h2>
               <p>{app.description}</p>
               <ul aria-label={`${app.name} characteristics`}>
-                {app.tags.slice(0, 4).map((tag) => (
+                {/* Declared facts lead, and are budgeted separately from `tags` on
+                    purpose: a badge must never be the reason a real capability tag gets
+                    sliced off. */}
+                {appFacts(app).map((fact) => (
+                  <li key={fact} className="app-fact">
+                    {fact}
+                  </li>
+                ))}
+                {/* 🔴 THIS USED TO BE `tags.slice(0, 4)`, and the comment right above it already said why
+                    that was wrong: "a badge must never be the reason a real capability tag gets sliced
+                    off." The cap it kept did the slicing anyway — on exactly one app. Censused across all
+                    39: `openrouter-models` is the only one with five tags, so the cap's entire effect was
+                    to drop its `Video`, silently, while `app.tags.join(" ")` above puts Video in the
+                    SEARCH haystack. A user could find this app by searching "video" and then not see why.
+                    Uncapped, the widest card in the catalogue is 5 pills — the same card — so removing the
+                    slice adds one pill to one card and changes nothing else. The bound did not disappear:
+                    it moved to a build-time assertion in tests/browser/interactions.spec.ts, so a future
+                    app with more tags than a card can show fails the gate instead of losing a capability
+                    without saying so. */}
+                {app.tags.map((tag) => (
                   <li key={tag}>{tag}</li>
                 ))}
               </ul>

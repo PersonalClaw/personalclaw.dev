@@ -730,6 +730,16 @@ h3 {
   font-size: 0.7rem;
 }
 
+/* A chip derived from a registry field, not hand-authored copy. It borrows the treatment
+   the community registry already gives manifest-backed facts — mono, and a step brighter
+   than the sans free-text tags beside it — rather than adding a second badge vocabulary
+   to the site. No hue: coral is the page accent and would make these compete with
+   `.app-category`. */
+.app-card li.app-fact {
+  color: var(--ink-soft);
+  font-family: var(--font-mono);
+}
+
 .empty-state {
   display: grid;
   min-height: 22rem;
