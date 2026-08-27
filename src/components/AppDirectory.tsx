@@ -1,5 +1,6 @@
 import { ArrowUpRight, Search, X } from "lucide-react";
 import { useEffect, useId, useMemo, useState } from "react";
+import { appFacts } from "../data/apps";
 import type { App, AppCategory } from "../data/apps";
 
 type Category = "All" | AppCategory;
@@ -46,7 +47,10 @@ export function AppDirectory({
       const inCategory = category === "All" || app.category === category;
       const matchesQuery =
         !normalized ||
-        `${app.name} ${app.description} ${app.tags.join(" ")}`
+        // The derived facts are searchable text too. They used to reach this haystack
+        // only for the apps that happened to also carry the matching tag, so "keyless"
+        // found 3 of the 9 keyless apps; it now finds all 9.
+        `${app.name} ${app.description} ${appFacts(app).join(" ")} ${app.tags.join(" ")}`
           .toLowerCase()
           .includes(normalized);
       return inCategory && matchesQuery;
@@ -119,6 +123,14 @@ export function AppDirectory({
               <h2>{app.name}</h2>
               <p>{app.description}</p>
               <ul aria-label={`${app.name} characteristics`}>
+                {/* Declared facts lead, and are budgeted separately from `tags` on
+                    purpose: a badge must never be the reason a real capability tag gets
+                    sliced off. */}
+                {appFacts(app).map((fact) => (
+                  <li key={fact} className="app-fact">
+                    {fact}
+                  </li>
+                ))}
                 {app.tags.slice(0, 4).map((tag) => (
                   <li key={tag}>{tag}</li>
                 ))}

@@ -19,6 +19,26 @@ export type App = {
   keyless?: boolean;
 };
 
+/* `local` and `keyless` are the two structured claims this registry makes, and they are
+   the per-app evidence behind the "0 Required cloud vendors" stat on the apps page. They
+   had no consumer: every card rendered `tags` only, so both facts were hand-copied into
+   free text and drifted. Measured on the previous commit: 6 of the 9 keyless apps carried
+   no "Keyless" tag, 2 of the 9 local apps carried no "Local" tag, and none of the three
+   keyless Speech apps said so at all. Derive the chips from the fields instead; the fields
+   stay the single place a claim is made. */
+const appFactChips = [
+  { field: "local", label: "Local" },
+  { field: "keyless", label: "Keyless" }
+] as const satisfies ReadonlyArray<{ field: keyof App; label: string }>;
+
+/** The labels a card shows for the boolean claims its registry entry declares. */
+export function appFacts(app: App): string[] {
+  return appFactChips.filter(({ field }) => app[field]).map(({ label }) => label);
+}
+
+/** Every label `appFacts` can emit — the strings `tags` must therefore never repeat. */
+export const appFactLabels: string[] = appFactChips.map(({ label }) => label);
+
 export const appCategories: Array<"All" | AppCategory> = [
   "All",
   "Models",
@@ -94,7 +114,7 @@ export const apps: App[] = [
     name: "Diarization (ONNX)",
     category: "Speech",
     description: "Install-and-go local speaker diarization using sherpa-onnx.",
-    tags: ["Local", "Diarization"],
+    tags: ["Diarization"],
     local: true,
     keyless: true
   },
@@ -103,7 +123,7 @@ export const apps: App[] = [
     name: "Diarization (pyannote)",
     category: "Speech",
     description: "High-accuracy speaker diarization using the pyannote.audio pretrained pipeline.",
-    tags: ["Diarization", "Local"],
+    tags: ["Diarization"],
     local: true
   },
   {
@@ -111,7 +131,7 @@ export const apps: App[] = [
     name: "DuckDuckGo",
     category: "Search",
     description: "Keyless, zero-config web search with links and snippets.",
-    tags: ["Web", "Keyless"],
+    tags: ["Web"],
     keyless: true
   },
   {
@@ -133,7 +153,7 @@ export const apps: App[] = [
     name: "Faster Whisper",
     category: "Speech",
     description: "Local speech-to-text with CTranslate2-optimized Whisper models.",
-    tags: ["STT", "Local"],
+    tags: ["STT"],
     local: true,
     keyless: true
   },
@@ -199,7 +219,7 @@ export const apps: App[] = [
     name: "Ollama",
     category: "Models",
     description: "Use local or remote Ollama models for chat and embedding.",
-    tags: ["Chat", "Embedding", "Local"],
+    tags: ["Chat", "Embedding"],
     local: true,
     keyless: true
   },
@@ -243,7 +263,7 @@ export const apps: App[] = [
     name: "Piper TTS",
     category: "Speech",
     description: "Local neural text-to-speech with downloadable Piper voices.",
-    tags: ["TTS", "Local"],
+    tags: ["TTS"],
     local: true,
     keyless: true
   },
@@ -252,7 +272,7 @@ export const apps: App[] = [
     name: "SearXNG",
     category: "Search",
     description: "Private, keyless meta-search through your own SearXNG instance.",
-    tags: ["Self-hosted", "Keyless"],
+    tags: ["Self-hosted"],
     local: true,
     keyless: true
   },
@@ -261,7 +281,7 @@ export const apps: App[] = [
     name: "Sentence Transformers",
     category: "Models",
     description: "Run text embedding models in-process on your own machine.",
-    tags: ["Embedding", "Local"],
+    tags: ["Embedding"],
     local: true,
     keyless: true
   },
@@ -298,7 +318,7 @@ export const apps: App[] = [
     name: "vLLM",
     category: "Models",
     description: "Connect a local vLLM server through its OpenAI-compatible endpoint.",
-    tags: ["Chat", "Local"],
+    tags: ["Chat"],
     local: true,
     keyless: true
   },
@@ -321,7 +341,7 @@ export const apps: App[] = [
     name: "Wikipedia Search",
     category: "Search",
     description: "Keyless encyclopedic search with ranked articles and introductory extracts.",
-    tags: ["Reference", "Keyless"],
+    tags: ["Reference"],
     keyless: true
   }
 ];
