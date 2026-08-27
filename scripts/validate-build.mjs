@@ -6,6 +6,7 @@ import {
   routeOutputPath,
   allRoutePaths,
   blogRoutes,
+  compareRoutes,
   crossLinkedDocsRoutes,
   docsRoutes,
   qualityRoutes,
@@ -448,7 +449,8 @@ if (failures.length > 0) {
   console.log(
     `Validated ${routes.length} marketing routes + ${docsRoutes.length} docs pages + ` +
       `the registry index and ${registryAppPaths.length} per-listing page(s) ` +
-      `(registry ${registryListing().state}) + ${blogRoutes.length} blog page(s) in ` +
+      `(registry ${registryListing().state}) + ${blogRoutes.length} blog page(s) + ` +
+      `${compareRoutes.length} compare page(s) in ` +
       `${path.relative(root, distDir)} (${expectNoIndex ? "preview" : "production"} policy); ` +
       `resolved ${researchLinksChecked} research cross-links across ` +
       `${crossLinkedDocsRoutes.length} republished topics.`
