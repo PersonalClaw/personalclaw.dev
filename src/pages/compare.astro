@@ -1,0 +1,423 @@
+---
+import { ArrowUpRight } from "lucide-react";
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { GITHUB_URL } from "../data/site";
+import { capabilityMatrix, verdictPresentation } from "../data/capabilities.mjs";
+
+// One normalizer, shared with scripts/validate-compare-render.mjs. See the header of
+// src/data/capabilities.mjs for why an unsourced row cannot reach this page.
+const { groups, counts, release, verdicts, checkedOn, problems } = capabilityMatrix();
+
+// Worst-last is deliberate: the legend and the headline counts both read yes -> partial ->
+// no, so a reader meets the failures in the same order every time rather than by scroll
+// position.
+const order = ["yes", "partial", "no"] as const;
+---
+
+<BaseLayout
+  title="What it does · PersonalClaw"
+  description="A row-by-row account of what PersonalClaw does and does not do at its released version, with every row citing the file it was checked against."
+>
+  <section class="caps">
+    <div class="shell">
+      <p class="kicker">What it does</p>
+      <h1>Every row checked against the release, including the ones that fail</h1>
+
+      <p class="lede">
+        Feature lists are written to be believed. This one is written to be checked. Every
+        row below names the file it was verified against in
+        <span translate="no">{release.version}</span> — the release this website publishes,
+        pinned at <span translate="no">{release.commit.slice(0, 8)}</span> — and not core's
+        development branch, where more is true. Checked on
+        <time datetime={checkedOn}>{checkedOn}</time>.
+      </p>
+
+      <p class="lede">
+        Roughly half of these rows are not a clean pass. That is deliberate and it is the
+        point of the page: a claim stated wider than the release supports is the failure
+        mode this project keeps finding in its own drafts, so the narrower truth is written
+        out in full rather than rounded up.
+      </p>
+
+      <ul class="counts" data-capability-counts>
+        {order.map((verdict) => {
+          const shown = verdictPresentation(verdict);
+          return (
+            <li data-capability-count={verdict}>
+              <span class:list={["count-n", shown.tone]}>{counts[verdict]}</span>
+              <span class="count-label">{shown.label}</span>
+            </li>
+          );
+        })}
+      </ul>
+
+      <section class="legend" aria-labelledby="how-to-read" data-capability-legend>
+        <h2 id="how-to-read">How to read a verdict</h2>
+        <dl>
+          {order.map((verdict) => {
+            const shown = verdictPresentation(verdict);
+            return (
+              <div data-capability-legend-item={verdict}>
+                <dt>
+                  <span class:list={["verdict", shown.tone]}>{shown.label}</span>
+                </dt>
+                <dd>{verdicts[verdict]?.meaning ?? ""}</dd>
+              </div>
+            );
+          })}
+        </dl>
+      </section>
+
+      {groups.map((group) => (
+        <section class="group" aria-labelledby={`group-${group.id}`} data-capability-group={group.id}>
+          <h2 id={`group-${group.id}`}>{group.label}</h2>
+          <p class="group-blurb">{group.blurb}</p>
+
+          <ul class="rows">
+            {group.rows.map((row) => {
+              const shown = verdictPresentation(row.verdict);
+              return (
+                <li
+                  class="row"
+                  data-capability-row={row.id}
+                  data-capability-verdict={row.verdict}
+                >
+                  <p class:list={["verdict", shown.tone]}>{shown.label}</p>
+                  <h3 data-capability-claim>{row.claim}</h3>
+                  <p class="statement" data-capability-statement>{row.statement}</p>
+                  <a
+                    class="source"
+                    data-capability-source
+                    href={row.sourceUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    <span translate="no">{row.sourceLabel}</span>
+                    <span class="source-at">
+                      at <span translate="no">{release.version}</span>
+                    </span>
+                    <ArrowUpRight size={14} aria-hidden="true" />
+                  </a>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ))}
+
+      {problems.length > 0 && (
+        <p class="problems">
+          {problems.length} recorded row{problems.length === 1 ? "" : "s"} could not be
+          rendered because {problems.length === 1 ? "it was" : "they were"} incomplete, and
+          {problems.length === 1 ? " is" : " are"} named in the build output rather than
+          shown here as a fact.
+        </p>
+      )}
+
+      <section class="closing" aria-labelledby="check-it">
+        <h2 id="check-it">Check it yourself</h2>
+        <p class="lede">
+          Every link above points into the tagged release, so a row is falsifiable in one
+          step: open the file and read it. If a row overstates what the code does, that is a
+          defect in this page and it will be fixed or the row will be removed.
+        </p>
+        <p class="lede">
+          What this page does not do is compare PersonalClaw to other projects. Doing that
+          responsibly means auditing somebody else's software to the same standard applied
+          here, and this project has not earned that standing while it is still finding
+          overstatements in its own drafts. An accurate account of our own scope is more
+          useful to you than our characterisation of anyone else's.
+        </p>
+        <p class="lede">
+          The controls behind the autonomy rows are written up in full elsewhere, including
+          a limitations page that exists for the same reason this one does.
+        </p>
+
+        <ul class="next-links">
+          <li>
+            <a class="text-link" href="/security">
+              The security posture <ArrowUpRight size={16} aria-hidden="true" />
+            </a>
+          </li>
+          <li>
+            <a class="text-link" href="/docs/security/limitations">
+              Known limitations <ArrowUpRight size={16} aria-hidden="true" />
+            </a>
+          </li>
+        </ul>
+      </section>
+
+      <p class="provenance">
+        Read from <span translate="no">{release.version}</span>
+        (<span translate="no">{release.commit.slice(0, 12)}</span>) ·
+        {counts.yes} holding · {counts.partial} narrower than stated ·
+        {counts.no} not in this release ·
+        checked <time datetime={checkedOn}>{checkedOn}</time>
+      </p>
+
+      <p class="correction">
+        If a row here is wrong or has gone stale, say so and it will be corrected or the row
+        will be removed.
+      </p>
+      <a
+        class="text-link"
+        href={`${GITHUB_URL}/issues`}
+        target="_blank"
+        rel="noreferrer"
+      >
+        Open an issue <ArrowUpRight size={16} aria-hidden="true" />
+      </a>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .caps {
+    padding: clamp(4rem, 8vw, 7rem) 0 clamp(6rem, 10vw, 9rem);
+  }
+
+  .kicker {
+    margin: 0;
+    color: var(--ink-muted);
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  h1 {
+    max-width: 30ch;
+    margin: 0.5rem 0 1.6rem;
+    font-size: clamp(2.4rem, 5.4vw, 4.6rem);
+    font-weight: 390;
+    line-height: 1.02;
+  }
+
+  h2 {
+    margin: 0 0 0.7rem;
+    font-size: clamp(1.4rem, 2.5vw, 2rem);
+    font-weight: 500;
+  }
+
+  h3 {
+    margin: 0 0 0.5rem;
+    max-width: 62ch;
+    font-size: 1.06rem;
+    font-weight: 600;
+    line-height: 1.45;
+  }
+
+  .lede {
+    margin: 0 0 1.2rem;
+    max-width: 70ch;
+    color: var(--ink-soft);
+    font-size: 1.02rem;
+    line-height: 1.7;
+  }
+
+  .counts {
+    display: flex;
+    margin: clamp(2.5rem, 6vw, 3.5rem) 0 0;
+    padding: 0;
+    gap: clamp(1.5rem, 5vw, 3.5rem);
+    flex-wrap: wrap;
+    list-style: none;
+  }
+
+  .counts li {
+    display: flex;
+    gap: 0.3rem;
+    flex-direction: column;
+  }
+
+  .count-n {
+    font-size: clamp(2rem, 4vw, 2.9rem);
+    font-weight: 380;
+    line-height: 1;
+  }
+
+  .count-n.verdict-yes {
+    color: var(--success);
+  }
+
+  .count-n.verdict-partial {
+    color: var(--coral-bright);
+  }
+
+  .count-n.verdict-no {
+    color: var(--ink);
+  }
+
+  .count-label {
+    color: var(--ink-muted);
+    font-size: 0.82rem;
+  }
+
+  .legend,
+  .group,
+  .closing {
+    margin-top: clamp(3rem, 7vw, 5rem);
+    padding-top: clamp(2rem, 5vw, 3rem);
+    border-top: 1px solid var(--line);
+  }
+
+  .legend dl {
+    display: grid;
+    margin: 1.4rem 0 0;
+    gap: 1rem;
+  }
+
+  .legend dt {
+    margin-bottom: 0.3rem;
+  }
+
+  .legend dd {
+    margin: 0;
+    max-width: 70ch;
+    color: var(--ink-soft);
+    font-size: 0.92rem;
+    line-height: 1.65;
+  }
+
+  .verdict {
+    display: inline-flex;
+    margin: 0;
+    padding: 0.22rem 0.6rem;
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+    color: var(--ink-soft);
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+  }
+
+  .verdict-yes {
+    border-color: var(--success);
+    color: var(--success);
+  }
+
+  /* Coral, because a narrowed claim is the row a reader most needs to stop on. DESIGN.md
+     reserves coral for active attention rather than decoration, and this is exactly that. */
+  .verdict-partial {
+    border-color: var(--coral-bright);
+    color: var(--coral-bright);
+  }
+
+  /* Solid and plain, never dashed: "not in this release" is a settled fact, not an
+     uncertainty. */
+  .verdict-no {
+    border-color: var(--line-strong);
+    background: var(--surface-high);
+    color: var(--ink);
+  }
+
+  .group-blurb {
+    margin: 0;
+    max-width: 70ch;
+    color: var(--ink-muted);
+    font-size: 0.95rem;
+    line-height: 1.65;
+  }
+
+  .rows {
+    display: grid;
+    margin: clamp(1.6rem, 4vw, 2.2rem) 0 0;
+    padding: 0;
+    gap: 1rem;
+    list-style: none;
+  }
+
+  .row {
+    padding: 1.3rem;
+    border: 1px solid var(--line-strong);
+    border-radius: 8px;
+  }
+
+  .row .verdict {
+    margin-bottom: 0.7rem;
+  }
+
+  .statement {
+    margin: 0 0 0.9rem;
+    max-width: 74ch;
+    color: var(--ink-soft);
+    font-size: 0.93rem;
+    line-height: 1.7;
+  }
+
+  .source {
+    display: inline-flex;
+    min-height: 44px;
+    gap: 0.4rem;
+    align-items: center;
+    /* Both of these are load-bearing at 320px. The labels are real repository paths -
+       `.github/workflows/full.yml` is the longest - and a monospace path is one unbreakable
+       token, so without a wrap the flex row runs past the card and takes the page with it. */
+    flex-wrap: wrap;
+    color: var(--coral-bright);
+    font-weight: 650;
+    font-size: 0.85rem;
+  }
+
+  .source span[translate="no"] {
+    font-family: var(--font-mono);
+    overflow-wrap: anywhere;
+  }
+
+  .source-at {
+    color: var(--ink-muted);
+    font-family: inherit;
+    font-weight: 400;
+  }
+
+  .problems {
+    margin: clamp(2rem, 5vw, 3rem) 0 0;
+    max-width: 70ch;
+    color: var(--ink-muted);
+    font-size: 0.88rem;
+    line-height: 1.65;
+  }
+
+  /* Standalone, never mid-sentence. `.text-link` is declared per page across this site
+     (see src/pages/release.astro) and every link on it is inline-flex with a 44px minimum,
+     so a link inside a running paragraph would be the one shape that cannot satisfy the
+     touch-target contract without wrecking the line box. The prose above was rewritten to
+     end in these instead. */
+  .text-link {
+    display: inline-flex;
+    min-height: 44px;
+    gap: 0.45rem;
+    align-items: center;
+    color: var(--coral-bright);
+    font-weight: 650;
+  }
+
+  .text-link:hover {
+    color: var(--ink);
+  }
+
+  .next-links {
+    display: flex;
+    margin: 0.4rem 0 0;
+    padding: 0;
+    gap: clamp(1rem, 4vw, 2.5rem);
+    flex-wrap: wrap;
+    list-style: none;
+  }
+
+  .provenance {
+    margin: clamp(3rem, 7vw, 5rem) 0 0;
+    color: var(--ink-muted);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    line-height: 1.9;
+  }
+
+  .correction {
+    margin: 1.2rem 0 0;
+    max-width: 70ch;
+    color: var(--ink-soft);
+    font-size: 0.9rem;
+    line-height: 1.7;
+  }
+
+</style>

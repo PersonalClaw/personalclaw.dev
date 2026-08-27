@@ -167,12 +167,38 @@ export const blogRoutes = [
   }
 ];
 
+// The CAPABILITY-MATRIX route, held as a third tier. It is a single page, so unlike the
+// registry there is nothing to derive — but it is deliberately kept out of `routes`, which
+// is the visually-baselined set. The matrix's height is a function of how many rows the
+// data holds, so a committed screenshot would be invalidated by CHECKING ANOTHER CLAIM
+// rather than by changing a design, and a baseline that reds on honest content is a
+// baseline people learn to overwrite.
+//
+// Everything else applies through `qualityRoutes`: the metadata contract, the runtime
+// contract (console, requests, same-origin, 44px targets, overflow), the axe WCAG A/AA
+// scan, and the Lighthouse budgets.
+//
+// What replaces the pixel baseline is `npm run validate:compare`, which refuses a matrix
+// that renders no rows, that renders rows whose text has drifted from its data, that
+// sources a row to a branch instead of the pinned release, or that has quietly stopped
+// carrying the rows which do NOT hold. A page with an empty matrix passes every check in
+// this list vacuously.
+export const compareRoutes = [
+  {
+    name: "compare",
+    path: "/compare",
+    title: "What it does · PersonalClaw",
+    description:
+      "A row-by-row account of what PersonalClaw does and does not do at its released version, with every row citing the file it was checked against."
+  }
+];
+
 /**
  * Every route held to the metadata, runtime, accessibility and performance contract:
- * the visually-baselined marketing routes plus the registry and blog tiers. `routes`
- * alone is what the VISUAL contract covers.
+ * the visually-baselined marketing routes plus the registry, blog and capability-matrix
+ * tiers. `routes` alone is what the VISUAL contract covers.
  */
-export const qualityRoutes = [...routes, ...registryRoutes, ...blogRoutes];
+export const qualityRoutes = [...routes, ...registryRoutes, ...blogRoutes, ...compareRoutes];
 
 /**
  * The per-listing pages, derived from the same normalizer the pages render
@@ -192,14 +218,15 @@ export async function registryAppRoutePaths() {
 
 /**
  * Every published path with a FIXED name: the contracted marketing routes, the docs
- * corpus, the registry index, and the blog. The per-listing registry pages are
- * registry-derived, so they come from `registryAppRoutePaths()` instead.
+ * corpus, the registry index, the blog, and the capability matrix. The per-listing
+ * registry pages are registry-derived, so they come from `registryAppRoutePaths()` instead.
  */
 export const allRoutePaths = [
   ...routes.map((r) => r.path),
   ...docsRoutes,
   ...registryRoutes.map((r) => r.path),
-  ...blogRoutes.map((r) => r.path)
+  ...blogRoutes.map((r) => r.path),
+  ...compareRoutes.map((r) => r.path)
 ];
 
 export function canonicalUrl(path) {
