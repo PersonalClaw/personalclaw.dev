@@ -53,6 +53,7 @@ The website should be persuasive because it is specific and checkable, not becau
 | `/apps` | Searchable first-party app directory and app-platform explanation |
 | `/security` | Trust boundaries, enforced controls, supply-chain lifecycle, and known limitations |
 | `/release` | Build channel, exact source commits, package/changelog facts, and manifest-derived ecosystem evidence |
+| `/blog` | Posts written here, each naming the release its claims were verified against |
 
 The next major public surfaces are synchronized documentation, release provenance, stable installation, changelog, and app detail routes. Their sequencing and acceptance gates are defined in the [website evolution roadmap](./docs/roadmap/roadmap.md).
 
@@ -163,6 +164,7 @@ The build runs Astro diagnostics before producing the static site in `dist/`.
 | `npm run preview` | Serves the production build locally |
 | `npm run validate:release-parity` | Checks the website version against the pinned + newest published core release (see [Release parity](#release-parity)) |
 | `npm run validate:registry` | Rebuilds `/registry` against fixture registries that carry listings and asserts what it renders |
+| `npm run validate:blog` | Asserts `/blog` renders one listing item per readable post, and that each post is published, contracted, and not an empty body |
 | `npm run test:static` | Validates production and preview publication artifacts |
 | `npm run test:browser` | Builds and runs the complete Playwright suite |
 | `npm run test:lighthouse` | Builds and enforces Lighthouse budgets on every route |
@@ -177,8 +179,9 @@ All scripts set `ASTRO_TELEMETRY_DISABLED=1`.
 
 The route contract in `tests/support/site-contract.mjs` is shared by static, browser, and performance gates. A new generated page fails validation until it is added to that contract and receives the same coverage as every existing route.
 
-Two tiers are contracted differently, and the contract says why in place: the generated
-`/docs` corpus (core owns its words) and the community **registry** tier. `/registry` is
+Three tiers are contracted differently, and the contract says why in place: the generated
+`/docs` corpus (core owns its words), the community **registry** tier, and the **blog**
+tier. `/registry` is
 held to the metadata, runtime, accessibility and Lighthouse contracts like every other
 route, but carries **no pixel baseline** — it renders a registry owned by another
 repository, so a committed screenshot would be invalidated by a registry pull request
@@ -186,6 +189,15 @@ rather than by a change here. What replaces the baseline is `npm run validate:re
 which rebuilds the page against fixture registries that carry listings. That check exists
 because the production registry is empty — a listing surface built against it renders
 nothing, looks clean, and passes every other gate vacuously.
+
+`/blog` carries no pixel baseline either, for a different reason: a post's page height is a
+function of prose length and the listing's height is a function of post count, so a
+committed screenshot there would be refreshed by publishing writing rather than by changing
+a design — on two platforms, one of which only CI can regenerate. Its design is pixel-locked
+where it lives, in the shared shell and card treatment the five marketing routes already
+baseline. Everything else applies, and `npm run validate:blog` replaces the screenshot with
+the assertion a screenshot would have made: a collection with readable posts must not
+render an empty listing.
 
 The required checks are:
 
