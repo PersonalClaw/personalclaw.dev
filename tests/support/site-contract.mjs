@@ -129,12 +129,50 @@ export const registryIndexRoute = {
 
 export const registryRoutes = [registryIndexRoute];
 
+// The BLOG tier. Its words ARE written here (src/content/blog/*.md is source-controlled,
+// unlike the generated /docs corpus), so its titles and descriptions are contracted below
+// and a post appearing or vanishing is a deliberate act recorded in this file.
+//
+// What it deliberately does NOT carry is a pixel baseline, and the reason is not the
+// registry's reason. A post's full-page height is a function of prose length, and this
+// listing's height is a function of post count — so a committed screenshot here would be
+// invalidated by PUBLISHING WRITING rather than by changing a design, on two platforms,
+// one of which only CI can regenerate (.github/workflows/visual-baselines.yml). That
+// trains exactly the habit the README forbids: refreshing baselines without inspecting a
+// visual change. The surface's design is pixel-locked where it actually lives — the
+// shared shell, tokens and card treatment already baselined on the five marketing routes.
+//
+// Everything else applies, via `qualityRoutes`: the metadata contract, the runtime
+// contract (console, requests, same-origin, 44px targets, overflow), the axe WCAG A/AA
+// scan, and the Lighthouse budgets. What replaces the baseline is
+// `npm run validate:blog`, which asserts the listing renders one item per readable post.
+// That check exists because a listing built against a collection it cannot read renders
+// nothing, looks clean, and passes every other gate vacuously.
+export const blogIndexRoute = {
+  name: "blog",
+  path: "/blog",
+  title: "Writing · PersonalClaw",
+  description:
+    "Posts about what PersonalClaw shipped, how each claim is checked against the release this site publishes, and which claims did not survive the check."
+};
+
+export const blogRoutes = [
+  blogIndexRoute,
+  {
+    name: "blog-launch",
+    path: "/blog/launch",
+    title: "A personal agent you can audit · PersonalClaw",
+    description:
+      "Every claim in this post names the file that proves it, checked against the tagged release this site publishes — including the claims that did not survive the check."
+  }
+];
+
 /**
  * Every route held to the metadata, runtime, accessibility and performance contract:
- * the visually-baselined marketing routes plus the registry tier. `routes` alone is
- * what the VISUAL contract covers.
+ * the visually-baselined marketing routes plus the registry and blog tiers. `routes`
+ * alone is what the VISUAL contract covers.
  */
-export const qualityRoutes = [...routes, ...registryRoutes];
+export const qualityRoutes = [...routes, ...registryRoutes, ...blogRoutes];
 
 /**
  * The per-listing pages, derived from the same normalizer the pages render
@@ -154,13 +192,14 @@ export async function registryAppRoutePaths() {
 
 /**
  * Every published path with a FIXED name: the contracted marketing routes, the docs
- * corpus, and the registry index. The per-listing pages are registry-derived, so they
- * come from `registryAppRoutePaths()` instead.
+ * corpus, the registry index, and the blog. The per-listing registry pages are
+ * registry-derived, so they come from `registryAppRoutePaths()` instead.
  */
 export const allRoutePaths = [
   ...routes.map((r) => r.path),
   ...docsRoutes,
-  ...registryRoutes.map((r) => r.path)
+  ...registryRoutes.map((r) => r.path),
+  ...blogRoutes.map((r) => r.path)
 ];
 
 export function canonicalUrl(path) {
