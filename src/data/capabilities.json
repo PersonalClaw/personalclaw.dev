@@ -1,0 +1,253 @@
+{
+  "note": "What PersonalClaw does and does not do, at the RELEASED version this website publishes. Every row cites a file at that tag, never core's default branch. A row whose obvious reading is wider than the truth is marked 'partial' and states the narrower truth; a row that does not hold is marked 'no' and says so. This file deliberately contains no claims about any other project - see README 'Claims about our own capabilities'.",
+  "checked_on": "2026-08-27",
+  "release": {
+    "version": "v0.1.3",
+    "commit": "bc185c020252f753d91302f83c42a06a4087a5e8",
+    "repo": "https://github.com/PersonalClaw/PersonalClaw",
+    "blob_base": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.1.3/"
+  },
+  "verdicts": {
+    "yes": {
+      "label": "Holds",
+      "meaning": "True at this release, with a live consumer rather than only a declaration."
+    },
+    "partial": {
+      "label": "Narrower than it sounds",
+      "meaning": "Something real ships, but the obvious reading of the claim is wider than what this release does. The row states the narrower truth."
+    },
+    "no": {
+      "label": "Not in this release",
+      "meaning": "Does not hold at this release. Some of these are declared in the code and inert; some are later work; none of them are things you should rely on today."
+    }
+  },
+  "groups": [
+    {
+      "id": "ownership",
+      "label": "Ownership and lifecycle",
+      "blurb": "What you get, and what it costs you to be an early user."
+    },
+    {
+      "id": "network",
+      "label": "What leaves your machine",
+      "blurb": "The rows most likely to be overstated by a self-hosted project, including by us."
+    },
+    {
+      "id": "autonomy",
+      "label": "Constraints on autonomous work",
+      "blurb": "What actually bounds an agent acting without you watching."
+    },
+    {
+      "id": "apps",
+      "label": "The app platform and supply chain",
+      "blurb": "How capabilities are added, and what is checked when they are."
+    },
+    {
+      "id": "capabilities",
+      "label": "What it does",
+      "blurb": "Shipped code paths with live consumers at this release."
+    }
+  ],
+  "rows": [
+    {
+      "id": "license",
+      "group": "ownership",
+      "claim": "The code is under a permissive open-source license.",
+      "verdict": "yes",
+      "statement": "MIT, with no additional field-of-use or branding conditions.",
+      "source_label": "LICENSE",
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.1.3/LICENSE",
+      "retrieved": "2026-08-27"
+    },
+    {
+      "id": "multi_user",
+      "group": "ownership",
+      "claim": "Several people can each have their own account on one install.",
+      "verdict": "no",
+      "statement": "One owner per install. The gateway authenticates a single local token; there is no user-account model, no per-user separation of memory or knowledge, and nothing that would keep two people's work apart. Run one install per person.",
+      "source_label": "auth/modes.py",
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.1.3/src/personalclaw/auth/modes.py",
+      "retrieved": "2026-08-27"
+    },
+    {
+      "id": "data_stability",
+      "group": "ownership",
+      "claim": "Upgrading will not break the data you have already put in.",
+      "verdict": "no",
+      "statement": "This is a 0.x release under a clean-break doctrine: when a design is replaced the old path is removed in the same change. The release's own README says the next few 0.x releases may introduce breaking changes with no automatic migration, that sessions, memory, knowledge, config and app state may need to be recreated after an update, and that you should not make this your only system of record yet. Run `personalclaw snapshot` before every update.",
+      "source_label": "README.md, pre-1.0 heads-up",
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.1.3/README.md#-pre-10-heads-up",
+      "retrieved": "2026-08-27"
+    },
+    {
+      "id": "telemetry",
+      "group": "network",
+      "claim": "Zero telemetry.",
+      "verdict": "partial",
+      "statement": "No analytics, no crash reporting and no usage reporting of any kind - nothing about how you use it is sent anywhere. But the claim as stated is wider than the truth: the dashboard asks GitHub whether a newer release exists, at most every twelve hours, identifying itself with a `personalclaw-update-check` user agent. You did not ask it to, and this release has no setting that stops it. If you grep the tree you will also find a `telemetry_salt` and a hashed owner id; at this release both are written and read locally only, by the file listing, the durability inventory, snapshots and portability exports, and nothing transmits them.",
+      "source_label": "handlers/updates_kind.py",
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.1.3/src/personalclaw/dashboard/handlers/updates_kind.py",
+      "retrieved": "2026-08-27"
+    },
+    {
+      "id": "disable_update_check",
+      "group": "network",
+      "claim": "You can turn the update check off.",
+      "verdict": "no",
+      "statement": "There is an `auto_update` setting and it does not do this. Its own description says it gates whether an update is applied, not whether the check happens. At this release the check has no off switch. Blocking it is a firewall rule, not a preference.",
+      "source_label": "config/loader.py",
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.1.3/src/personalclaw/config/loader.py",
+      "retrieved": "2026-08-27"
+    },
+    {
+      "id": "egress_default_deny",
+      "group": "network",
+      "claim": "Outbound network access is deny-by-default.",
+      "verdict": "partial",
+      "statement": "True about address ranges, not about destinations. The guard denies private, loopback and link-local ranges by default and pins the resolved address to defeat rebinding - so it will not reach your router, your NAS or a metadata endpoint. It is not a destination allow-list: the default profile reaches any public host. Read it as protecting your LAN, not as restricting where an agent may go on the internet.",
+      "source_label": "net/policy.py",
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.1.3/src/personalclaw/net/policy.py",
+      "retrieved": "2026-08-27"
+    },
+    {
+      "id": "single_chokepoint",
+      "group": "network",
+      "claim": "All network access goes through one guarded chokepoint.",
+      "verdict": "partial",
+      "statement": "It is a real chokepoint for core's own fetch surfaces, and that is where the range checks and address pinning apply. It is not the whole machine: an app backend runs as a separate process with its own network stack, so its outbound traffic does not pass through this guard. Two more limits worth knowing - an operator allow-list entry is unioned onto the tier preset rather than narrowing it, and if the config file cannot be read the operator layer is skipped rather than failing closed.",
+      "source_label": "net/guard.py",
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.1.3/src/personalclaw/net/guard.py",
+      "retrieved": "2026-08-27"
+    },
+    {
+      "id": "egress_allowlist_exclusive",
+      "group": "network",
+      "claim": "You can restrict outbound access to an explicit list of hosts.",
+      "verdict": "no",
+      "statement": "Not at this release. There is no exclusive tier: the `listed` and `all` tiers both start from the same base, and the flag that would make a tier exclusive is not in this release's policy module. Because an operator entry is unioned on, adding one widens what a tier can reach rather than narrowing it. A related field, `on_violation`, is declared on the egress policy here and has no consumer at all - do not read it as a warn-instead-of-block mode.",
+      "source_label": "net/policy.py",
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.1.3/src/personalclaw/net/policy.py",
+      "retrieved": "2026-08-27"
+    },
+    {
+      "id": "auth_default",
+      "group": "autonomy",
+      "claim": "The gateway requires authentication by default.",
+      "verdict": "yes",
+      "statement": "A local token is the default mode. The one mode that removes the token, `none`, forces the bind to loopback, so switching auth off cannot silently expose the gateway to your network.",
+      "source_label": "auth/modes.py",
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.1.3/src/personalclaw/auth/modes.py",
+      "retrieved": "2026-08-27"
+    },
+    {
+      "id": "credentials_failclosed",
+      "group": "autonomy",
+      "claim": "Credential handling fails closed.",
+      "verdict": "yes",
+      "statement": "The credential store's stated failure posture is fail-closed: when it cannot decide, it refuses rather than proceeding without the credential.",
+      "source_label": "auth/credentials.py",
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.1.3/src/personalclaw/auth/credentials.py",
+      "retrieved": "2026-08-27"
+    },
+    {
+      "id": "audit_log",
+      "group": "autonomy",
+      "claim": "Autonomous actions leave an audit trail that would show tampering.",
+      "verdict": "yes",
+      "statement": "Entries are chained with an HMAC over the previous entry's hash, so removing or editing one breaks the chain from that point on rather than leaving a clean gap. Default retention is 365 days.",
+      "source_label": "sel.py",
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.1.3/src/personalclaw/sel.py",
+      "retrieved": "2026-08-27"
+    },
+    {
+      "id": "tool_approval",
+      "group": "autonomy",
+      "claim": "Per-tool grants restrict which tools an agent may call.",
+      "verdict": "no",
+      "statement": "A `tool_grants` field and a `tool_allowlist` beside it are declared on the safety profile, and at this release nothing outside that module reads either one - the module's own comment says the profile decides approval, egress, budget and scan until then. So the knob exists, the values look meaningful, and setting them changes nothing. What does bound autonomy at this release is the approval mode and the profile, not a per-tool list.",
+      "source_label": "guardrails/policy.py",
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.1.3/src/personalclaw/guardrails/policy.py",
+      "retrieved": "2026-08-27"
+    },
+    {
+      "id": "app_platform",
+      "group": "apps",
+      "claim": "Capabilities install and uninstall as app bundles rather than being built in.",
+      "verdict": "yes",
+      "statement": "Fourteen provider types at this release - model, agent, task, channel, inbox, skills, knowledge, memory, notification, tool, workflow, search, action and prompt - each satisfied by an installable bundle that declares its type and permissions in a manifest. Note fourteen, not the nineteen a later development branch has.",
+      "source_label": "apps/manifest.py",
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.1.3/src/personalclaw/apps/manifest.py",
+      "retrieved": "2026-08-27"
+    },
+    {
+      "id": "provider_agnostic",
+      "group": "apps",
+      "claim": "The core contains no vendor-specific logic.",
+      "verdict": "yes",
+      "statement": "Enforced by a lint rather than by convention: apps may import core only through the published SDK surface, and the test fails per-file so a violation names the file. This is the claim the architecture is built on, and it is the one with a mechanical check behind it.",
+      "source_label": "tests/test_apps_import_boundary.py",
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.1.3/tests/test_apps_import_boundary.py",
+      "retrieved": "2026-08-27"
+    },
+    {
+      "id": "app_sandbox",
+      "group": "apps",
+      "claim": "Apps are sandboxed, with a per-app network policy.",
+      "verdict": "no",
+      "statement": "Neither half holds at this release. An app declares a `network` permission in its manifest and the store shows it to you at install, but nothing enforces it at runtime - it is a disclosure, not a boundary. An app backend is an ordinary separate process with its own network stack. Install a third-party app with the same care you would give any program you run.",
+      "source_label": "apps/manifest.py",
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.1.3/src/personalclaw/apps/manifest.py",
+      "retrieved": "2026-08-27"
+    },
+    {
+      "id": "dep_scan_gate",
+      "group": "apps",
+      "claim": "A vulnerable dependency cannot reach the default branch.",
+      "verdict": "no",
+      "statement": "The dependency audit jobs are report-only by explicit design, and the workflow says so in a comment - they surface findings without blocking a merge. What is a real gate is the full pytest suite, which runs across the supported matrix and includes the supply-chain scanner's own tests. So the scanner is tested; the audit is advisory.",
+      "source_label": ".github/workflows/full.yml",
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.1.3/.github/workflows/full.yml",
+      "retrieved": "2026-08-27"
+    },
+    {
+      "id": "local_models",
+      "group": "capabilities",
+      "claim": "It can run inference against a model hosted on your own machine.",
+      "verdict": "yes",
+      "statement": "A local model manager ships and is reached from the gateway and the provider and model-registry handlers at this release, so it is a live path rather than a module without callers.",
+      "source_label": "local_models/provider.py",
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.1.3/src/personalclaw/local_models/provider.py",
+      "retrieved": "2026-08-27"
+    },
+    {
+      "id": "mcp_client",
+      "group": "capabilities",
+      "claim": "It can connect to external MCP servers.",
+      "verdict": "yes",
+      "statement": "An MCP bridge ships and is consumed by the app manager and the MCP handler at this release. Serving in the other direction - PersonalClaw acting as an MCP server for something else - is a separate module and is not what this row claims.",
+      "source_label": "apps/mcp_bridge.py",
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.1.3/src/personalclaw/apps/mcp_bridge.py",
+      "retrieved": "2026-08-27"
+    },
+    {
+      "id": "scheduled",
+      "group": "capabilities",
+      "claim": "It can run work on a schedule with nobody watching.",
+      "verdict": "yes",
+      "statement": "A scheduler ships and is consumed by app crons, the trigger handlers and the channel SDK at this release. Read this row together with the autonomy rows above: what is scheduled is bounded by the approval mode and the profile, not by a per-tool allow-list.",
+      "source_label": "schedule.py",
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.1.3/src/personalclaw/schedule.py",
+      "retrieved": "2026-08-27"
+    },
+    {
+      "id": "desktop_app",
+      "group": "capabilities",
+      "claim": "There is a desktop application you can install.",
+      "verdict": "partial",
+      "statement": "A desktop shell exists in the tree at this release, with its own packaging tests, and the packaging config reasons about a desktop bundle. But the only artifacts published for this release are the Python wheel and the source archive - there is no signed desktop installer to download for v0.1.3. Today you install the package and reach the gateway in a browser.",
+      "source_label": "desktop/main.js",
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.1.3/desktop/main.js",
+      "retrieved": "2026-08-27"
+    }
+  ]
+}
