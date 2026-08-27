@@ -10,6 +10,14 @@
  * including these) is what holds this honest.
  */
 
+/* This file reaches the browser through Starlight's `customCss`, NOT through
+ * BaseLayout.astro — so the /docs pages never load global.css, and the tokens are not
+ * otherwise in scope here. Without this import the var()s below resolve to nothing and
+ * Starlight's whole ramp goes empty. That absence is exactly why this file used to hold
+ * a hand-copied duplicate of the palette; importing it is what lets the mapping below
+ * BE the mapping instead of describing one. */
+@import "./tokens.css";
+
 :root {
   /* Dark mode (Starlight's default). Measured against --night #0b0c0d:
    *   --coral #ff6b5b        → 7.00:1  ✓ (the brand token, used as-is)
@@ -17,19 +25,22 @@
    * An earlier draft used a darker #d4432f here and measured 4.33:1 — below AA. The
    * brand colour was already the right answer; darkening it was the mistake. */
   --sl-color-accent-low: #3a1611;
-  --sl-color-accent: #ff6b5b;
-  --sl-color-accent-high: #ff937d;
+  --sl-color-accent: var(--coral);
+  --sl-color-accent-high: var(--coral-bright);
 
-  /* Neutral ramp from the marketing tokens: --night #0b0c0d → --ink #f2f1ed. */
+  /* Neutral ramp from the marketing tokens: --night → --ink. The three rungs Starlight
+   * wants that the marketing palette does not mint (white, gray-4, gray-7) stay
+   * literal — inventing tokens for them would put values in tokens.css that only /docs
+   * ever reads. */
   --sl-color-white: #ffffff;
-  --sl-color-gray-1: #f2f1ed;
-  --sl-color-gray-2: #c4c4bf;
-  --sl-color-gray-3: #92938f;
+  --sl-color-gray-1: var(--ink);
+  --sl-color-gray-2: var(--ink-soft);
+  --sl-color-gray-3: var(--ink-muted);
   --sl-color-gray-4: #5c5e5b;
-  --sl-color-gray-5: #3b3e41;
-  --sl-color-gray-6: #2b2d2f;
+  --sl-color-gray-5: var(--line-strong);
+  --sl-color-gray-6: var(--line);
   --sl-color-gray-7: #1a1c1d;
-  --sl-color-black: #0b0c0d;
+  --sl-color-black: var(--night);
 }
 
 /* Light mode: Starlight inverts the ramp itself, but the accent needs a darker coral
