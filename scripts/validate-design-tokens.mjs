@@ -167,8 +167,70 @@ function readTokenPalette() {
   return palette;
 }
 
+// DESIGN.md's frontmatter also commits the COLOUR palette, and nothing checked it against the
+// tokens it claims to describe. It was wrong: `line` said `#343638` while `--line` shipped
+// `#2b2d2f`, a value `var(--line)` is spent 72 times on — and both values dated from the initial
+// commit, so neither drifted; the doc was transcribed wrong on day one and went unnoticed for the
+// life of the repo. `--line-strong` was shipping undocumented at the same time.
+//
+// The two assertions above check that authored styles SPEND the vocabulary. This one checks that the
+// document defining the vocabulary tells the truth about it — the same drift, one level up, and the
+// level a reader trusts.
+function readDesignColours() {
+  const frontmatter = readFileSync(designFile, "utf8").split(/^---$/m)[1] ?? "";
+  const colours = new Map();
+  let inColours = false;
+  for (const rawLine of frontmatter.split("\n")) {
+    if (/^\S/.test(rawLine)) {
+      inColours = rawLine.startsWith("colors:");
+      continue;
+    }
+    if (!inColours) continue;
+    const match = rawLine.match(/^ {2}([\w-]+):\s*"(#[0-9a-fA-F]{3,8})"\s*$/);
+    if (match) colours.set(match[1], normaliseHex(match[2]));
+  }
+  return colours;
+}
+
+// tokens.css keyed by NAME. `readTokenPalette` keys by hex so a literal can be traced back to its
+// token; parity needs the other direction, and two tokens may legitimately share a value.
+function readTokenColoursByName() {
+  const byName = new Map();
+  for (const line of readFileSync(tokensFile, "utf8").split("\n")) {
+    const match = line.match(/^\s*--([\w-]+)\s*:\s*(#[0-9a-fA-F]{3,8})\s*;/);
+    if (match) byName.set(match[1], normaliseHex(match[2]));
+  }
+  return byName;
+}
+
 const typographyRoles = readDesignTypography();
 const tokenPalette = readTokenPalette();
+const designColours = readDesignColours();
+const tokenColours = readTokenColoursByName();
+
+// Both directions. A doc that misstates a token is wrong; a token the doc omits is undocumented,
+// and the palette block reads as complete either way.
+const paletteMismatches = [];
+const undocumentedTokens = [];
+for (const [name, hex] of designColours) {
+  const shipped = tokenColours.get(name);
+  if (shipped === undefined) paletteMismatches.push(`${name}: DESIGN.md says ${hex}, tokens.css declares no --${name}`);
+  else if (shipped !== hex) paletteMismatches.push(`${name}: DESIGN.md says ${hex}, tokens.css ships ${shipped}`);
+}
+for (const name of tokenColours.keys()) {
+  if (!designColours.has(name)) undocumentedTokens.push(`--${name}: ${tokenColours.get(name)}`);
+}
+
+// Vacuity floor: if either reader stops matching, the comparison passes by comparing nothing — the
+// exact failure mode that let a wrong value live since the initial commit.
+if (designColours.size === 0 || tokenColours.size === 0) {
+  console.error(
+    `Design token validation FAILED: the palette parity check read ${designColours.size} colour(s) ` +
+      `from DESIGN.md and ${tokenColours.size} from tokens.css. One of the readers has stopped ` +
+      "matching, so it is asserting nothing."
+  );
+  process.exitCode = 1;
+}
 
 if (typographyRoles.size === 0) {
   console.error(
@@ -293,6 +355,30 @@ if (markupColours.length > 0) {
   for (const [literal, locations] of groupBy(markupColours, "literal")) {
     report.push(`    ${literal}  —  ${locations.join(", ")}`);
   }
+}
+
+// The palette parity check is BINDING, and deliberately not behind ENFORCE_DESIGN_TOKENS. That flag
+// exists because assertion 1 has an open owner question — none of DESIGN.md's six typography roles
+// ships in src/, and converging is a real pixel change. Parity has no such question: a doc that
+// misstates a shipped token is simply wrong, in one direction or the other, and fixing it costs zero
+// pixels. It starts green, so enforcing it now can only catch a regression.
+const paletteProblems = paletteMismatches.length + undocumentedTokens.length;
+if (paletteProblems > 0) {
+  console.error("Design token validation FAILED: DESIGN.md's palette disagrees with tokens.css.");
+  for (const line of paletteMismatches) console.error(`  ${line}`);
+  for (const line of undocumentedTokens) {
+    console.error(`  ${line} ships but is not in DESIGN.md's colors block`);
+  }
+  console.error(
+    "  DESIGN.md commits the palette; tokens.css ships it. Correct whichever is wrong — and if the " +
+      "token is the one that moves, that is a visual change and needs its baselines."
+  );
+  process.exitCode = 1;
+} else {
+  console.log(
+    `Palette parity OK: DESIGN.md's ${designColours.size} colour(s) match tokens.css's ` +
+      `${tokenColours.size}, in both directions.`
+  );
 }
 
 const violations = fontSizeFindings.length + colourFindings.length;
