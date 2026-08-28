@@ -131,7 +131,18 @@ export function AppDirectory({
                     {fact}
                   </li>
                 ))}
-                {app.tags.slice(0, 4).map((tag) => (
+                {/* 🔴 THIS USED TO BE `tags.slice(0, 4)`, and the comment right above it already said why
+                    that was wrong: "a badge must never be the reason a real capability tag gets sliced
+                    off." The cap it kept did the slicing anyway — on exactly one app. Censused across all
+                    39: `openrouter-models` is the only one with five tags, so the cap's entire effect was
+                    to drop its `Video`, silently, while `app.tags.join(" ")` above puts Video in the
+                    SEARCH haystack. A user could find this app by searching "video" and then not see why.
+                    Uncapped, the widest card in the catalogue is 5 pills — the same card — so removing the
+                    slice adds one pill to one card and changes nothing else. The bound did not disappear:
+                    it moved to a build-time assertion in tests/browser/interactions.spec.ts, so a future
+                    app with more tags than a card can show fails the gate instead of losing a capability
+                    without saying so. */}
+                {app.tags.map((tag) => (
                   <li key={tag}>{tag}</li>
                 ))}
               </ul>
