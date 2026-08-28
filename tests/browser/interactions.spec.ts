@@ -70,8 +70,31 @@ test("every declared local and keyless app renders its derived chip, once", asyn
     const characteristics = page.getByRole("list", { name: `${app.name} characteristics` });
     await expect(characteristics.getByRole("listitem")).toHaveText([
       ...appFacts(app),
-      ...app.tags.slice(0, 4)
+      ...app.tags
     ]);
+  }
+
+  // ── The pill budget, which used to be a silent runtime slice ──────────────────────────
+  //
+  // `AppDirectory` rendered `tags.slice(0, 4)`, so a card with five tags simply lost one. Censused
+  // across all 39 apps, that cap's entire effect was to drop `openrouter-models`' `Video` — while the
+  // search haystack indexes every tag, so the app was findable by a word its card refused to show.
+  //
+  // The slice is gone and the bound lives here instead: a card that would need more pills than the
+  // layout can carry now fails THIS, with the app named, instead of truncating without saying so. The
+  // numbers are measured, not chosen — 5 is the widest card in the catalogue today (5 tags + 0 facts),
+  // and 6 is the ceiling the two-fact case would reach at four tags.
+  const PILL_BUDGET = 6;
+  const widest = Math.max(...apps.map((app) => appFacts(app).length + app.tags.length));
+  expect(widest, "the widest card in the catalogue grew — re-measure before raising the budget").toBe(5);
+  for (const app of apps) {
+    const pills = appFacts(app).length + app.tags.length;
+    expect(
+      pills,
+      `${app.name} needs ${pills} pills; the card budget is ${PILL_BUDGET}. Reduce its tags, or raise ` +
+        `the budget deliberately after checking the card still reads at 390px — do NOT re-add a slice, ` +
+        `which drops a real capability silently.`
+    ).toBeLessThanOrEqual(PILL_BUDGET);
   }
 
   // The two Diarization cards are the sharpest case: they differ (only ONNX is keyless)
