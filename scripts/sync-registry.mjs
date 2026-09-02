@@ -5,7 +5,7 @@
 //
 // WHY A SYNC AND NOT A COMMITTED SNAPSHOT: the registry is not this repository's
 // content. It is owned by the PersonalClaw project (today at core's
-// scratch/registry/registry.json; its own schema $id already points at a future
+// scratch/registry/app-registry.json; its own schema $id already points at a future
 // standalone registry repo). This repository commits no copies of source content —
 // the rule stated in README.md and enforced by .gitignore for the docs corpus and
 // the release facts. A committed copy is a copy that drifts, and a stale copy of a
@@ -23,7 +23,7 @@
 //
 // THE REGISTRY IS NOT IN THE PINNED RELEASE YET, and that is a state, not an error.
 // Core's registry data tier landed on core main on 2026-08-18; the newest core release
-// is v0.1.3 (2026-07-30), which this site pins. So `scratch/registry/registry.json`
+// is v0.1.3 (2026-07-30), which this site pins. So `scratch/registry/app-registry.json`
 // 404s at the pinned commit. Reading core main instead would publish unreleased core
 // content as released state — the exact thing the projection rule forbids. So absence
 // is recorded as `availability: "absent-at-pin"` and the page says so plainly. The
@@ -48,7 +48,7 @@ const root = process.cwd();
 const generatedPath = path.join(root, ".generated", "registry.json");
 
 /** The registry's path inside the core repository at the pinned commit. */
-const REGISTRY_SOURCE_PATH = "scratch/registry/registry.json";
+const REGISTRY_SOURCE_PATH = "scratch/registry/app-registry.json";
 
 /** Characters of README kept per listing. See fetchReadme for why there is a cap. */
 const README_LIMIT = 96_000;
