@@ -5,7 +5,7 @@
     "repository": "PersonalClaw/PersonalClaw",
     "commit": "0000000000000000000000000000000000000000",
     "tag": "v9.9.9-fixture",
-    "path": "scratch/registry/registry.json"
+    "path": "scratch/registry/app-registry.json"
   },
   "availability": {
     "status": "present"
