@@ -155,9 +155,25 @@ h3 {
 .statement h2 {
   max-width: 14ch;
   margin-bottom: 0;
-  font-size: clamp(2.35rem, 5.6vw, 5rem);
-  font-weight: 390;
-  line-height: 1;
+}
+
+/* Type-scale utilities. One home for the display hero and the section heading, both
+   sourced from the DESIGN.md roles in tokens.css instead of a clamp re-derived per page.
+   Layout (margin, max-width, alignment) stays with each consumer; only size/weight/
+   line-height come from here. */
+.display {
+  font-size: var(--fs-display);
+  font-weight: var(--fw-display);
+  line-height: var(--lh-display);
+}
+
+.section-title,
+.section-head h2,
+.page-intro h1,
+.statement h2 {
+  font-size: var(--fs-heading);
+  font-weight: var(--fw-heading);
+  line-height: var(--lh-heading);
 }
 
 .section-head p {

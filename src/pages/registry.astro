@@ -48,7 +48,7 @@ const verdictLegend = [
     <div class="shell registry-intro">
       <div>
         <p class="kicker">Community registry</p>
-        <h1>See what an app asks for, first.</h1>
+        <h1 class="display">See what an app asks for, first.</h1>
       </div>
       <div class="intro-copy">
         <p>
@@ -205,9 +205,6 @@ const verdictLegend = [
   h1 {
     max-width: 14ch;
     margin: 0;
-    font-size: clamp(3.5rem, 8vw, 7.5rem);
-    font-weight: 330;
-    line-height: 0.94;
   }
 
   .intro-copy > p {
@@ -409,12 +406,6 @@ const verdictLegend = [
     .registry-intro,
     .registry-legend {
       grid-template-columns: 1fr;
-    }
-  }
-
-  @media (max-width: 560px) {
-    h1 {
-      font-size: 3.6rem;
     }
   }
 </style>

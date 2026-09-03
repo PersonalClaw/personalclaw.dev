@@ -28,7 +28,7 @@ import { GITHUB_URL } from "../data/site";
       <div class="hero-layout">
         <div>
           <p class="kicker">Security model</p>
-          <h1>The model proposes. The host decides.</h1>
+          <h1 class="display">The model proposes. The host decides.</h1>
         </div>
         <div class="hero-copy">
           <p>
@@ -142,7 +142,7 @@ import { GITHUB_URL } from "../data/site";
       <div class="path-heading">
         <div>
           <p class="kicker">A tool request</p>
-          <h2>Every effect crosses the gate.</h2>
+          <h2 class="section-title">Every effect crosses the gate.</h2>
         </div>
         <p>
           The decision path stays explicit whether the request came from native
@@ -184,7 +184,7 @@ import { GITHUB_URL } from "../data/site";
     <div class="shell app-security-grid">
       <div class="app-title">
         <p class="kicker">Supply chain</p>
-        <h2>An app is code, not a collectible.</h2>
+        <h2 class="section-title">An app is code, not a collectible.</h2>
         <p>
           PersonalClaw treats installation as a staged trust decision. The
           package stays separate until inspection and consent are complete.
@@ -215,7 +215,7 @@ import { GITHUB_URL } from "../data/site";
     <div class="narrow">
       <CircleAlert size={34} aria-hidden="true" />
       <p class="kicker">Clear limits</p>
-      <h2>Security claims should name their boundary.</h2>
+      <h2 class="section-title">Security claims should name their boundary.</h2>
       <p>
         PersonalClaw publishes a full threat model — five trust boundaries, an
         OWASP Agentic Top-10 mapping where every enforced claim cites the module
@@ -271,9 +271,6 @@ import { GITHUB_URL } from "../data/site";
   h1 {
     max-width: 11ch;
     margin: 0;
-    font-size: clamp(3.5rem, 8vw, 7.5rem);
-    font-weight: 330;
-    line-height: 0.94;
   }
 
   .hero-copy > p {
@@ -385,9 +382,6 @@ import { GITHUB_URL } from "../data/site";
   .honesty h2 {
     max-width: 12ch;
     margin: 0;
-    font-size: clamp(2.5rem, 5.7vw, 5rem);
-    font-weight: 390;
-    line-height: 1;
   }
 
   .path-heading > p {
@@ -543,10 +537,6 @@ import { GITHUB_URL } from "../data/site";
   }
 
   @media (max-width: 620px) {
-    h1 {
-      font-size: 3.5rem;
-    }
-
     .trust-boundary,
     .control-grid,
     .decision-path {

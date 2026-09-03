@@ -51,7 +51,7 @@ import { GITHUB_URL } from "../data/site";
     <div class="shell hero-overlay">
       <div>
         <p class="kicker">The product</p>
-        <h1>The whole system, under one roof.</h1>
+        <h1 class="display">The whole system, under one roof.</h1>
         <p>
           Move from conversation to autonomous work, durable context, and
           scheduled action without splitting your personal operating layer
@@ -68,7 +68,7 @@ import { GITHUB_URL } from "../data/site";
     <div class="shell promise-grid">
       <div class="promise-statement">
         <p class="kicker">Designed as a system</p>
-        <h2>Every mode of work shares the same context and controls.</h2>
+        <h2 class="section-title">Every mode of work shares the same context and controls.</h2>
       </div>
       <div class="promise-points">
         <p>
@@ -89,7 +89,7 @@ import { GITHUB_URL } from "../data/site";
       <div class="feature-copy">
         <span class="feature-icon"><MessagesSquare size={23} aria-hidden="true" /></span>
         <p class="kicker">Agentic chat</p>
-        <h2>Conversation that can become work.</h2>
+        <h2 class="section-title">Conversation that can become work.</h2>
         <p>
           Run tools with approval controls, organize sessions, branch from
           earlier turns, compare answer variants, and tune model or memory
@@ -119,7 +119,7 @@ import { GITHUB_URL } from "../data/site";
     <div class="shell autonomy-grid">
       <div class="autonomy-title">
         <p class="kicker">Autonomous goals</p>
-        <h2>The agent keeps going. You keep the final say.</h2>
+        <h2 class="section-title">The agent keeps going. You keep the final say.</h2>
       </div>
       <div class="autonomy-points">
         <article>
@@ -214,7 +214,7 @@ import { GITHUB_URL } from "../data/site";
       <div class="feature-copy">
         <span class="feature-icon"><Clock3 size={23} aria-hidden="true" /></span>
         <p class="kicker">Automation</p>
-        <h2>Let the system notice first.</h2>
+        <h2 class="section-title">Let the system notice first.</h2>
         <p>
           Schedule recurring work, react to webhooks, monitor connected
           channels, and dispatch background subagents without building a second
@@ -308,7 +308,7 @@ import { GITHUB_URL } from "../data/site";
       <div class="feature-copy">
         <span class="feature-icon"><Layers size={23} aria-hidden="true" /></span>
         <p class="kicker">What it produced</p>
-        <h2>Output you can find again.</h2>
+        <h2 class="section-title">Output you can find again.</h2>
         <p>
           Documents, spreadsheets, charts, and diagrams the agent made stay in a
           library with live previews &mdash; searchable, versioned, and grouped
@@ -328,7 +328,7 @@ import { GITHUB_URL } from "../data/site";
       <div class="agents-copy">
         <div>
           <p class="kicker">Bring the right agent</p>
-          <h2>Native, ACP, or app-defined.</h2>
+          <h2 class="section-title">Native, ACP, or app-defined.</h2>
         </div>
         <div>
           <p>
@@ -363,7 +363,7 @@ import { GITHUB_URL } from "../data/site";
       <div class="feature-copy">
         <span class="feature-icon"><ShieldCheck size={23} aria-hidden="true" /></span>
         <p class="kicker">Runs safely on its own</p>
-        <h2>Autonomy with a floor under it.</h2>
+        <h2 class="section-title">Autonomy with a floor under it.</h2>
         <p>
           Before you hand the system unattended work, it gives you the controls
           to trust it: a kill switch that suspends every automation at once, daily
@@ -405,7 +405,7 @@ import { GITHUB_URL } from "../data/site";
       <div class="feature-copy">
         <span class="feature-icon"><Stethoscope size={23} aria-hidden="true" /></span>
         <p class="kicker">Diagnoses itself</p>
-        <h2>See what's healthy, and fix what isn't.</h2>
+        <h2 class="section-title">See what's healthy, and fix what isn't.</h2>
         <p>
           The Doctor runs read-only health probes across every subsystem —
           memory, channels, local models, app backends, the SPA, model-provider
@@ -426,7 +426,7 @@ import { GITHUB_URL } from "../data/site";
   <section class="section product-cta">
     <div class="narrow">
       <p class="kicker">Open source · self-hosted</p>
-      <h2>Run the system on your machine.</h2>
+      <h2 class="section-title">Run the system on your machine.</h2>
       <p>
         Python 3.12, an aiohttp gateway, React dashboard, SQLite state, and no
         product telemetry.
@@ -494,9 +494,6 @@ import { GITHUB_URL } from "../data/site";
   h1 {
     max-width: 11ch;
     margin-bottom: 1.5rem;
-    font-size: clamp(3.3rem, 7.5vw, 7.2rem);
-    font-weight: 330;
-    line-height: 0.94;
   }
 
   .hero-overlay p:not(.kicker) {
@@ -518,9 +515,6 @@ import { GITHUB_URL } from "../data/site";
   .agents-copy h2,
   .product-cta h2 {
     margin-bottom: 1.4rem;
-    font-size: clamp(2.5rem, 5.7vw, 5rem);
-    font-weight: 390;
-    line-height: 1;
   }
 
   .promise-statement h2 {
@@ -822,10 +816,6 @@ import { GITHUB_URL } from "../data/site";
       width: 900px;
       top: 44%;
       right: -22rem;
-    }
-
-    h1 {
-      font-size: 3.5rem;
     }
 
     .hero-overlay {

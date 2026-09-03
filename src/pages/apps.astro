@@ -15,7 +15,7 @@ import { APPS_URL } from "../data/site";
     <div class="shell apps-intro">
       <div>
         <p class="kicker">First-party ecosystem</p>
-        <h1>Bring the providers you choose.</h1>
+        <h1 class="display">Bring the providers you choose.</h1>
       </div>
       <div class="intro-copy">
         <p>
@@ -99,7 +99,7 @@ import { APPS_URL } from "../data/site";
     <div class="shell build-layout">
       <div>
         <p class="kicker">For builders</p>
-        <h2>The ecosystem is an open surface.</h2>
+        <h2 class="section-title">The ecosystem is an open surface.</h2>
       </div>
       <div>
         <p>
@@ -143,9 +143,6 @@ import { APPS_URL } from "../data/site";
   h1 {
     max-width: 12ch;
     margin: 0;
-    font-size: clamp(3.5rem, 8vw, 7.5rem);
-    font-weight: 330;
-    line-height: 0.94;
   }
 
   .intro-copy > p {
@@ -261,9 +258,6 @@ import { APPS_URL } from "../data/site";
   .build-layout h2 {
     max-width: 11ch;
     margin: 0;
-    font-size: clamp(2.5rem, 5.7vw, 5rem);
-    font-weight: 390;
-    line-height: 1;
   }
 
   .build-layout > div:last-child > p {
@@ -326,10 +320,6 @@ import { APPS_URL } from "../data/site";
   }
 
   @media (max-width: 560px) {
-    h1 {
-      font-size: 3.6rem;
-    }
-
     .app-ledger,
     .install-path {
       grid-template-columns: 1fr;
