@@ -27,7 +27,7 @@ const readableDate = new Intl.DateTimeFormat("en-GB", {
       </a>
 
       <p class="kicker">Writing</p>
-      <h1>{post.data.title}</h1>
+      <h1 class="section-title">{post.data.title}</h1>
       <p class="post-meta">
         <time datetime={post.data.publishDate.toISOString().slice(0, 10)}>{readableDate}</time>
         <span class="verified" translate="no">
@@ -65,9 +65,6 @@ const readableDate = new Intl.DateTimeFormat("en-GB", {
   h1 {
     max-width: 26ch;
     margin: 0.4rem 0 1rem;
-    font-size: clamp(2.5rem, 5.7vw, 5rem);
-    font-weight: 390;
-    line-height: 1;
   }
 
   .post-meta {

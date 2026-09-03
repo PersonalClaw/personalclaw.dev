@@ -40,7 +40,7 @@ const changelogUrl = `${releaseFacts.core.source.repositoryUrl}/blob/${releaseFa
     <div class="shell release-hero-grid">
       <div class="release-heading">
         <p class="kicker">Release provenance</p>
-        <h1>Know exactly what this site describes.</h1>
+        <h1 class="display">Know exactly what this site describes.</h1>
         <p class="release-lede">
           Product facts are built from pinned PersonalClaw and PersonalClawApps
           revisions. The source state is visible here instead of being hidden
@@ -206,7 +206,7 @@ const changelogUrl = `${releaseFacts.core.source.repositoryUrl}/blob/${releaseFa
     <div class="shell change-grid">
       <div class="change-intro">
         <p class="kicker">Changelog truth</p>
-        <h2>Package baseline and work after it.</h2>
+        <h2 class="section-title">Package baseline and work after it.</h2>
         <p>
           The release page reads the package version from <code>pyproject.toml</code>
           and locates the matching entry in the same pinned changelog.
@@ -262,7 +262,7 @@ const changelogUrl = `${releaseFacts.core.source.repositoryUrl}/blob/${releaseFa
     <div class="shell">
       <div class="method-heading">
         <p class="kicker">Publication contract</p>
-        <h2>A claim has to survive the build.</h2>
+        <h2 class="section-title">A claim has to survive the build.</h2>
       </div>
       <ol class="method-steps">
         <li>
@@ -304,9 +304,6 @@ const changelogUrl = `${releaseFacts.core.source.repositoryUrl}/blob/${releaseFa
   h1 {
     max-width: 12ch;
     margin-bottom: 1.6rem;
-    font-size: clamp(3.5rem, 8vw, 7.25rem);
-    font-weight: 330;
-    line-height: 0.94;
   }
 
   .release-lede {
@@ -593,9 +590,6 @@ const changelogUrl = `${releaseFacts.core.source.repositoryUrl}/blob/${releaseFa
   .method-heading h2 {
     max-width: 12ch;
     margin-bottom: 1.5rem;
-    font-size: clamp(2.5rem, 5.5vw, 5rem);
-    font-weight: 390;
-    line-height: 1;
   }
 
   .change-intro > p:not(.kicker) {
@@ -789,10 +783,6 @@ const changelogUrl = `${releaseFacts.core.source.repositoryUrl}/blob/${releaseFa
   }
 
   @media (max-width: 560px) {
-    h1 {
-      font-size: 3.55rem;
-    }
-
     .snapshot-summary dl div,
     .source-ledger dl,
     .entry-heading {

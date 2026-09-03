@@ -54,7 +54,7 @@ const featuredApps = [
           width="64"
           height="64"
         />
-        <h1>PersonalClaw</h1>
+        <h1 class="display">PersonalClaw</h1>
         <p class="hero-line">One agentic OS.<br />Your machine. Your rules.</p>
         <p class="hero-support">
           Chat, autonomous goals, memory, knowledge, and automation behind one
@@ -126,7 +126,7 @@ const featuredApps = [
     <div class="shell story-layout">
       <div class="story-copy">
         <p class="kicker">Goal loops</p>
-        <h2>Delegate an outcome. Keep the controls.</h2>
+        <h2 class="section-title">Delegate an outcome. Keep the controls.</h2>
         <p>
           PersonalClaw classifies a goal, builds a plan, and works cycle by
           cycle under a deterministic supervisor. It can run without constant
@@ -207,7 +207,7 @@ const featuredApps = [
       <div class="ecosystem-intro">
         <div>
           <p class="kicker">First-party ecosystem</p>
-          <h2>{releaseFacts.apps.total} apps. No permanent provider.</h2>
+          <h2 class="section-title">{releaseFacts.apps.total} apps. No permanent provider.</h2>
         </div>
         <a class="button button-secondary" href="/apps">
           Browse all apps <ArrowRight size={18} aria-hidden="true" />
@@ -257,7 +257,7 @@ const featuredApps = [
     <div class="shell security-layout">
       <div class="security-copy">
         <p class="kicker">Security is architecture</p>
-        <h2>Autonomy with a boundary.</h2>
+        <h2 class="section-title">Autonomy with a boundary.</h2>
         <p>
           The model can propose. Deterministic controls decide what reaches your
           shell, network, and installed app surface.
@@ -296,7 +296,7 @@ const featuredApps = [
   <section class="section quickstart">
     <div class="narrow">
       <p class="kicker">Run it yourself</p>
-      <h2>One command to a local gateway.</h2>
+      <h2 class="section-title">One command to a local gateway.</h2>
       <p class="quickstart-lede">
         The installer brings its own Python 3.12 via <code>uv</code> — nothing to
         set up first. The dashboard opens at <code>localhost:10000</code> after
@@ -378,9 +378,6 @@ const featuredApps = [
 
   h1 {
     margin-bottom: 0.45rem;
-    font-size: clamp(3.6rem, 8vw, 7rem);
-    font-weight: 320;
-    line-height: 0.92;
   }
 
   .hero-line {
@@ -503,9 +500,6 @@ const featuredApps = [
   .security-copy h2,
   .quickstart h2 {
     margin-bottom: 1.5rem;
-    font-size: clamp(2.5rem, 5.5vw, 5rem);
-    font-weight: 390;
-    line-height: 1;
   }
 
   .story-copy > p:not(.kicker),
@@ -960,10 +954,6 @@ const featuredApps = [
   }
 
   @media (max-width: 560px) {
-    h1 {
-      font-size: 3.7rem;
-    }
-
     .hero-actions {
       gap: 0.45rem;
       flex-wrap: nowrap;
