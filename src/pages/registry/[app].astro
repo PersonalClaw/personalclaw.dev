@@ -29,7 +29,7 @@ const { source } = registryListing();
       </a>
 
       <p class="kicker">{app.types.join(" · ")}</p>
-      <h1 translate="no">{app.name}</h1>
+      <h1 class="section-title" translate="no">{app.name}</h1>
 
       <p class:list={["registry-verdict", `verdict-${app.verdict.tone}`]}>
         <span>{app.verdict.label}</span>
@@ -145,9 +145,6 @@ const { source } = registryListing();
   h1 {
     max-width: 22ch;
     margin: 0.4rem 0 1.5rem;
-    font-size: clamp(2.5rem, 5.7vw, 5rem);
-    font-weight: 390;
-    line-height: 1;
     overflow-wrap: anywhere;
   }
 
