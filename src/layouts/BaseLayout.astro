@@ -5,33 +5,129 @@ import dmSansLatin from "@fontsource-variable/dm-sans/files/dm-sans-latin-wght-n
 import "../styles/global.css";
 import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
+import { GITHUB_URL } from "../data/site";
+import { releaseFacts } from "../data/release";
 
 interface Props {
   title?: string;
   description?: string;
+  /** Set by blog post pages: emits an Article node in the JSON-LD graph. */
+  article?: {
+    title: string;
+    description: string;
+    publishDate: Date;
+  };
 }
 
 const {
   title = "PersonalClaw · Your personal agentic OS",
-  description = "A self-hosted agentic operating system for chat, autonomous goals, memory, knowledge, automation, and replaceable apps."
+  description = "A self-hosted agentic operating system for chat, autonomous goals, memory, knowledge, automation, and replaceable apps.",
+  article
 } = Astro.props;
 const canonical = new URL(Astro.url.pathname, Astro.site);
 const socialImage = new URL("/brand/social-preview.png", Astro.site);
 const pathname = Astro.url.pathname.replace(/\/$/, "") || "/";
 const isPreview = import.meta.env.VERCEL_ENV === "preview";
-const structuredData = {
-  "@context": "https://schema.org",
+
+// ── Structured data (JSON-LD @graph) ─────────────────────────────────────────
+// One graph, assembled per route. Every claim here traces to the same sources the
+// visible pages read (README → "Content And Release Truth"): the version comes from
+// the generated release facts, the repo URL from src/data/site.ts, and the license
+// from the claim the home page already makes ("MIT licensed"). No operatingSystem
+// node on purpose — the site publishes no platform claims, so neither does the graph.
+const siteUrl = Astro.site?.toString() ?? "https://personalclaw.dev/";
+const websiteNode = {
+  "@type": "WebSite",
+  "@id": new URL("/#website", Astro.site).toString(),
+  name: "PersonalClaw",
+  url: siteUrl,
+  publisher: { "@id": new URL("/#org", Astro.site).toString() }
+};
+const orgNode = {
+  "@type": "Organization",
+  "@id": new URL("/#org", Astro.site).toString(),
+  name: "PersonalClaw",
+  url: siteUrl,
+  logo: new URL("/brand/personalclaw-mark.svg", Astro.site).toString(),
+  sameAs: [GITHUB_URL]
+};
+const pageNode = {
   "@type": "WebPage",
+  "@id": canonical.toString(),
   name: title,
   description,
   url: canonical.toString(),
   inLanguage: "en",
-  isPartOf: {
-    "@type": "WebSite",
-    name: "PersonalClaw",
-    url: Astro.site?.toString()
-  }
+  isPartOf: { "@id": websiteNode["@id"] }
 };
+const graph: Record<string, unknown>[] = [websiteNode, orgNode, pageNode];
+
+if (pathname === "/") {
+  graph.push({
+    "@type": "SoftwareApplication",
+    "@id": new URL("/#app", Astro.site).toString(),
+    name: "PersonalClaw",
+    description,
+    url: siteUrl,
+    applicationCategory: "DeveloperApplication",
+    softwareVersion: releaseFacts.core.version,
+    license: "https://opensource.org/license/mit",
+    isAccessibleForFree: true,
+    offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+    downloadUrl: GITHUB_URL,
+    sameAs: [GITHUB_URL],
+    publisher: { "@id": orgNode["@id"] }
+  });
+}
+
+// Breadcrumbs mirror the visible route structure: Home → section (→ post title).
+// Names match the header nav / page kickers so the crumb trail never invents a label.
+const sectionNames: Record<string, string> = {
+  product: "Product",
+  compare: "Compare",
+  apps: "Apps",
+  security: "Security",
+  release: "Release",
+  registry: "Registry",
+  blog: "Writing"
+};
+if (pathname !== "/") {
+  const segments = pathname.split("/").filter(Boolean);
+  const crumbs = [{ name: "Home", item: siteUrl }];
+  const section = sectionNames[segments[0]];
+  if (section) {
+    crumbs.push({ name: section, item: new URL(`/${segments[0]}`, Astro.site).toString() });
+  }
+  if (article && segments.length > 1) {
+    crumbs.push({ name: article.title, item: canonical.toString() });
+  }
+  graph.push({
+    "@type": "BreadcrumbList",
+    itemListElement: crumbs.map((crumb, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      name: crumb.name,
+      item: crumb.item
+    }))
+  });
+}
+
+if (article) {
+  graph.push({
+    "@type": "Article",
+    "@id": canonical.toString() + "#article",
+    headline: article.title,
+    description: article.description,
+    datePublished: article.publishDate.toISOString().slice(0, 10),
+    inLanguage: "en",
+    mainEntityOfPage: { "@id": canonical.toString() },
+    image: socialImage.toString(),
+    author: { "@id": orgNode["@id"] },
+    publisher: { "@id": orgNode["@id"] }
+  });
+}
+
+const structuredData = { "@context": "https://schema.org", "@graph": graph };
 ---
 
 <!doctype html>

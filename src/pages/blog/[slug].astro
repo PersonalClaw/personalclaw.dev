@@ -19,7 +19,15 @@ const readableDate = new Intl.DateTimeFormat("en-GB", {
 }).format(post.data.publishDate);
 ---
 
-<BaseLayout title={`${post.data.title} · PersonalClaw`} description={post.data.description}>
+<BaseLayout
+  title={`${post.data.title} · PersonalClaw`}
+  description={post.data.description}
+  article={{
+    title: post.data.title,
+    description: post.data.description,
+    publishDate: post.data.publishDate
+  }}
+>
   <article class="post">
     <div class="narrow">
       <a class="text-link back-link" href="/blog">
