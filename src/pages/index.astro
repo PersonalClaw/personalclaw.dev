@@ -881,10 +881,21 @@ const featuredApps = [
       margin-inline: auto;
     }
 
-    .hero-mark,
-    .hero-support,
-    .hero-facts {
+    .hero-mark {
       display: none;
+    }
+
+    /* The value prop and trust chips are conversion content — condensed here,
+       never dropped: phones are the most common first visit. */
+    .hero-support {
+      margin-bottom: 1.1rem;
+      font-size: 0.94rem;
+    }
+
+    .hero-facts {
+      margin-top: 0.9rem;
+      gap: 0.75rem;
+      font-size: 0.75rem;
     }
 
     h1 {
