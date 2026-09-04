@@ -455,6 +455,69 @@ for (const header of [
   if (!securityHeaders.has(header)) fail(`vercel.json is missing ${header}`);
 }
 
+// ── CTA canon + nav parity (PRODUCT.md: the primary CTA is "Get PersonalClaw") ──
+//
+// Three labels once pointed the SAME primary-button treatment at the SAME
+// destination ("Get PersonalClaw" / "Read the repository" / "View the source").
+// The rule from PRODUCT.md is checked against the RENDERED output: every
+// `button-primary` anchor whose destination is the core GitHub repository must
+// carry the canonical label. Anchors to other destinations (a tour, a guide,
+// an in-page jump) keep their own verbs — the canon binds the conversion CTA,
+// not every loud button.
+const CTA_CANON = "Get PersonalClaw";
+const CORE_REPO_URL = "https://github.com/PersonalClaw/PersonalClaw";
+for (const route of routes) {
+  const filePath = localOutputPath(route.path);
+  if (!(await exists(filePath))) {
+    fail(`${route.path}: no built output at ${path.relative(root, filePath)} for the CTA sweep`);
+    continue;
+  }
+  const $ = load(await readFile(filePath, "utf8"));
+  $("a.button-primary").each((_, el) => {
+    const href = ($(el).attr("href") ?? "").replace(/\/+$/, "");
+    if (href !== CORE_REPO_URL) return;
+    const label = $(el).text().replace(/\s+/g, " ").trim();
+    if (!label.startsWith(CTA_CANON)) {
+      fail(
+        `${route.path}: primary CTA to the core repository must carry the canonical ` +
+          `label "${CTA_CANON}" (found "${label}")`
+      );
+    }
+  });
+}
+
+// The header names the site's primary internal routes; the footer is the
+// long-tail nav and must not silently drop any of them — a route reachable
+// from the sticky header but absent from the footer reads as deprecated.
+{
+  const home$ = load(await readFile(localOutputPath("/"), "utf8"));
+  const headerInternal = new Set(
+    home$("header nav a[href^='/']")
+      .map((_, el) => home$(el).attr("href"))
+      .get()
+  );
+  const footerHrefs = new Set(
+    home$("footer a[href^='/']")
+      .map((_, el) => home$(el).attr("href"))
+      .get()
+  );
+  for (const href of headerInternal) {
+    if (href === "/") continue;
+    if (!footerHrefs.has(href)) {
+      fail(`footer navigation is missing header route ${href}`);
+    }
+  }
+  // The header's conversion CTA carries the canon too (it is the one CTA
+  // rendered on every page, so drift here multiplies across the whole site).
+  const headerCta = home$("header a.button-primary").first();
+  const headerLabel = headerCta.text().replace(/\s+/g, " ").trim();
+  if (!headerCta.length) {
+    fail("the sticky header must render the primary conversion CTA");
+  } else if (!headerLabel.startsWith(CTA_CANON)) {
+    fail(`the header CTA must carry "${CTA_CANON}" (found "${headerLabel}")`);
+  }
+}
+
 if (failures.length > 0) {
   console.error(failures.map((failure) => `- ${failure}`).join("\n"));
   process.exitCode = 1;
