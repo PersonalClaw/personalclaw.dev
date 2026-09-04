@@ -11,6 +11,8 @@
 //      screenshot committed without a manifest entry, or a manifest entry whose
 //      file was deleted, both fail here).
 //   4. every placement `file` exists in the repo (the site location is real).
+//   5. manifest targetRelease === package.json version (captures were taken for
+//      the release the site publishes; a new release without a re-capture reds).
 //
 // A "new-needs-placement" shot is allowed to have a not-yet-committed asset (the
 // image is captured later in the release flow) and empty placements — it is a
@@ -88,6 +90,22 @@ for (const file of onDisk) {
   if (!referenced.has(rel)) {
     problems.push(`orphan asset (no manifest entry): ${rel} — add a shot or remove the file`);
   }
+}
+
+// 5. capture ↔ release parity — the shots must have been (re-)captured for the
+// version this site publishes. validate-release-parity already pins package.json
+// to the published core tag; pinning targetRelease to package.json closes the
+// loop: the day a new release ships without a re-capture pass, this reds instead
+// of the site silently showing the previous release's chrome. (The manifest's own
+// rule: every SHIPPING shot is re-captured each release — this makes that rule
+// mechanical rather than remembered.)
+const siteVersion = readJson(join(repositoryRoot, "package.json")).version;
+if (manifest.targetRelease !== siteVersion) {
+  problems.push(
+    `capture/release drift: manifest targetRelease is "${manifest.targetRelease}" but the site ` +
+      `publishes ${siteVersion} — re-capture the shipping shots against a ${siteVersion} gateway ` +
+      `(scripts/capture-app-shots.mjs + the manifest runbook), then bump targetRelease`,
+  );
 }
 
 if (problems.length > 0) {
