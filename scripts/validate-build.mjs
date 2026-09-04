@@ -251,10 +251,23 @@ for (const route of qualityRoutes) {
   } else {
     try {
       const jsonLd = JSON.parse(jsonLdScripts.text());
-      if (jsonLd["@type"] !== "WebPage") fail(`${route.path}: JSON-LD type must be WebPage`);
-      if (jsonLd.url !== canonical) fail(`${route.path}: JSON-LD URL must match canonical`);
-      if (jsonLd.isPartOf?.url !== `${siteOrigin}/`) {
+      const graph = Array.isArray(jsonLd["@graph"]) ? jsonLd["@graph"] : [];
+      if (jsonLd["@context"] !== "https://schema.org" || graph.length === 0) {
+        fail(`${route.path}: JSON-LD must be a schema.org @graph`);
+      }
+      const ofType = (type) => graph.filter((node) => node["@type"] === type);
+      const [webPage] = ofType("WebPage");
+      if (!webPage) fail(`${route.path}: JSON-LD graph must carry a WebPage node`);
+      else if (webPage.url !== canonical) fail(`${route.path}: JSON-LD URL must match canonical`);
+      const [webSite] = ofType("WebSite");
+      if (webSite?.url !== `${siteOrigin}/`) {
         fail(`${route.path}: JSON-LD website URL must be ${siteOrigin}/`);
+      }
+      // The product identity node is scoped to the home page: exactly one there,
+      // none anywhere else — a second SoftwareApplication would compete with it.
+      const appNodes = ofType("SoftwareApplication").length;
+      if (route.path === "/" ? appNodes !== 1 : appNodes !== 0) {
+        fail(`${route.path}: SoftwareApplication node must appear on / only (found ${appNodes})`);
       }
     } catch (error) {
       fail(`${route.path}: invalid JSON-LD (${error.message})`);
