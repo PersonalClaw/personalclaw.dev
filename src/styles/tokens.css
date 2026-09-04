@@ -1,6 +1,10 @@
 :root {
   --night: #0b0c0d;
   --night-soft: #101112;
+  /* Recessed "well" ground — terminal/command blocks that read as sunk below the
+     night ground. Darker than --night on purpose; minted here after the same value
+     had been hand-copied into three files. */
+  --well: #090a0b;
   --surface: #171819;
   --surface-high: #202224;
   --line: #2b2d2f;

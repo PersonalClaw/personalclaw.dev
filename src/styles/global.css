@@ -546,7 +546,7 @@ h3 {
   align-items: center;
   border: 1px solid var(--line-strong);
   border-radius: 8px;
-  background: #090a0b;
+  background: var(--well);
 }
 
 .command-block code {
