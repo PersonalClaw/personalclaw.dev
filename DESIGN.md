@@ -4,6 +4,7 @@ description: An immersive product theater for the self-hosted agentic operating 
 colors:
   night: "#0b0c0d"
   night-soft: "#101112"
+  well: "#090a0b"
   surface: "#171819"
   surface-high: "#202224"
   line: "#2b2d2f"
