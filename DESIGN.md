@@ -5,6 +5,8 @@ colors:
   night: "#0b0c0d"
   night-soft: "#101112"
   well: "#090a0b"
+  window: "#121416"
+  window-frame: "#111416"
   surface: "#171819"
   surface-high: "#202224"
   line: "#2b2d2f"
