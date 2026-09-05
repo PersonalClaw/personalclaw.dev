@@ -23,6 +23,9 @@
 // `npm run test:static` run, and flipping ENFORCE_DESIGN_TOKENS to true is the single
 // edit that makes them binding. Do that once the scale question has an owner answer.
 //
+// One thing IS binding meanwhile: the two debt counts are ratcheted (see the
+// *_DEBT_CEILING constants below). Existing debt reports; new debt fails.
+//
 // SCOPE NOTES
 // -----------
 // * src/content/** is excluded: those pages are GENERATED from the pinned core repo by
@@ -47,6 +50,15 @@ import { fileURLToPath } from "node:url";
 // The one edit that turns this guard from measuring into enforcing. Read the
 // "WHY THIS RUNS IN REPORTING MODE" note above before flipping it.
 const ENFORCE_DESIGN_TOKENS = false;
+
+// Debt RATCHETS — binding, unlike the flag above. Migrating the EXISTING debt is an owner
+// call about how the site looks; ADDING to it is not, so each count below is capped at the
+// value measured when the ratchet landed (2026-09-05). The existing findings stay reported,
+// a change that grows a count fails. When a migration drops a count below its ceiling,
+// lower the ceiling to the new count in the same change — that is the ratchet tightening.
+// When both reach zero, flip ENFORCE_DESIGN_TOKENS and delete the ratchets.
+const FONT_SIZE_DEBT_CEILING = 109;
+const COLOUR_LITERAL_DEBT_CEILING = 8;
 
 const repositoryRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const sourceRoot = join(repositoryRoot, "src");
@@ -383,15 +395,51 @@ if (paletteProblems > 0) {
 
 const violations = fontSizeFindings.length + colourFindings.length;
 
+// The ratchet check. Like palette parity, this starts green — the ceilings ARE the current
+// counts — so a failure here can only mean a change added debt on top of the pile.
+const ratchetBreaches = [];
+if (fontSizeFindings.length > FONT_SIZE_DEBT_CEILING) {
+  ratchetBreaches.push(
+    `font-size debt is ${fontSizeFindings.length}, above the ceiling of ${FONT_SIZE_DEBT_CEILING}. ` +
+      "Size new text with the type scale — var(--fs-…) from src/styles/tokens.css, the roles " +
+      "DESIGN.md commits — instead of a raw font-size. When you migrate a site's sizes, lower " +
+      "FONT_SIZE_DEBT_CEILING to the new count so the migration cannot regress."
+  );
+}
+if (colourFindings.length > COLOUR_LITERAL_DEBT_CEILING) {
+  ratchetBreaches.push(
+    `colour-literal debt is ${colourFindings.length}, above the ceiling of ${COLOUR_LITERAL_DEBT_CEILING}. ` +
+      "Spend the palette — var(--…) from src/styles/tokens.css — instead of a hex literal; if no " +
+      "token fits, mint one in tokens.css AND DESIGN.md's colors block. When you migrate a " +
+      "literal, lower COLOUR_LITERAL_DEBT_CEILING to the new count so the migration cannot regress."
+  );
+}
+
 if (violations > 0 && ENFORCE_DESIGN_TOKENS) {
   console.error("Design token validation FAILED:");
   for (const line of report) console.error(line ? `  ${line}` : "");
   process.exitCode = 1;
+} else if (ratchetBreaches.length > 0) {
+  console.error("Design token validation FAILED: new debt exceeds a ratchet ceiling.");
+  for (const line of ratchetBreaches) console.error(`  ${line}`);
+  console.error("");
+  for (const line of report) console.error(line ? `  ${line}` : "");
+  process.exitCode = 1;
 } else if (violations > 0) {
   console.log(
-    `Design token validation: ${violations} finding(s) — REPORTING ONLY, not failing the ` +
-      "build. Flip ENFORCE_DESIGN_TOKENS in scripts/validate-design-tokens.mjs to enforce."
+    `Design token validation: ${violations} finding(s) — within the debt ceilings ` +
+      `(font-size ${fontSizeFindings.length}/${FONT_SIZE_DEBT_CEILING}, colour literals ` +
+      `${colourFindings.length}/${COLOUR_LITERAL_DEBT_CEILING}), so not failing the build. ` +
+      "Flip ENFORCE_DESIGN_TOKENS in scripts/validate-design-tokens.mjs to enforce the scale itself."
   );
+  if (
+    fontSizeFindings.length < FONT_SIZE_DEBT_CEILING ||
+    colourFindings.length < COLOUR_LITERAL_DEBT_CEILING
+  ) {
+    console.log(
+      "  A count sits below its ceiling — lower the ceiling to match, so the migration cannot regress."
+    );
+  }
   for (const line of report) console.log(line ? `  ${line}` : "");
 } else {
   console.log(
