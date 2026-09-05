@@ -398,7 +398,7 @@ h3 {
   overflow: hidden;
   border: 1px solid var(--line-strong);
   border-radius: 8px;
-  background: #121416;
+  background: var(--window);
   box-shadow: 0 40px 100px rgba(0, 0, 0, 0.48);
 }
 
@@ -491,7 +491,7 @@ h3 {
   position: relative;
   overflow: hidden;
   aspect-ratio: 16 / 9.6;
-  background: #111416;
+  background: var(--window-frame);
 }
 
 .system-image {

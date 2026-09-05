@@ -27,8 +27,11 @@ export const productViews = [
     id: "loops",
     label: "Loops",
     title: "Delegate goals, not prompts",
+    // The app deliberately has no Loops nav tile — loops launch from within Projects (and
+    // surface as chat widgets). Say so here, or a reader lands in the app hunting for a
+    // marketed view that is not in the rail (AUD-X2).
     description:
-      "Autonomous loops plan, act, and report against a goal while remaining observable and pausable."
+      "Launched from within your projects, autonomous loops plan, act, and report against a goal while remaining observable and pausable."
   },
   {
     id: "knowledge",

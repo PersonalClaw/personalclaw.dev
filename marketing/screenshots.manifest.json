@@ -58,12 +58,12 @@
       "minWidth": 1280,
       "minHeight": 800,
       "scenario": "An autonomous goal loop mid-execution: a clear goal statement, 2-3 completed steps, one live step in progress, findings/output accumulating, and the pause/observe controls visible. Shows delegation-of-a-goal, not a prompt.",
-      "value": "Autonomous loops plan, act, and report against a goal while remaining observable and pausable.",
+      "value": "Launched from within your projects, autonomous loops plan, act, and report against a goal while remaining observable and pausable.",
       "placements": [
         {
           "file": "src/data/site.ts",
           "kind": "hero-system-window",
-          "caption": "Delegate goals, not prompts — Autonomous loops plan, act, and report against a goal while remaining observable and pausable.",
+          "caption": "Delegate goals, not prompts — Launched from within your projects, autonomous loops plan, act, and report against a goal while remaining observable and pausable.",
           "alt": "Loops view in the PersonalClaw dashboard"
         },
         {

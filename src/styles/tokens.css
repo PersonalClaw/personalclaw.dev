@@ -5,6 +5,12 @@
      night ground. Darker than --night on purpose; minted here after the same value
      had been hand-copied into three files. */
   --well: #090a0b;
+  /* System-window chrome — the fake-OS window that frames product screenshots.
+     Minted from literals that lived in global.css (AUD-X5). The shell and its
+     screenshot frame differ by one channel step (12 vs 11) — likely drift, kept
+     verbatim so this change is zero-pixel; unify in a deliberate design pass. */
+  --window: #121416;
+  --window-frame: #111416;
   --surface: #171819;
   --surface-high: #202224;
   --line: #2b2d2f;
