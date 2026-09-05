@@ -518,6 +518,30 @@ for (const route of routes) {
   }
 }
 
+// ── The hand-authored catalog must equal the pinned release's manifests (AUD-X1b) ──
+// src/data/apps.ts is authored by hand; .generated/release-facts.json is derived from the
+// pinned apps-repo commit. The two matched by authorship when this check landed (39 == 39),
+// which is exactly the kind of parity that drifts silently: an app added to the next release
+// pin, or renamed, would leave the catalog lying about the release it claims to project.
+// Set equality, both directions, so the failure names the drifted slug.
+{
+  const appsTs = await readFile(path.join(root, "src", "data", "apps.ts"), "utf8");
+  const catalogSlugs = new Set(
+    [...appsTs.matchAll(/slug:\s*"([^"]+)"/g)].map((m) => m[1])
+  );
+  const pinnedNames = new Set(releaseFacts.apps.manifests.map((m) => m.name));
+  for (const name of pinnedNames) {
+    if (!catalogSlugs.has(name)) {
+      fail(`apps.ts is missing "${name}", which ships at the pinned apps commit`);
+    }
+  }
+  for (const slug of catalogSlugs) {
+    if (!pinnedNames.has(slug)) {
+      fail(`apps.ts lists "${slug}", which does not exist at the pinned apps commit`);
+    }
+  }
+}
+
 if (failures.length > 0) {
   console.error(failures.map((failure) => `- ${failure}`).join("\n"));
   process.exitCode = 1;
