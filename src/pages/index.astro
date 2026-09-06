@@ -6,6 +6,7 @@ import {
   Box,
   Check,
   CirclePause,
+  CirclePlay,
   Database,
   Eye,
   KeyRound,
@@ -74,6 +75,34 @@ const featuredApps = [
             <ArrowRight size={18} aria-hidden="true" />
           </a>
         </div>
+        <!-- The tour is REFERENCED from the hero; the player lives at /product#tour.
+             Two reasons, neither of them a preference.
+
+             Space: this hero is a fixed-height clipped composition (620-780px desktop;
+             100dvh - 112px capped at 732px on phones) in which SystemWindow is
+             absolutely positioned at min(1180px, 76vw) and bleeds past the right
+             viewport edge, with this copy column overlaid on its left. There is no free
+             column beside the carousel, and a 16:9 player or thumbnail dropped into this
+             column would be cropped on a short viewport — the mark is already hidden and
+             the type already condensed at 820px to fit the copy that is here now.
+
+             Weight: / has the least largest-contentful-paint headroom of any route,
+             ~2.18s against a 2.5s budget before this change. A video poster is fetched
+             eagerly — <video> has no loading="lazy", and a section at the fold sits
+             inside Chromium's lazy threshold regardless — so a poster here spends ~220ms
+             of a ~320ms margin on an image nobody has asked to see yet. /product carries
+             the player instead: ~690ms of headroom, and it is the route whose entire job
+             is the guided tour of the five things the capture shows.
+
+             So the hero spends one text row and no bytes, and SystemWindow stays the
+             signature element DESIGN.md names it. -->
+        <p class="hero-tour">
+          <a class="hero-tour-link" href="/product#tour">
+            <CirclePlay size={17} aria-hidden="true" />
+            Watch the 84-second tour
+          </a>
+          <span class="hero-tour-note">Silent. No sign-up.</span>
+        </p>
         <div class="hero-facts" aria-label="Project facts">
           <span><Check size={15} aria-hidden="true" /> MIT licensed</span>
           <span><Check size={15} aria-hidden="true" /> Zero telemetry</span>
@@ -401,6 +430,37 @@ const featuredApps = [
     gap: 0.7rem;
     flex-wrap: wrap;
   }
+
+  .hero-tour {
+    display: flex;
+    margin-top: 1.1rem;
+    gap: 0.75rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .hero-tour-link {
+    display: inline-flex;
+    min-height: 44px;
+    gap: 0.45rem;
+    align-items: center;
+    color: var(--coral-bright);
+    font-size: var(--fs-label);
+    font-weight: 650;
+  }
+
+  .hero-tour-link:hover {
+    color: var(--ink);
+  }
+
+  /* Separated from the link by colour, not by another off-scale size. */
+  .hero-tour-note {
+    color: var(--ink-muted);
+    font-size: var(--fs-label);
+  }
+
+  /* The 16/9 box is reserved by the wrapper, so the poster, the first decoded frame
+     and a failed load all occupy exactly the same space. */
 
   .hero-facts {
     display: flex;
@@ -962,9 +1022,18 @@ const featuredApps = [
       align-items: start;
       flex-direction: column;
     }
+
+    /* Same treatment the value prop and trust chips get above: condensed to survive
+       the clipped hero box, never dropped. */
+    .hero-tour {
+      margin-top: 0.75rem;
+      gap: 0.5rem;
+    }
+
   }
 
   @media (max-width: 560px) {
+
     .hero-actions {
       gap: 0.45rem;
       flex-wrap: nowrap;

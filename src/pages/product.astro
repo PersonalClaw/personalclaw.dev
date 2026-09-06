@@ -30,6 +30,7 @@ import memoryCapture from "../assets/memory.png";
 import notificationRulesCapture from "../assets/notification-rules.png";
 import triggersCapture from "../assets/triggers.png";
 import BaseLayout from "../layouts/BaseLayout.astro";
+import { releaseFacts } from "../data/release";
 import { GITHUB_URL } from "../data/site";
 ---
 
@@ -81,6 +82,60 @@ import { GITHUB_URL } from "../data/site";
           <li><Check size={18} aria-hidden="true" /> One inspectable home directory</li>
         </ul>
       </div>
+    </div>
+  </section>
+
+  <section class="section tour section-rule" id="tour">
+    <div class="shell">
+      <div class="tour-head">
+        <p class="kicker">The 84-second tour</p>
+        <h2 class="section-title">One unedited run through the parts that matter.</h2>
+      </div>
+      <p class="tour-support">
+        A single recording of {releaseFacts.core.versionLabel} on one machine — the
+        version in the capture's status bar is the release this site publishes. Chat
+        against a local model, the approval it stops on, a goal loop, the local corpus,
+        and the file the agent actually wrote. No narration, no cuts, nothing sped up.
+      </p>
+      <!-- No autoplay: nothing else on this site plays media on load, and an 84-second
+           capture that starts itself is a worse first impression than a good still. The
+           wrapper reserves 16/9 so the poster, the first decoded frame and a failed load
+           all occupy the same box — this section contributes no layout shift.
+
+           preload="none", not the handoff's "metadata". Chromium serves "metadata" by
+           range-requesting the header and ABORTING the rest, and
+           tests/browser/support.ts asserts zero failed network requests on every route.
+           What "metadata" buys is a scrubber that knows its duration before first play,
+           and the heading and copy both state the length in words. So this section costs
+           the poster and nothing else until a visitor opts in. -->
+      <div class="tour-frame">
+        <video
+          class="tour-video"
+          width="1280"
+          height="720"
+          controls
+          muted
+          playsinline
+          preload="none"
+          poster="/media/personalclaw-tour-poster.webp"
+        >
+          <source src="/media/personalclaw-tour.mp4" type="video/mp4" />
+          <track
+            default
+            kind="captions"
+            srclang="en"
+            label="English (described beats)"
+            src="/media/personalclaw-tour.vtt"
+          />
+        </video>
+      </div>
+      <ol class="tour-beats" aria-label="What the tour shows, in order">
+        <li><span class="index">01</span> Chat against a model on this machine</li>
+        <li><span class="index">02</span> The approval it stops on before writing</li>
+        <li><span class="index">03</span> A goal loop with its findings</li>
+        <li><span class="index">04</span> Knowledge searched locally</li>
+        <li><span class="index">05</span> The artifact it wrote, on disk</li>
+      </ol>
     </div>
   </section>
 
@@ -522,9 +577,66 @@ import { GITHUB_URL } from "../data/site";
     margin-bottom: 0;
   }
 
-  .promise-points > p {
+  .promise-points > p,
+  .tour-support {
     color: var(--ink-soft);
     font-size: 1.08rem;
+  }
+
+  .tour-head h2 {
+    max-width: 26ch;
+    margin-bottom: 0;
+  }
+
+  .tour-support {
+    max-width: 62ch;
+    margin-top: 1.75rem;
+  }
+
+  /* The 16/9 box is reserved here, not by the video, so the poster and the decoded
+     frames land in the same place and this section shifts nothing. */
+  .tour-frame {
+    max-width: 1080px;
+    margin-top: 2rem;
+    overflow: hidden;
+    border: 1px solid var(--line-strong);
+    border-radius: 8px;
+    background: var(--surface);
+    box-shadow: 0 35px 90px rgba(0, 0, 0, 0.42);
+    aspect-ratio: 16 / 9;
+  }
+
+  .tour-video {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .tour-beats {
+    display: grid;
+    max-width: 1080px;
+    margin-top: 1.5rem;
+    padding: 0;
+    gap: 0;
+    grid-template-columns: repeat(5, 1fr);
+    list-style: none;
+    border-top: 1px solid var(--line);
+  }
+
+  .tour-beats li {
+    display: flex;
+    min-height: 48px;
+    padding: 0.9rem 1rem 0.9rem 0;
+    gap: 0.6rem;
+    align-items: baseline;
+    color: var(--ink-soft);
+    font-size: var(--fs-label);
+  }
+
+  .tour-beats .index {
+    color: var(--coral);
+    font-family: var(--font-mono);
+    font-size: var(--fs-mono);
   }
 
   .promise-points ul,
@@ -772,6 +884,14 @@ import { GITHUB_URL } from "../data/site";
   }
 
   @media (max-width: 920px) {
+    .tour-beats {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .tour-beats li {
+      padding-right: 0.75rem;
+    }
+
     .product-hero :global(.hero-image) {
       width: 1120px;
       max-width: none;
@@ -801,6 +921,20 @@ import { GITHUB_URL } from "../data/site";
   }
 
   @media (max-width: 720px) {
+    .tour-support {
+      margin-top: 1.25rem;
+    }
+
+    .tour-beats {
+      grid-template-columns: 1fr;
+    }
+
+    .tour-beats li {
+      min-height: 44px;
+      padding-block: 0.65rem;
+      border-bottom: 1px solid var(--line);
+    }
+
     .product-hero {
       min-height: 560px;
       height: calc(100dvh - 112px);
