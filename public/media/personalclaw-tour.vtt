@@ -1,0 +1,34 @@
+WEBVTT
+
+NOTE
+The tour is a silent screen capture, so these cues are descriptive: they name the
+beat on screen rather than transcribe speech. Beat boundaries come from the
+click-path this capture was recorded against (PersonalClaw docs/demo/CLICKPATH.md).
+
+1
+00:00:00.000 --> 00:00:09.000
+Home. One local gateway serving a real dashboard: uptime, version, CPU, memory and disk, with seeded work already in it.
+
+2
+00:00:09.000 --> 00:00:23.000
+Chat. A prompt sent in the owner's own words, answered by a model running on this machine, which now wants to make a tool call.
+
+3
+00:00:23.000 --> 00:00:41.000
+Approval. The run stops before writing anything and states the tool, its arguments, a Caution risk chip, a Writes files blast radius, and how far the answer is remembered. Allow is clicked.
+
+4
+00:00:41.000 --> 00:00:55.000
+Loops. A goal loop as a durable object: the goal, an explicit done-when, a completed state, and six numbered findings with the latest quoted verbatim.
+
+5
+00:00:55.000 --> 00:01:07.000
+Knowledge. Five local items with types and tags narrow to the matching note as the word "digest" is typed.
+
+6
+00:01:07.000 --> 00:01:19.000
+Artifacts. The document the agent was allowed to write is on disk, rendered, versioned at v1, with one recorded event.
+
+7
+00:01:19.000 --> 00:01:23.720
+Back to Home. One gateway, one machine, owned by the person using it.

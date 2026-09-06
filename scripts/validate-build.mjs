@@ -297,6 +297,12 @@ for (const route of qualityRoutes) {
   const resources = [
     ...$("script[src]").toArray().map((element) => $(element).attr("src")),
     ...$("img[src]").toArray().map((element) => $(element).attr("src")),
+    // Media in public/ is not fingerprinted by Astro, so nothing else catches a
+    // renamed or missing capture: the poster degrades to an empty box and the source
+    // 404s only once a visitor presses play.
+    ...$("video[src], video[poster], audio[src], source[src], track[src]")
+      .toArray()
+      .flatMap((element) => [$(element).attr("src"), $(element).attr("poster")]),
     ...$('link[rel="icon"], link[rel="stylesheet"], link[rel="preload"], link[rel="modulepreload"]')
       .toArray()
       .map((element) => $(element).attr("href"))
