@@ -50,6 +50,12 @@ const generatedPath = path.join(root, ".generated", "registry.json");
 /** The registry's path inside the core repository at the pinned commit. */
 const REGISTRY_SOURCE_PATH = "scratch/registry/app-registry.json";
 
+/**
+ * A file that exists whenever the registry DIRECTORY exists at the pinned commit, used
+ * only to tell two different failures apart. See `classifyMissingRegistry`.
+ */
+const REGISTRY_DIRECTORY_SENTINEL = "scratch/registry/app-registry.schema.json";
+
 /** Characters of README kept per listing. See fetchReadme for why there is a cap. */
 const README_LIMIT = 96_000;
 
@@ -135,6 +141,54 @@ function isMissingPath(error) {
   return candidate?.status === 404 || candidate?.code === "ENOENT";
 }
 
+/**
+ * Decide WHICH failure a missing registry file is, and fail closed on the wrong one.
+ *
+ * 🔴 A 404 answers "this path is not in the pinned tree" — and that is true of two
+ * completely different situations which must not share a verdict:
+ *
+ *   1. the pinned release genuinely predates the registry → `absent-at-pin` is correct,
+ *      and the page says "not part of this release yet";
+ *   2. **this script is looking in the wrong place** → `absent-at-pin` is a LIE.
+ *
+ * Case 2 was live: this file read `scratch/registry/registry.json`, the name core renamed
+ * to `app-registry.json` (ET-4a, 2026-08-27). The rename would have been swallowed
+ * silently and permanently — once the core pin moves to a release carrying the registry,
+ * the site would keep reporting "not part of this release yet" with the stamped verdicts
+ * sitting right there in the source tree. Nothing downstream would notice, because
+ * `validate-registry-render.mjs` builds against `tests/fixtures/registry-*.json` and never
+ * asserts on the SYNCED artifact.
+ *
+ * So the two facts get separated by probing a file that exists whenever the registry
+ * directory does. Directory present + registry file missing ⇒ our path is wrong ⇒ throw,
+ * because a build-configuration bug must not render as a product state.
+ *
+ * @param {{ readText: (p: string) => Promise<string> }} coreSource
+ * @param {string} pinDescription
+ * @returns {Promise<{ status: string, reason: string }>}
+ */
+async function classifyMissingRegistry(coreSource, pinDescription) {
+  try {
+    await coreSource.readText(REGISTRY_DIRECTORY_SENTINEL);
+  } catch (sentinelError) {
+    if (isMissingPath(sentinelError)) {
+      // Neither the registry nor its directory is there: a genuine absence.
+      return {
+        status: "absent-at-pin",
+        reason: `${REGISTRY_SOURCE_PATH} does not exist in ${pinDescription}.`
+      };
+    }
+    throw sentinelError;
+  }
+  throw new Error(
+    `${REGISTRY_SOURCE_PATH} is missing from ${pinDescription}, but ` +
+      `${REGISTRY_DIRECTORY_SENTINEL} IS present — so the registry directory exists and this ` +
+      `script is reading the wrong filename. Refusing to record "absent-at-pin", which would ` +
+      `render as "not part of this release yet" and hide the registry indefinitely. Update ` +
+      `REGISTRY_SOURCE_PATH in scripts/sync-registry.mjs to match core.`
+  );
+}
+
 async function main() {
   const manifest = await loadManifest();
   const coreSource = await resolveSource("core", manifest.sources.core);
@@ -147,12 +201,12 @@ async function main() {
     registry = JSON.parse(await coreSource.readText(REGISTRY_SOURCE_PATH));
   } catch (error) {
     if (!isMissingPath(error)) throw error;
-    availability = {
-      status: "absent-at-pin",
-      reason:
-        `${REGISTRY_SOURCE_PATH} does not exist in ` +
-        `${manifest.sources.core.repository}@${manifest.sources.core.tag ?? manifest.sources.core.commit}.`
-    };
+    // A 404 is not self-explaining — it may mean this script is looking in the wrong place,
+    // which must fail closed rather than render as a product state.
+    availability = await classifyMissingRegistry(
+      coreSource,
+      `${manifest.sources.core.repository}@${manifest.sources.core.tag ?? manifest.sources.core.commit}`
+    );
   }
 
   const apps =
