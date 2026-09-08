@@ -28,9 +28,12 @@ export default defineConfig({
     react(),
     starlight({
       title: "PersonalClaw docs",
-      // The docs describe a released version exactly; say which one, since the
-      // corpus is generated from that tag rather than written alongside it.
-      tagline: "Generated from the tagged source this site was built from.",
+      // No `tagline` here: Starlight 0.42.0 removed the option outright (withastro/starlight#3572,
+      // "Removes the `tagline` configuration option, which was never used" — no replacement). It
+      // had rendered nowhere on 0.41 either, so dropping it changes no pixel; the sentence it
+      // carried ("generated from the tagged source this site was built from") was never shown to
+      // a reader. If that fact is worth surfacing, it belongs in page content, not in a key the
+      // framework ignored.
       social: [
         {
           icon: "github",
