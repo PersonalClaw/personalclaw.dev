@@ -108,6 +108,26 @@ export const crossLinkedDocsRoutes = docsRoutes.filter((route) =>
  */
 export const RESEARCH_CROSS_LINK_FLOOR = 100;
 
+/**
+ * The minimum rendered body text, in characters, a published docs page must carry.
+ *
+ * Why this exists: every other assertion on a docs page reads its FRONTMATTER (title,
+ * description, lang, robots), and the sync writes frontmatter from a path and an H1 —
+ * neither of which needs the document body to have survived. So a page whose body came
+ * out empty satisfies the whole docs contract and serves a confident HTTP 200 over
+ * nothing. Registering a route is not publishing a document.
+ *
+ * That is the live failure mode, not a hypothetical: adding a filename to
+ * `scripts/known-docs.mjs` is what registers the route, and it is one edit away from a
+ * page that 200s blank.
+ *
+ * Measured, not guessed: across the 33 docs routes at the pinned commit the smallest
+ * rendered body is /docs/security/limitations at 3,948 characters. The floor is set an
+ * order of magnitude below that so core can rewrite, shorten or merge a document
+ * without reddening this repository, while a blank or stub render still fails loudly.
+ */
+export const DOCS_BODY_TEXT_FLOOR = 400;
+
 // The REGISTRY tier, contracted differently from the marketing routes above for the
 // same kind of reason the docs tier is: this repository does not own the content.
 //
