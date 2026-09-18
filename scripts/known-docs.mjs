@@ -5,10 +5,21 @@
 // appearing on the website without anyone deciding it should. Publishing is a
 // decision; this file is where it is recorded.
 //
-// A LOCAL checkout lists the directory directly and ignores this file, which is how
-// drift is detected: `scripts/validate-docs-sync.mjs` compares the two and fails when
-// they disagree, so a new core doc surfaces as a red check rather than a silent
-// omission.
+// A LOCAL checkout lists the directory directly and ignores this file (only
+// `scripts/sync-docs.mjs:266` reads it, and only in remote mode), which is how drift is
+// detected. There is NO `scripts/validate-docs-sync.mjs` — that name was a comment that
+// never had a file behind it. The rail is `scripts/validate-build.mjs`, which compares
+// the generated pages against `docsRoutes` in `tests/support/site-contract.mjs` in BOTH
+// directions: a page this list omits reds as "generated route … is missing from the route
+// contract", and a contracted route with no page reds as "route contract references
+// missing generated page".
+//
+// So adding a filename here is two edits, not one — this list AND `docsRoutes` — and it
+// only works if the file exists AT THE PINNED COMMIT below. `readText` fetches
+// raw.githubusercontent.com at that exact SHA, so a name core added after the pin fails
+// the sync outright ("Pinned source request failed (404)"). It cannot ship a blank page;
+// publishing a newer doc means moving the pin to a newer release, which is a decision
+// about what the site projects, not a sync.
 //
 // Verified against PersonalClaw v0.1.3 (commit bc185c0) on 2026-07-31.
 export const KNOWN_DOCS = {
