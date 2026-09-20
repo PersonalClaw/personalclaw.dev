@@ -8,6 +8,7 @@ import {
   blogRoutes,
   compareRoutes,
   crossLinkedDocsRoutes,
+  DOCS_BODY_TEXT_FLOOR,
   docsRoutes,
   qualityRoutes,
   registryAppRoutePaths,
@@ -139,8 +140,13 @@ for (const filePath of contractedHtml) {
 }
 
 // Docs pages are generated from core, so their WORDS are not contracted — but their
-// existence and their having real metadata are. A doc that renders with an empty
-// title is a sync bug, and it would otherwise ship silently.
+// existence, their having real metadata, and their having a BODY are. A doc that
+// renders with an empty title is a sync bug, and it would otherwise ship silently.
+//
+// The body check is the one that cannot be inferred from the others: frontmatter is
+// written from a filename and an H1, so a page whose document body came out empty
+// passes every metadata assertion and still serves an HTTP 200 over nothing. A route
+// that exists is not a document that published — see DOCS_BODY_TEXT_FLOOR.
 for (const routePath of docsRoutes) {
   const filePath = path.join(distDir, routeOutputPath(routePath));
   if (!(await exists(filePath))) {
@@ -150,6 +156,25 @@ for (const routePath of docsRoutes) {
   const $ = load(await readFile(filePath, "utf8"));
   const title = $("title").text().trim();
   const description = metaContent($, 'meta[name="description"]');
+  // `.sl-markdown-content` is the rendered document only, deliberately: measuring
+  // `main` would count Starlight's own sidebar, pagination and footer chrome, so a
+  // page with no document at all would clear any floor on the strength of furniture.
+  const body = $(".sl-markdown-content");
+  if (body.length !== 1) {
+    fail(
+      `${routePath}: expected exactly one rendered document container, found ` +
+        `${body.length} — the page is registered as a route but published no document`
+    );
+  } else {
+    const bodyText = body.text().replace(/\s+/g, " ").trim();
+    if (bodyText.length < DOCS_BODY_TEXT_FLOOR) {
+      fail(
+        `${routePath}: docs page rendered only ${bodyText.length} characters of body ` +
+          `text (floor ${DOCS_BODY_TEXT_FLOOR}) — it serves a 200 over a blank or stub ` +
+          `page, which is what an allowlist entry without a working sync produces`
+      );
+    }
+  }
   if (!title) fail(`${routePath}: docs page has no title`);
   if (title && !title.includes("PersonalClaw")) {
     fail(`${routePath}: docs title "${title}" is missing the site suffix`);
