@@ -248,6 +248,76 @@
       "source_label": "desktop/main.js",
       "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.1.3/desktop/main.js",
       "retrieved": "2026-08-27"
+    },
+    {
+      "id": "retrieval",
+      "group": "capabilities",
+      "claim": "It can retrieve relevant passages from your own documents to ground its answers (RAG).",
+      "verdict": "partial",
+      "statement": "A hybrid retriever fuses SQLite FTS5 keyword search with a knowledge-graph layer and reciprocal rank fusion, and it is a live path at this release, not a module without callers. But vector search is not on by default: it only joins that fusion once an embedding provider is bound. With none bound, embeddings are off and retrieval runs keyword plus graph only, not semantic.",
+      "source_label": "knowledge/retrieval.py",
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.1.3/src/personalclaw/knowledge/retrieval.py#L1",
+      "retrieved": "2026-09-18"
+    },
+    {
+      "id": "document_upload",
+      "group": "capabilities",
+      "claim": "You can upload documents, including large files, and attach them to a conversation.",
+      "verdict": "yes",
+      "statement": "A resumable, tus-like chunked-upload protocol (init/part/status/complete) streams to disk in bounded chunks rather than buffering a file in memory, is size-policed per file type before a byte lands, and the assembled file routes to a chat attachment, knowledge ingest, or the workspace - the same protocol behind all three.",
+      "source_label": "uploads/store.py",
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.1.3/src/personalclaw/uploads/store.py#L1",
+      "retrieved": "2026-09-18"
+    },
+    {
+      "id": "backup_export",
+      "group": "capabilities",
+      "claim": "You can back up your data and restore it.",
+      "verdict": "yes",
+      "statement": "`personalclaw snapshot` and `restore` ship as CLI commands, alongside `backup export`/`backup validate`, which produce a deterministic export with a SHA-256 manifest that re-derives byte-for-byte on validation and excludes secrets. The dashboard's durability page lists the retention plan and can trigger a snapshot on demand, so this is not CLI-only.",
+      "source_label": "docs/reference/cli.md",
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.1.3/docs/reference/cli.md#L179",
+      "retrieved": "2026-09-18"
+    },
+    {
+      "id": "sso_auth",
+      "group": "capabilities",
+      "claim": "It supports SSO - SAML or OIDC login.",
+      "verdict": "no",
+      "statement": "Not shipped, by design: PersonalClaw is single-owner and self-hosted, so there is no directory to federate with. `api_key` and `oauth2` are declared auth modes, but the runtime's own environment-based selector resolves only to `none` or the default `local_token` - no configuration path in this release can select either one.",
+      "source_label": "auth/modes.py",
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.1.3/src/personalclaw/auth/modes.py#L50",
+      "retrieved": "2026-09-18"
+    },
+    {
+      "id": "webhooks",
+      "group": "capabilities",
+      "claim": "It can send and receive webhooks.",
+      "verdict": "yes",
+      "statement": "Both directions ship at this release. Inbound: an external system can POST to the Bearer-token-authenticated agent webhook endpoint to run an agent turn. Outbound: webhook is a first-class action a hook can execute as its side effect, alongside bash and run-script.",
+      "source_label": "dashboard/handlers/hooks.py",
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.1.3/src/personalclaw/dashboard/handlers/hooks.py#L199",
+      "retrieved": "2026-09-18"
+    },
+    {
+      "id": "layered_memory",
+      "group": "capabilities",
+      "claim": "It has memory that persists and learns across sessions, not just within one.",
+      "verdict": "yes",
+      "statement": "Semantic memory (key-value facts with confidence gating and conflict resolution), episodic memory (conversation fragments with embeddings and time-decay retrieval, falling back to FTS5 without them) and procedural memory (after-turn mining of tool-outcome priors) all ship and are live at this release.",
+      "source_label": "vector_memory.py",
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.1.3/src/personalclaw/vector_memory.py#L1",
+      "retrieved": "2026-09-18"
+    },
+    {
+      "id": "web_search",
+      "group": "capabilities",
+      "claim": "It can search the web.",
+      "verdict": "partial",
+      "statement": "The web_search/web_fetch tools and a provider registry ship, resolved through the same active-binding path the model providers use. But nothing is bound out of the box: no search provider ships bundled at this release, so it is a seam you fill by installing a search-provider app, not a batteries-included web search feature.",
+      "source_label": "search_providers/registry.py",
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.1.3/src/personalclaw/search_providers/registry.py#L1",
+      "retrieved": "2026-09-18"
     }
   ]
 }
