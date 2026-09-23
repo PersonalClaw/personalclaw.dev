@@ -10,7 +10,7 @@
     },
     "apps": {
       "repository": "PersonalClaw/PersonalClawApps",
-      "commit": "79d93b40d61e889290b39959bc47c64873a5c055",
+      "commit": "9df8b68842d64721f5bb6750bd568765656a9a9f",
       "tag": "v0.1.3"
     }
   }

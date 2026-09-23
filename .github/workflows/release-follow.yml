@@ -26,6 +26,8 @@ jobs:
     name: Check the website against the newest core release
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    env:
+      TITLE: "Website is behind the published core release"
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
@@ -62,7 +64,6 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           REPORT: ${{ steps.parity.outputs.report }}
-          TITLE: "Website is behind the published core release"
         run: |
           body=$(printf 'The scheduled release-parity check failed — the website is not publishing the current core release.\n\n```\n%s\n```\n\nTo resolve: re-pin `sources/personalclaw.sources.json` to the new tag + commit, bump `package.json` to the matching version, refresh release-sensitive content, and run `npm run test:prepush`. See `docs/release-runbook.md`.\n\n_Updated by the release-follow workflow._\n' "$REPORT")
           existing=$(gh issue list --state open --search "$TITLE in:title" --json number --jq '.[0].number // empty')
@@ -70,6 +71,18 @@ jobs:
             gh issue comment "$existing" --body "$body"
           else
             gh issue create --title "$TITLE" --body "$body"
+          fi
+
+      - name: Close the tracking issue when parity is restored
+        if: steps.parity.outputs.status == '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPORT: ${{ steps.parity.outputs.report }}
+        run: |
+          existing=$(gh issue list --state open --search "$TITLE in:title" --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            body=$(printf 'The scheduled release-parity check is green again — the website is publishing the current core release.\n\n```\n%s\n```\n\n_Closed by the release-follow workflow._\n' "$REPORT")
+            gh issue close "$existing" --comment "$body"
           fi
 
       - name: Fail the run when the website is stale
