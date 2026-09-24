@@ -6,10 +6,19 @@ const PASS = "PASS";
 const FAIL = "FAIL";
 const SKIP = "SKIP";
 
-const gateReportContract = {
-  name: "aggregate-report-contract",
+// The unit tier: `node --test` over the checks that need neither a build nor a network
+// source. It runs FIRST and unconditionally, because everything downstream depends on it —
+// the aggregate report's own contract, and the docs publication floor that decides which
+// documents are allowed to become routes at all. A floor observed only at the end of a
+// full build is a floor that gets weakened rather than fixed.
+const unitTests = {
+  name: "unit-tests",
   command: process.execPath,
-  args: ["--test", "tests/run-ci-gates.test.mjs"],
+  args: [
+    "--test",
+    "tests/run-ci-gates.test.mjs",
+    "tests/docs-publication.test.mjs",
+  ],
 };
 
 const independentGates = [
@@ -213,7 +222,7 @@ export function runCiGates({
   const rows = [];
   const run = (gate) => runGate(gate, rows, execute, write);
 
-  run(gateReportContract);
+  run(unitTests);
   for (const gate of independentGates) {
     run(gate);
   }
