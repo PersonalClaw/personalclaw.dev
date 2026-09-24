@@ -142,6 +142,15 @@ async function resolveLocalSource(key, source) {
       }
       return manifests.sort();
     },
+    async listMarkdown(directory) {
+      const entries = await readdir(path.join(candidate, directory), {
+        withFileTypes: true
+      });
+      return entries
+        .filter((entry) => entry.isFile() && entry.name.endsWith(".md"))
+        .map((entry) => entry.name)
+        .sort();
+    },
     readText(relativePath) {
       return readFile(path.join(candidate, relativePath), "utf8");
     }
@@ -220,33 +229,58 @@ async function resolveRemoteSource(key, source) {
   const directory = cacheDirectory(source);
   const metadata = await verifyRemoteCommit(source, directory);
 
+  // Every blob path at the pinned commit, fetched ONCE and cached on disk beside the
+  // commit metadata. Two callers need to enumerate the pinned tree — app manifests and
+  // documentation directories — and a second fetch for the second caller would double
+  // the cost of the one request in this module that is rate-limit sensitive
+  // (api.github.com is unauthenticated at 60/hr unless GITHUB_TOKEN is set, and a full
+  // `test:ci` runs the sync several times). Filtering one cached listing twice is also
+  // the only way the two enumerations can be guaranteed to describe the same tree.
+  const listBlobPaths = async () => {
+    const indexPath = path.join(directory, ".tree.json");
+    if (await fileExists(indexPath)) return readJson(indexPath);
+
+    const tree = await fetchJson(
+      `https://api.github.com/repos/${source.repository}/git/trees/${metadata.tree}?recursive=1`
+    );
+    if (tree.sha !== metadata.tree || tree.truncated) {
+      throw new Error(
+        `Could not read the complete pinned tree for ${source.repository}@${source.commit}`
+      );
+    }
+    const paths = tree.tree
+      .filter((entry) => entry.type === "blob")
+      .map((entry) => entry.path)
+      .sort();
+    await writeAtomically(indexPath, `${JSON.stringify(paths, null, 2)}\n`);
+    return paths;
+  };
+
   return {
     key,
     mode: "remote",
     root: directory,
     source,
     async listAppManifests() {
-      const indexPath = path.join(directory, ".app-manifests.json");
-      if (await fileExists(indexPath)) return readJson(indexPath);
-
-      const tree = await fetchJson(
-        `https://api.github.com/repos/${source.repository}/git/trees/${metadata.tree}?recursive=1`
+      return (await listBlobPaths()).filter((blobPath) =>
+        /^[^/]+\/app\.json$/.test(blobPath)
       );
-      if (tree.sha !== metadata.tree || tree.truncated) {
-        throw new Error(
-          `Could not read the complete pinned tree for ${source.repository}@${source.commit}`
-        );
-      }
-      const manifests = tree.tree
+    },
+    // A DIRECTORY LISTING against the pinned commit. This is what makes the remote and
+    // local resolvers answer the same question the same way: before it existed, a remote
+    // sync had to be handed an explicit filename list, so the same commit published a
+    // different page count depending on whether the machine running the build happened
+    // to have a matching local checkout. See scripts/docs-publication.mjs.
+    async listMarkdown(directory) {
+      const prefix = `${directory.replace(/\/$/, "")}/`;
+      return (await listBlobPaths())
         .filter(
-          (entry) =>
-            entry.type === "blob" &&
-            /^[^/]+\/app\.json$/.test(entry.path)
+          (blobPath) =>
+            blobPath.startsWith(prefix) &&
+            blobPath.endsWith(".md") &&
+            !blobPath.slice(prefix.length).includes("/")
         )
-        .map((entry) => entry.path)
-        .sort();
-      await writeAtomically(indexPath, `${JSON.stringify(manifests, null, 2)}\n`);
-      return manifests;
+        .map((blobPath) => blobPath.slice(prefix.length));
     },
     async readText(relativePath) {
       const cachedPath = path.join(directory, relativePath);

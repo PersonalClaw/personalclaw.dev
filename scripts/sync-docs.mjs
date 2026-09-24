@@ -13,12 +13,14 @@
 // the pin, else the verified pinned remote), so the docs corpus and the release facts
 // can never come from different commits.
 
-import { mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { assertPublishable, isWithheld } from "./docs-publication.mjs";
 import {
   loadManifest,
   resolveSource,
-  validateReleaseTags
+  validateReleaseTags,
+  writeAtomically
 } from "./sync-sources.mjs";
 
 const root = process.cwd();
@@ -30,16 +32,35 @@ const root = process.cwd();
 const contentRoot = path.join(root, "src", "content", "docs", "docs");
 const publicRoot = path.join(root, "public");
 
-// The doc trees the website publishes, in nav order. `label` heads the sidebar
-// group; `blurb` explains the group in llms.txt, where an LLM has no sidebar to read.
+// The doc trees the website publishes, in nav order. `label` heads the sidebar group;
+// `blurb` explains the group in llms.txt, where an LLM has no sidebar to read; `preface`
+// points at the committed, website-authored section index the sync writes as the tree's
+// `index.md`, and `indexHeading` names the generated list beneath that prose.
 //
-// A tree may set `sourceDir` when its location in core differs from its location on
-// the site (the research corpus lives two levels down in core), `exclude` to withhold
-// a file the directory contains but the site does not publish, and `preface` to point
-// at a committed, website-authored section index that the sync writes as the tree's
-// `index.md`. Those three fields are the whole of the research extension: the corpus
-// still flows through the same source resolution, the same link rewriter, and the same
-// llms.txt generation as every other tree.
+// EVERY tree carries a preface, and that is the docs site's information architecture
+// rather than a decoration. Before it did, the only way into a document was Starlight's
+// sidebar: there was no /docs, no /docs/guides, no page anywhere that said what a
+// section was for or which document to read first — so the marketing header's "Docs"
+// link had to point at one arbitrary guide (`/docs/guides/getting-started`) because
+// there was nothing to land on. A reader who arrived at a deep page had no way to tell
+// whether they were in the user documentation or the platform documentation. The
+// research tree got a preface first because its corpus needed disclaiming; the other
+// four need one for the ordinary reason that a section should introduce itself.
+//
+// The split the prefaces draw, and the reason the trees are ordered this way:
+//
+//   guides       ── running PersonalClaw. Task walkthroughs, in reading order.
+//   reference    ── the exact surfaces. The CLI, the config keys, the HTTP API.
+//   architecture ── extending PersonalClaw. How the parts fit; the app and provider
+//                   contracts an app author is writing against.
+//   security     ── the threat model, and what it does not protect against.
+//   research     ── background on how the product was designed. Not instructions.
+//
+// A tree may also set `sourceDir` when its location in core differs from its location
+// on the site (the research corpus lives two levels down in core) and `descriptionsFrom`
+// to read curated per-page descriptions out of an index file the tree contains.
+// Withholding a file a published tree contains is recorded in scripts/docs-publication.mjs,
+// not here — one place, with the reason next to it.
 //
 // Deliberately NOT synced: docs/roadmap/ (intent, not released behavior — the
 // projection rule), docs/maintainers/ (internal process), docs/design/ +
@@ -47,43 +68,78 @@ const publicRoot = path.join(root, "public");
 const TREES = [
   {
     dir: "guides",
+    // Measured at the pinned commit: 6 in-site cross-links (install walkthroughs that point at reference pages and at each other).
+    // See the assertion in main() and the note on the research tree.
+    crossLinked: true,
     label: "Guides",
+    preface: path.join("src", "prose", "guides-preface.md"),
+    indexHeading: "The guides",
     blurb: "Task-oriented walkthroughs: install, first run, containers, remote access."
   },
   {
     dir: "reference",
+    // Measured at the pinned commit: 9 in-site cross-links (the CLI and config pages cross-reference each other and the API overview).
+    // See the assertion in main() and the note on the research tree.
+    crossLinked: true,
     label: "Reference",
+    preface: path.join("src", "prose", "reference-preface.md"),
+    indexHeading: "The reference pages",
     blurb: "Exact surfaces: CLI commands, configuration keys, the HTTP API, file formats."
   },
   {
     dir: "architecture",
+    // Measured at the pinned commit: 49 in-site cross-links (the densest cross-referencing outside research — every subsystem page names its neighbours).
+    // See the assertion in main() and the note on the research tree.
+    crossLinked: true,
     label: "Architecture",
+    preface: path.join("src", "prose", "architecture-preface.md"),
+    indexHeading: "The subsystems",
     blurb: "How the parts fit: the gateway, providers, memory and knowledge, loops, apps."
   },
   {
     dir: "security",
+    // Measured at the pinned commit: 7 in-site cross-links (the threat model and limitations reference each other and the architecture pages).
+    // See the assertion in main() and the note on the research tree.
+    crossLinked: true,
     label: "Security",
+    preface: path.join("src", "prose", "security-preface.md"),
+    indexHeading: "The documents",
     blurb: "The threat model and an honest account of what PersonalClaw does not protect against."
   },
   {
     dir: "research",
     // Core path: docs/research/learnings/. Site path: /docs/research/.
     sourceDir: "research/learnings",
-    // README.md is the corpus index, not a topic — the site publishes its own index
-    // (`preface` below) instead, so there is exactly one. See known-docs.mjs.
-    exclude: ["README.md"],
-    // …but it is still READ. Its topic table carries a curated one-line "what it
-    // covers" per topic, which makes a far better page description than anything
-    // extractable from a topic that opens straight into `## Principles` — two of the
-    // fourteen otherwise took a mid-document implementation fragment as their
-    // description. Withholding the index page and using its prose are not in tension.
+    // Its README.md is withheld (scripts/docs-publication.mjs) because the site
+    // publishes its own index — but it is still READ. That index's topic table carries
+    // a curated one-line "what it covers" per topic, which makes a far better page
+    // description than anything extractable from a topic that opens straight into
+    // `## Principles` — two of the fourteen otherwise took a mid-document
+    // implementation fragment as their description. Withholding the page and using its
+    // prose are not in tension.
     descriptionsFrom: "README.md",
     preface: path.join("src", "prose", "research-preface.md"),
+    indexHeading: "The topics",
+    // The corpus cross-references itself heavily — 117 relative links across the 14
+    // topics at the pinned commit — so a run that rewrites ZERO of them is a broken
+    // rewriter rather than a corpus without links, and the check below says so. Stated
+    // per-tree rather than inferred from `preface`, because every tree now has a
+    // preface: see the assertion in main(). Only set this where the non-zero count has
+    // been MEASURED, or the flag asserts a property nobody checked.
+    crossLinked: true,
     label: "Research",
     blurb:
       "The competitive-research corpus PersonalClaw was designed from: 14 topics distilled from 95 sources, published as-written."
   }
 ];
+
+// The docs root, `/docs`. Committed prose over a GENERATED list of the sections above,
+// written by `writeLanding()` — so the landing cannot come to advertise a section that
+// no longer syncs, and a section added to TREES appears on it without an edit.
+const LANDING = {
+  preface: path.join("src", "prose", "docs-landing.md"),
+  indexHeading: "The sections"
+};
 
 // Relative links in core docs fall into two classes, and they need opposite handling.
 //
@@ -262,70 +318,78 @@ function frontmatter(title, description) {
   return `---\n${lines.join("\n")}\n---\n`;
 }
 
+/**
+ * The markdown files a tree publishes at the pinned commit.
+ *
+ * Both resolvers implement `listMarkdown()`, so this is one directory listing against
+ * one tree regardless of whether the source resolved to a matching local checkout or to
+ * the verified pinned remote. That symmetry is the point: when remote runs read a
+ * hand-written filename list instead, the same commit published a different page count
+ * on different machines and nothing reported the difference.
+ *
+ * `index.md` is skipped unconditionally — the site writes its own section index at that
+ * slug from committed prose, so publishing core's would be overwritten by it (or worse,
+ * overwrite it, depending on ordering). No tree in core carries one today; this refuses
+ * the collision rather than discovering it later.
+ */
 async function listTree(source, tree) {
   const dir = sourceDirOf(tree);
-  // Both resolvers expose readText(); only the local one can list a directory, so
-  // remote runs read an explicit file list. Keeping the list here (rather than
-  // globbing the API) means a new core doc is a deliberate addition on this side —
-  // the drift check below is what tells us when that is out of date.
-  //
-  // `exclude` is applied to BOTH modes: a local listing would otherwise pick up a
-  // file the pinned list deliberately withholds, so the same commit would publish a
-  // different page count depending on which machine ran the sync.
-  const excluded = new Set(tree.exclude ?? []);
-  if (source.mode === "local") {
-    const entries = await readdir(path.join(source.root, "docs", dir), {
-      withFileTypes: true
-    });
-    return entries
-      .filter((e) => e.isFile() && e.name.endsWith(".md") && !excluded.has(e.name))
-      .map((e) => e.name)
-      .sort();
-  }
-  const { KNOWN_DOCS } = await import("./known-docs.mjs");
-  return (KNOWN_DOCS[dir] ?? []).filter((name) => !excluded.has(name));
+  const names = await source.listMarkdown(`docs/${dir}`);
+  return names.filter((name) => name !== "index.md" && !isWithheld(dir, name));
 }
 
 /**
- * Write a tree's section index from its committed, website-authored preface.
+ * Read a committed, website-authored prose file and expand it.
  *
- * The prose is owned by this repo (it is commentary ON core's corpus, not a copy of
- * it) but the topic list under it is GENERATED from what actually synced, so the index
- * cannot come to advertise a page that no longer exists. A leading HTML comment block
- * in the source file is stripped: that is where the file's own editing notice lives,
- * and it has no business in the published page.
+ * A leading HTML comment block is stripped: that is where such a file's own editing
+ * notice lives, and it has no business in the published page. An unexpanded
+ * `{{placeholder}}` is a hard failure rather than published braces.
  */
-async function writePreface(tree, synced, core) {
-  const source = await readFile(path.join(root, tree.preface), "utf8");
+async function readProse(prosePath, core, fallbackTitle) {
+  const source = await readFile(path.join(root, prosePath), "utf8");
   const repoUrl = `https://github.com/${core.repository}/blob/${core.commit}`;
   const prose = source
     .replace(/^(?:\s*<!--[\s\S]*?-->\s*)+/, "")
     .replaceAll("{{coreRepoUrl}}", repoUrl);
   if (prose.includes("{{")) {
-    throw new Error(`${tree.preface} contains an unexpanded {{placeholder}}`);
+    throw new Error(`${prosePath} contains an unexpanded {{placeholder}}`);
   }
-  const title = extractTitle(prose, tree.label);
+  const title = extractTitle(prose, fallbackTitle);
   const summary = extractSummary(prose);
   if (!summary) {
     throw new Error(
-      `${tree.preface} has no prose paragraph to use as the page description — ` +
+      `${prosePath} has no prose paragraph to use as the page description — ` +
         `a docs page without a meta description fails validate:build`
     );
   }
+  return { prose, title, summary };
+}
+
+/** `- **[Title](url)** — summary`, the one list shape every generated index uses. */
+function indexEntry(title, url, summary) {
+  return summary ? `- **[${title}](${url})** — ${summary}` : `- **[${title}](${url})**`;
+}
+
+/**
+ * Write a tree's section index from its committed, website-authored preface.
+ *
+ * The prose is owned by this repo (it is commentary ON core's corpus, not a copy of it)
+ * but the list under it is GENERATED from what actually synced, so the index cannot come
+ * to advertise a page that no longer exists — nor omit one that appeared because the pin
+ * advanced.
+ */
+async function writePreface(tree, synced, core) {
+  const { prose, title, summary } = await readProse(tree.preface, core, tree.label);
 
   const pages = synced.filter((page) => page.tree === tree.dir);
   const body = [
     prose.replace(/^#\s+.+\n+/, "").trimEnd(),
     "",
-    "## The topics",
+    `## ${tree.indexHeading}`,
     ""
   ];
   for (const page of pages) {
-    body.push(
-      page.summary
-        ? `- **[${page.title}](/docs/${tree.dir}/${page.slug})** — ${page.summary}`
-        : `- **[${page.title}](/docs/${tree.dir}/${page.slug})**`
-    );
+    body.push(indexEntry(page.title, `/docs/${tree.dir}/${page.slug}`, page.summary));
   }
   body.push("");
 
@@ -339,6 +403,42 @@ async function writePreface(tree, synced, core) {
   // core file", and the two llms.txt writers both dereference `page.source` against
   // the core source. A preface has no core file behind it.
   return { title, summary, markdown };
+}
+
+/**
+ * Write `/docs` — the docs root, which is where the marketing header's "Docs" link
+ * lands and therefore the first documentation page most readers see.
+ *
+ * Committed prose over a generated list of SECTIONS, each described by its own
+ * preface's first paragraph and carrying its live page count. Nothing about a section is
+ * restated here: the description a reader sees on the landing is the same sentence they
+ * see at the top of the section, because both come from the same file. Restating it
+ * would be two descriptions of one section that drift apart on the first edit.
+ */
+async function writeLanding(trees, synced, prefaces, core) {
+  const { prose, title, summary } = await readProse(LANDING.preface, core, "Documentation");
+  const body = [
+    prose.replace(/^#\s+.+\n+/, "").trimEnd(),
+    "",
+    `## ${LANDING.indexHeading}`,
+    ""
+  ];
+  for (const tree of trees) {
+    const preface = prefaces.get(tree.dir);
+    const pages = synced.filter((page) => page.tree === tree.dir).length;
+    const count = `${pages} page${pages === 1 ? "" : "s"}`;
+    body.push(
+      indexEntry(preface.title, `/docs/${tree.dir}`, `${preface.summary} (${count})`)
+    );
+  }
+  body.push("");
+
+  await writeFile(
+    path.join(contentRoot, "index.md"),
+    frontmatter(title, summary) + "\n" + body.join("\n"),
+    "utf8"
+  );
+  return { title, summary, markdown: body.join("\n") };
 }
 
 async function main() {
@@ -384,6 +484,11 @@ async function main() {
     for (const file of files.get(tree.dir)) {
       const relativePath = `docs/${sourceDirOf(tree)}/${file}`;
       const markdown = await coreSource.readText(relativePath);
+      // Refuse a stub BEFORE it becomes a route. The set of published documents is now
+      // whatever the pinned trees contain, so this is the check that keeps "publish
+      // everything the release documents" from meaning "publish whatever is there":
+      // a placeholder fails the sync and names its core path.
+      assertPublishable(relativePath, markdown);
       const slug = slugify(file);
       const title = extractTitle(markdown, slug.replace(/-/g, " "));
       const summary =
@@ -422,17 +527,23 @@ async function main() {
       synced.push({ tree: tree.dir, slug, title, summary, source: relativePath });
     }
 
-    if (tree.preface) {
-      prefaces.set(tree.dir, await writePreface(tree, synced, manifest.sources.core));
-    }
+    prefaces.set(tree.dir, await writePreface(tree, synced, manifest.sources.core));
   }
 
-  // Every tree that declares a preface republishes a cross-linked corpus, so its
-  // in-site link count must be non-zero. Without this floor the whole "intact
-  // cross-links" property is unobserved: a sweep for broken links passes trivially
-  // when there are no links left to break.
+  const landing = await writeLanding(TREES, synced, prefaces, manifest.sources.core);
+
+  // A tree declared `crossLinked` republishes a corpus whose documents reference each
+  // other, so its in-site link count must be non-zero. Without this floor the whole
+  // "intact cross-links" property is unobserved: a sweep for broken links passes
+  // trivially when there are no links left to break.
+  //
+  // The condition used to be `tree.preface`, on the reasoning that a preface implied a
+  // republished corpus. Every tree now has a preface — that is the section index — so
+  // the flag has to be stated rather than inferred, or the four trees that gained one
+  // would silently acquire an assertion nobody measured. The values below ARE measured;
+  // see the field's note in TREES.
   for (const tree of TREES) {
-    if (!tree.preface) continue;
+    if (!tree.crossLinked) continue;
     if (internalLinks.get(tree.dir) === 0) {
       throw new Error(
         `docs/${sourceDirOf(tree)} produced 0 in-site cross-links. Either the link ` +
@@ -465,6 +576,10 @@ async function main() {
     "```",
     "uv tool install personalclaw && personalclaw gateway",
     "```",
+    "",
+    "## Documentation",
+    "",
+    `- [${landing.title}](${site}/docs): ${landing.summary}`,
     ""
   ];
 
@@ -500,6 +615,14 @@ async function main() {
     "",
     "Generated from the pinned source tree. Sections appear in navigation order;",
     "each records the core repository path it came from.",
+    "",
+    "---",
+    "",
+    `# ${landing.title}`,
+    "",
+    `*Source: \`${LANDING.preface}\` (personalclaw.dev) · docs root*`,
+    "",
+    landing.markdown,
     ""
   ];
   for (const tree of TREES) {
@@ -532,11 +655,53 @@ async function main() {
   }
   await writeFile(path.join(publicRoot, "llms-full.txt"), full.join("\n"), "utf8");
 
+  // ── .generated/docs-index.json: the route contract, derived ─────────────────
+  //
+  // What this replaces: a hand-transcribed list of 33 paths in
+  // tests/support/site-contract.mjs, which had to be edited in lockstep with the
+  // (now deleted) allow list every time the published set changed. Two transcriptions of
+  // one fact, and advancing the pin required editing both — which is precisely the
+  // "no further code change" property the docs site is supposed to have.
+  //
+  // The set-equality check in scripts/validate-build.mjs still runs in both directions;
+  // it now compares what the SYNC wrote against what the BUILD generated, which is not a
+  // tautology. Starlight can drop a document (an unparseable frontmatter value, a slug
+  // collision) and it can emit a page the sync did not write; both still fail loudly.
+  // What no longer fails is the one event that is meant to change the set.
+  const docsIndex = {
+    schemaVersion: 1,
+    core: {
+      repository: manifest.sources.core.repository,
+      commit: manifest.sources.core.commit,
+      tag: manifest.sources.core.tag
+    },
+    landing: { route: "/docs", title: landing.title },
+    trees: TREES.map((tree) => ({
+      dir: tree.dir,
+      label: tree.label,
+      sourceDir: `docs/${sourceDirOf(tree)}`,
+      route: `/docs/${tree.dir}`,
+      crossLinked: tree.crossLinked === true,
+      pages: synced
+        .filter((page) => page.tree === tree.dir)
+        .map((page) => ({
+          route: `/docs/${tree.dir}/${page.slug}`,
+          title: page.title,
+          source: page.source
+        }))
+    }))
+  };
+  await writeAtomically(
+    path.join(root, ".generated", "docs-index.json"),
+    `${JSON.stringify(docsIndex, null, 2)}\n`
+  );
+
   const bytes = full.join("\n").length;
   console.log(
     `Synced ${synced.length} docs from ${manifest.sources.core.repository}@${version} ` +
-      `into src/content/docs/ (${TREES.length} trees, ${prefaces.size} section preface(s)); ` +
-      `wrote public/llms.txt and public/llms-full.txt (${Math.round(bytes / 1024)} KB).`
+      `into src/content/docs/ (${TREES.length} trees, ${prefaces.size} section index(es) ` +
+      `+ the /docs landing); wrote .generated/docs-index.json, public/llms.txt and ` +
+      `public/llms-full.txt (${Math.round(bytes / 1024)} KB).`
   );
   // The census, printed so "no broken links" can be read against a real denominator:
   // a zero here is a rewriter that matched nothing, not a corpus without links.

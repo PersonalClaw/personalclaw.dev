@@ -27,7 +27,7 @@
     "validate:release-parity": "node scripts/validate-release-parity.mjs",
     "validate:release-parity:offline": "RELEASE_PARITY_OFFLINE=1 node scripts/validate-release-parity.mjs",
     "validate:release-parity:strict": "RELEASE_PARITY_REQUIRE_REMOTE=1 node scripts/validate-release-parity.mjs",
-    "test:gate-report": "node --test tests/run-ci-gates.test.mjs",
+    "test:unit": "node --test tests/run-ci-gates.test.mjs tests/docs-publication.test.mjs",
     "test:static": "node scripts/run-ci-gates.mjs --static",
     "test:browser": "npm run build && playwright test",
     "test:browser:report": "playwright show-report",

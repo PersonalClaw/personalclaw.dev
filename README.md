@@ -42,7 +42,7 @@ It has a broader job than a conventional marketing site:
 The website should be persuasive because it is specific and checkable, not because it hides the product's maturity or tradeoffs.
 
 > [!IMPORTANT]
-> The source manifest is on the `released` channel: it pins the exact core and apps commits of a **tagged** release, and the site identifies itself as a verified release of that version. The website's own `package.json` version tracks the core release it publishes, and that agreement is enforced mechanically — see [Release parity](#release-parity) and [docs/release-runbook.md](./docs/release-runbook.md). Canonical `/docs` and the production `/install` contract remain roadmap work.
+> The source manifest is on the `released` channel: it pins the exact core and apps commits of a **tagged** release, and the site identifies itself as a verified release of that version. The website's own `package.json` version tracks the core release it publishes, and that agreement is enforced mechanically — see [Release parity](#release-parity) and [docs/release-runbook.md](./docs/release-runbook.md). The production `/install` contract remains roadmap work.
 
 ## Experience Map
 
@@ -55,6 +55,13 @@ The website should be persuasive because it is specific and checkable, not becau
 | `/release` | Build channel, exact source commits, package/changelog facts, and manifest-derived ecosystem evidence |
 | `/blog` | Posts written here, each naming the release its claims were verified against |
 | `/compare` | Row-by-row account of what PersonalClaw does and does not do at the released version, each row sourced to a file at the tag |
+| `/docs` | Documentation landing: three routes through the corpus (running it, extending it, trusting it), over a generated list of sections |
+| `/docs/{guides,reference,architecture,security,research}` | One section index per tree — committed prose over a generated page list — and every document the pinned release publishes beneath it |
+
+The `/docs` tier is generated from the pinned core commit, so its **shape** is contracted
+here and its **words** are not. `/docs/reference` doubles as the API documentation space:
+the gateway's HTTP, WebSocket and MCP surfaces are documented in core's reference tree, and
+a second landing page for them would be a second place to describe one API.
 
 The next major public surfaces are synchronized documentation, release provenance, stable installation, changelog, and app detail routes. Their sequencing and acceptance gates are defined in the [website evolution roadmap](./docs/roadmap/roadmap.md).
 
@@ -179,7 +186,20 @@ All scripts set `ASTRO_TELEMETRY_DISABLED=1`.
 
 ## Quality Floor
 
-The route contract in `tests/support/site-contract.mjs` is shared by static, browser, and performance gates. A new generated page fails validation until it is added to that contract and receives the same coverage as every existing route.
+The route contract in `tests/support/site-contract.mjs` is shared by static, browser, and performance gates. A new hand-authored page fails validation until it is added to that contract and receives the same coverage as every existing route.
+
+The `/docs` route set is the exception, and deliberately so: it is **derived** from
+`.generated/docs-index.json`, which `scripts/sync-docs.mjs` writes from the pinned core
+commit. The published corpus is a function of which release the site pins, so advancing the
+pin to a release carrying new documentation publishes it with no code change here — and
+under the hand-written allow list this replaced, the same pin advance published nothing.
+`scripts/validate-build.mjs` still asserts set equality in both directions; what it compares
+is the sync's manifest against the pages the build generated, so a document the sync wrote
+that Starlight did not publish, or a page Starlight published that the sync did not write,
+still fails loudly. Two floors guard the content: `assertPublishable()` in
+`scripts/docs-publication.mjs` refuses a stub while the sync is still reading source, and
+`DOCS_BODY_TEXT_FLOOR` refuses a page that renders nearly empty. A 200 over a blank page is
+worse than a 404, because nothing reports it.
 
 Three tiers are contracted differently, and the contract says why in place: the generated
 `/docs` corpus (core owns its words), the community **registry** tier, and the **blog**
@@ -243,6 +263,7 @@ inspecting the rendered result on the platform that produced it.
 ├── src/data/            Transitional site and app content
 ├── src/layouts/         Shared document shell and metadata
 ├── src/pages/           Route entry points
+├── src/prose/           The docs landing and the five section indexes, hand-written here
 ├── src/styles/          Global styles and design tokens
 ├── tests/browser/       User, accessibility, privacy, and visual coverage
 ├── tests/fixtures/      Registry inputs the render check rebuilds against
