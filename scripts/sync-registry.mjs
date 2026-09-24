@@ -30,11 +30,23 @@
 // listing surface goes live when the pin moves to a release that contains the registry;
 // nothing about it needs to change then.
 //
+// NEITHER IS THE STORE'S OWN CONSENT COPY, and for the same reason. The Store is the other
+// surface a reader meets a listing on, and core owns its wording in
+// `web/src/lib/provenance.ts` — a file that also postdates v0.1.3 (and at that tag
+// `RegistryPointer` carries none of `maintainer`, `last_validated` or `last_scan_verdict`).
+// So `checkStoreConsentParity` records `absent-at-pin` today and starts ENFORCING the
+// moment the pin moves to a release carrying both. That is what makes the three strings in
+// `src/data/registry.mjs: STORE_CONSENT` an assertion about core rather than a copy of it.
+//
 // FAIL-OPEN vs FAIL-CLOSED, deliberately split:
 //   - the REGISTRY read is fail-closed, EXCEPT for a 404/ENOENT at the pinned commit,
 //     which is the documented absence above. Any other read failure, or a registry that
 //     does not parse, exits non-zero and stops the build: the site does not publish a
 //     consent surface it could not source.
+//   - the STORE CONSENT PARITY check is fail-closed on drift and on a wrong path, and
+//     absent-at-pin only while the pinned release predates the module. By the same rule as
+//     the registry read: the site does not publish a consent surface it cannot show agrees
+//     with the product's own.
 //   - each README fetch is fail-OPEN, per app, with the reason recorded and rendered.
 //     A community repository deleting its README, renaming its default branch, or
 //     going private must not red the whole website build; and a README is prose, not
@@ -42,6 +54,7 @@
 
 import path from "node:path";
 import { pathToFileURL } from "node:url";
+import { STORE_CONSENT } from "../src/data/registry.mjs";
 import { loadManifest, resolveSource, writeAtomically } from "./sync-sources.mjs";
 
 const root = process.cwd();
@@ -49,6 +62,13 @@ const generatedPath = path.join(root, ".generated", "registry.json");
 
 /** The registry's path inside the core repository at the pinned commit. */
 const REGISTRY_SOURCE_PATH = "scratch/registry/app-registry.json";
+
+/**
+ * Core's module that owns the Store's wording for a registry listing — the OTHER surface a
+ * reader meets the same listing on. See `src/data/registry.mjs: STORE_CONSENT` for what is
+ * being agreed about and why the public page must not be the more reassuring of the two.
+ */
+const STORE_CONSENT_SOURCE_PATH = "web/src/lib/provenance.ts";
 
 /**
  * A file that exists whenever the registry DIRECTORY exists at the pinned commit, used
@@ -189,9 +209,81 @@ async function classifyMissingRegistry(coreSource, pinDescription) {
   );
 }
 
+/**
+ * Check this site's consent phrasing against the Store's own, at the pinned release.
+ *
+ * 🔑 WHY THIS IS A CHECK AND NOT A COPY. `src/data/registry.mjs: STORE_CONSENT` holds three
+ * strings that are CORE's, not this repository's. Committing them would be exactly the
+ * drifting copy of a consent surface this file's header forbids — so they are committed as
+ * an ASSERTION about core's module, and this is where the assertion is paid for. Core
+ * rewording its non-endorsement then reds this build instead of silently leaving the public
+ * page saying something the product no longer says.
+ *
+ * 🔴 THE SAME TWO-FAILURES-ONE-404 TRAP AS `classifyMissingRegistry`, and the same
+ * resolution. A missing module means either:
+ *
+ *   1. the pinned release predates the Store's registry-listing surface — true today:
+ *      `web/src/lib/provenance.ts` is not in v0.1.3, and `RegistryPointer` there carries
+ *      none of `maintainer`, `last_validated` or `last_scan_verdict`. There is nothing to
+ *      compare against, which is a state; or
+ *   2. core MOVED the module, and recording "absent" would retire this check permanently
+ *      and silently.
+ *
+ * The two are separated by whether the REGISTRY is in the pinned tree. A release that
+ * carries the registry but not the module that renders its verdicts is not a release that
+ * predates the surface — it is a path this script has wrong. So that combination throws.
+ *
+ * @param {{ readText: (p: string) => Promise<string> }} coreSource
+ * @param {string} pinDescription
+ * @param {boolean} registryPresent whether the registry itself was readable at the pin
+ * @returns {Promise<{ status: string, reason?: string }>}
+ */
+async function checkStoreConsentParity(coreSource, pinDescription, registryPresent) {
+  /** @type {string} */
+  let module;
+  try {
+    module = await coreSource.readText(STORE_CONSENT_SOURCE_PATH);
+  } catch (error) {
+    if (!isMissingPath(error)) throw error;
+    if (registryPresent) {
+      throw new Error(
+        `${STORE_CONSENT_SOURCE_PATH} is missing from ${pinDescription}, but ` +
+          `${REGISTRY_SOURCE_PATH} IS present — so this release publishes a registry and ` +
+          `this script cannot find the module that renders its verdicts in the Store. ` +
+          `Refusing to record "absent-at-pin", which would retire the consent-parity ` +
+          `check silently. Update STORE_CONSENT_SOURCE_PATH to match core.`
+      );
+    }
+    return {
+      status: "absent-at-pin",
+      reason:
+        `${STORE_CONSENT_SOURCE_PATH} does not exist in ${pinDescription}, so there is ` +
+        `no Store consent surface to compare against yet.`
+    };
+  }
+
+  const drifted = Object.entries(STORE_CONSENT).filter(
+    ([, phrase]) => !module.includes(phrase)
+  );
+  if (drifted.length > 0) {
+    throw new Error(
+      `${STORE_CONSENT_SOURCE_PATH} at ${pinDescription} no longer contains ` +
+        drifted.map(([key, phrase]) => `${key}: "${phrase}"`).join("; ") +
+        `. src/data/registry.mjs: STORE_CONSENT claims these are the Store's own words, ` +
+        `and this site renders them as such. Re-read core's registryListing() and update ` +
+        `STORE_CONSENT — do not relax this check, which is the only thing keeping the ` +
+        `public consent surface in step with the Store's.`
+    );
+  }
+  return { status: "verified" };
+}
+
 async function main() {
   const manifest = await loadManifest();
   const coreSource = await resolveSource("core", manifest.sources.core);
+  const pinDescription = `${manifest.sources.core.repository}@${
+    manifest.sources.core.tag ?? manifest.sources.core.commit
+  }`;
 
   /** @type {{ status: string, reason?: string }} */
   let availability = { status: "present" };
@@ -203,11 +295,14 @@ async function main() {
     if (!isMissingPath(error)) throw error;
     // A 404 is not self-explaining — it may mean this script is looking in the wrong place,
     // which must fail closed rather than render as a product state.
-    availability = await classifyMissingRegistry(
-      coreSource,
-      `${manifest.sources.core.repository}@${manifest.sources.core.tag ?? manifest.sources.core.commit}`
-    );
+    availability = await classifyMissingRegistry(coreSource, pinDescription);
   }
+
+  const storeConsent = await checkStoreConsentParity(
+    coreSource,
+    pinDescription,
+    registry !== null
+  );
 
   const apps =
     registry !== null && Array.isArray(/** @type {{ apps?: unknown }} */ (registry).apps)
@@ -244,7 +339,8 @@ async function main() {
   console.log(
     `Generated ${path.relative(root, generatedPath)}: registry ${availability.status}, ` +
       `${apps.length} listing(s) from ${artifact.source.repository}@` +
-      `${artifact.source.commit.slice(0, 12)}, ${fetched} README(s) fetched.`
+      `${artifact.source.commit.slice(0, 12)}, ${fetched} README(s) fetched, ` +
+      `Store consent parity ${storeConsent.status}.`
   );
 }
 

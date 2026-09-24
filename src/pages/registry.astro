@@ -1,7 +1,12 @@
 ---
 import { ArrowUpRight } from "lucide-react";
 import BaseLayout from "../layouts/BaseLayout.astro";
-import { registryListing } from "../data/registry.mjs";
+import {
+  INSTALL_GATE_SENTENCE,
+  STORE_CONSENT,
+  VERDICT_LEGEND,
+  registryListing
+} from "../data/registry.mjs";
 
 // One read, at build time. The page is static and same-origin: nothing here is fetched
 // in a reader's browser. See scripts/sync-registry.mjs for where the data comes from.
@@ -12,32 +17,6 @@ const registryTreeUrl =
   state === "absent-at-pin"
     ? `https://github.com/${source.repository}/tree/main/${source.path.replace(/\/[^/]+$/, "")}`
     : `https://github.com/${source.repository}/tree/${source.commit}/${source.path.replace(/\/[^/]+$/, "")}`;
-
-// The legend below explains the verdict vocabulary. It is deliberately labelled as a
-// legend rather than dressed up as data: with no listings to show, a page that looked
-// populated would be the dishonest version of an empty registry.
-const verdictLegend = [
-  {
-    label: "Clean",
-    tone: "pass",
-    detail: "The last recorded scan found nothing."
-  },
-  {
-    label: "Low / Warning",
-    tone: "caution",
-    detail: "The last recorded scan raised findings worth reading first."
-  },
-  {
-    label: "Dangerous",
-    tone: "blocked",
-    detail: "The last recorded scan found dangerous behaviour. Such listings are removed."
-  },
-  {
-    label: "No scan on record",
-    tone: "unscanned",
-    detail: "No verdict has been recorded. Unscanned is not the same as clean."
-  }
-];
 ---
 
 <BaseLayout
@@ -73,17 +52,37 @@ const verdictLegend = [
     <div class="shell">
       {state === "listed" && (
         <>
+          {/*
+            JOB 1 AND JOB 3 OF THE STORE'S CONSENT CONTRACT (src/data/registry.mjs:
+            STORE_CONSENT). This block is emitted BEFORE the grid on purpose, so a reader
+            reaches the non-endorsement before the first verdict badge — core's rule is
+            that a reader who stops after four words must have read "community-listed",
+            not "clean". scripts/validate-registry-render.mjs asserts the document order,
+            not merely the presence.
+          */}
+          <div class="registry-consent">
+            <p class="registry-not-endorsed">{STORE_CONSENT.notEndorsed}</p>
+            <p>{INSTALL_GATE_SENTENCE}</p>
+          </div>
+
           <p class="result-count">
             {apps.length} {apps.length === 1 ? "listing" : "listings"}
           </p>
           <div class="app-grid registry-grid">
             {apps.map((app) => (
               <a class="app-card registry-card" href={app.path}>
+                {/*
+                  `data-field` is how scripts/validate-registry-render.mjs addresses the
+                  card's enumerated fields. It selects BY NAME rather than by position,
+                  because a positional selector still passes when two values are swapped
+                  — and "maintainer" and "license" are adjacent monospace strings that a
+                  reader cannot tell apart if they are.
+                */}
                 <div class="app-card-head">
-                  <span class="app-category">{app.types.join(" · ")}</span>
+                  <span class="app-category" data-field="types">{app.types.join(" · ")}</span>
                   <ArrowUpRight size={18} aria-hidden="true" />
                 </div>
-                <h3>{app.name}</h3>
+                <h3 data-field="name">{app.name}</h3>
 
                 <p class:list={["registry-verdict", `verdict-${app.verdict.tone}`]}>
                   <span>{app.verdict.label}</span>
@@ -105,11 +104,11 @@ const verdictLegend = [
                 <dl class="registry-meta">
                   <div>
                     <dt>Maintainer</dt>
-                    <dd translate="no">{app.maintainer}</dd>
+                    <dd translate="no" data-field="maintainer">{app.maintainer}</dd>
                   </div>
                   <div>
                     <dt>License</dt>
-                    <dd translate="no">{app.license}</dd>
+                    <dd translate="no" data-field="license">{app.license}</dd>
                   </div>
                 </dl>
               </a>
@@ -170,12 +169,13 @@ const verdictLegend = [
         <p>
           The registry records what the last scan found, and when. Most listings carry
           no verdict at all, because a scan is recorded by the registry's own checks
-          rather than claimed by the author.
+          rather than claimed by the author. A listing found dangerous is removed. And
+          whatever the record says, {STORE_CONSENT.installGate}.
         </p>
       </div>
 
       <dl class="registry-legend">
-        {verdictLegend.map((item) => (
+        {VERDICT_LEGEND.map((item) => (
           <div>
             <dt>
               <span class:list={["registry-verdict", `verdict-${item.tone}`]}>
@@ -234,6 +234,35 @@ const verdictLegend = [
 
   .registry-listings {
     padding: 0 0 clamp(6rem, 10vw, 9rem);
+  }
+
+  /* The non-endorsement, above the grid. Deliberately NOT styled as a warning: it is not
+     a finding about any particular listing, it is the standing frame for all of them. A
+     red banner here would cry wolf and then be ignored on the listing that deserves it. */
+  .registry-consent {
+    max-width: 62ch;
+    margin: 0 0 clamp(2rem, 5vw, 3rem);
+    padding: 1.15rem 1.35rem;
+    border: 1px solid var(--line-strong);
+    border-radius: 8px;
+    background: var(--well);
+  }
+
+  /* `var(--fs-label)`, not a raw size: scripts/validate-design-tokens.mjs ratchets the
+     count of off-scale `font-size` declarations, so new text is sized from the roles
+     DESIGN.md commits. The neighbouring rules in this file predate that ratchet. */
+  .registry-consent p {
+    margin: 0;
+    color: var(--ink-soft);
+    font-size: var(--fs-label);
+  }
+
+  /* Scoped through the parent rather than raised with `!important`: `.registry-consent p`
+     above is (0,1,1), so a bare class would lose to it. */
+  .registry-consent .registry-not-endorsed {
+    margin-bottom: 0.45rem;
+    color: var(--ink);
+    font-weight: 650;
   }
 
   .registry-card h3 {

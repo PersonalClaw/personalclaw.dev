@@ -22,6 +22,9 @@
 //   4. A row this file cannot read is NOT rendered, and the page says how many it
 //      dropped. Fail-closed, but never silently: a swallowed row is an app that exists
 //      and is not shown, which the reader would have no way to know.
+//   5. This page says no LESS than the Store says about the same listing. See
+//      STORE_CONSENT below — the Store is the other surface a reader meets this listing
+//      on, and the public one must not be the more reassuring of the two.
 
 import { readFileSync } from "node:fs";
 import path from "node:path";
@@ -32,35 +35,92 @@ const artifactPath = path.join(process.cwd(), ".generated", "registry.json");
 let cached = null;
 
 /**
+ * ── PARITY WITH THE STORE'S OWN CONSENT COPY ───────────────────────────────────────────
+ *
+ * A reader meets a community listing TWICE: here, before they have the product, and in
+ * the Store, at the moment they install. Core owns the Store's wording for exactly this
+ * in one module — `web/src/lib/provenance.ts`, `registryListing()` — and states three
+ * non-negotiable jobs for presenting a registry listing, in this order:
+ *
+ *   1. LEAD WITH THE NON-ENDORSEMENT, not the reassurance. Core's words: "a reader who
+ *      stops after four words must have read 'community-listed', not 'clean'".
+ *   2. ATTRIBUTE THE VERDICT — "registry check", never a bare "Verified"/"Scanned", and
+ *      never PersonalClaw's voice. The check was the REGISTRY's, of the LISTING at that
+ *      moment, not of the bytes about to be installed.
+ *   3. POINT AT THE REAL GATE — the install-time rescan. That is the sentence that makes
+ *      a stale or absent verdict harmless: the number that matters arrives later.
+ *
+ * 🔴 THIS PAGE DID NONE OF THE THREE. It rendered a bare green "Clean" badge, a detail
+ * written in PersonalClaw's own voice ("The last recorded scan found nothing."), and said
+ * nothing about the install-time rescan anywhere. So the PUBLIC surface was the more
+ * reassuring of the two — trust-washing, in the one place a reader is deciding whether to
+ * run a stranger's code, and the exact defect core centralised its module to prevent.
+ *
+ * The three strings below are CORE's, used verbatim so the agreement is byte-checkable
+ * rather than argued: scripts/sync-registry.mjs reads core's module at the pinned release
+ * and fails the build when they have drifted. They are therefore not the kind of committed
+ * copy README.md forbids — they are an assertion about core's copy, and the assertion is
+ * checked on every sync.
+ */
+export const STORE_CONSENT = {
+  /** Job 1. Core's `NOT_ENDORSED`. */
+  notEndorsed: "Community-listed, not endorsed",
+  /** Job 2. Core's attribution prefix, from `registry check: ${verdict}`. */
+  verdictAttribution: "registry check:",
+  /** Job 3. Core's unconditional closing clause. */
+  installGate: "rescanned when you install"
+};
+
+/**
+ * Job 3 as a sentence this page can render. Unconditional on purpose: it is true whether
+ * or not the registry recorded anything, and it is what makes an absent verdict safe to
+ * show at all.
+ */
+export const INSTALL_GATE_SENTENCE =
+  "PersonalClaw does not review or endorse listed apps. It runs its own scan of the " +
+  `actual code instead: every listed app is ${STORE_CONSENT.installGate}, and that scan ` +
+  "is what can stop an install.";
+
+/**
  * The verdict values the registry schema defines. Everything outside this set — a typo,
  * a value added by a newer registry than this build knows about, a hand-edited row — is
  * presented as blocking, because the alternative is presenting an unknown string as if
  * it were reassuring.
+ *
+ * Every `detail` for a RECORDED verdict opens with `STORE_CONSENT.verdictAttribution`
+ * (job 2). The two branches below it — no verdict, unreadable verdict — deliberately do
+ * NOT, because prefixing them would claim a check happened when none did.
  */
 const VERDICT_PRESENTATION = {
   clean: {
     key: "clean",
     label: "Clean",
     tone: "pass",
-    detail: "The last recorded scan found nothing."
+    detail:
+      "registry check: clean — the registry's own last look at this listing found nothing."
   },
   low: {
     key: "low",
     label: "Low",
     tone: "caution",
-    detail: "The last recorded scan raised low-severity findings."
+    detail:
+      "registry check: low — the registry's own last look raised low-severity findings."
   },
   warning: {
     key: "warning",
     label: "Warning",
     tone: "caution",
-    detail: "The last recorded scan raised findings worth reading before installing."
+    detail:
+      "registry check: warning — the registry's own last look raised findings worth " +
+      "reading before installing."
   },
   dangerous: {
     key: "dangerous",
     label: "Dangerous",
     tone: "blocked",
-    detail: "The last recorded scan found dangerous behaviour. Do not install this."
+    detail:
+      "registry check: dangerous — the registry's own last look found dangerous " +
+      "behaviour. Do not install this."
   }
 };
 
@@ -69,7 +129,7 @@ const UNSCANNED = {
   label: "No scan on record",
   tone: "unscanned",
   detail:
-    "This listing carries no scan verdict. It has not been reviewed — treat it as unscanned, not as clean."
+    "No registry check is on record for this listing. It has not been reviewed — treat it as unscanned, not as clean."
 };
 
 /**
@@ -90,6 +150,29 @@ export function verdictPresentation(verdict) {
       "The registry recorded a scan verdict this site does not recognise. It is not a pass."
   };
 }
+
+/**
+ * The verdict vocabulary, for the legend on /registry.
+ *
+ * 🔑 DERIVED, not re-typed. This list used to be a hand-written array in
+ * src/pages/registry.astro that restated every verdict's copy independently of the map
+ * above — a second place for the verdict wording to live, in the module whose own header
+ * says "a second parser would be a second place for a pre-install consent surface to
+ * disagree with itself". Changing one and not the other would have shown a reader a
+ * legend that did not describe the badges beside it.
+ *
+ * `low` and `warning` share a row because they share a tone; the row's detail is
+ * `warning`'s, which is the stronger of the two and therefore the safe one to generalise.
+ */
+export const VERDICT_LEGEND = [
+  verdictPresentation("clean"),
+  {
+    ...verdictPresentation("warning"),
+    label: `${verdictPresentation("low").label} / ${verdictPresentation("warning").label}`
+  },
+  verdictPresentation("dangerous"),
+  verdictPresentation(undefined)
+];
 
 /** The site path for one listing. */
 export function registryAppPath(name) {
