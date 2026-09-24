@@ -1,0 +1,76 @@
+---
+// Starlight `Head` component override for the /docs corpus.
+//
+// Why this exists. Starlight does not render src/layouts/BaseLayout.astro, so everything
+// BaseLayout puts in the head reached only the nine hand-authored routes. Measured on a
+// production build of origin/main, all 33 generated docs pages shipped with NO
+// `og:image` (so every shared docs link rendered as a bare text card), no
+// `twitter:image`, and NO JSON-LD at all. Starlight's own head defaults cover title,
+// description, canonical, `og:title`/`og:type`/`og:url`/`og:description`/`og:site_name`
+// and `twitter:card`; this override adds the parts it has no way to know about.
+//
+// Static tags that are identical on every docs page are set in astro.config.mjs's
+// `starlight({ head })` instead — Starlight's `mergeHead` dedupes `<meta>` by
+// `name`/`property` with the later source winning, so config `head` both ADDS new tags
+// and OVERRIDES its own defaults. Only the PER-PAGE payload needs a component, which is
+// the JSON-LD graph: it carries this page's title, description, canonical and crumb
+// trail, none of which static config can see.
+import Default from "@astrojs/starlight/components/Head.astro";
+import { buildStructuredData } from "../data/structured-data";
+
+const route = Astro.locals.starlightRoute;
+
+/** Read a tag Starlight is about to render, so the graph cannot disagree with the head. */
+const headTag = (predicate: (entry: (typeof route.head)[number]) => boolean) =>
+  route.head.find(predicate);
+
+// The rendered `<title>` verbatim — `${frontmatter.title} | PersonalClaw docs`. Taken
+// from the head array rather than recomposed from `siteTitle` + `titleDelimiter` so a
+// Starlight change to either cannot silently desynchronise the two.
+const title =
+  headTag((entry) => entry.tag === "title")?.content ?? route.entry.data.title;
+
+const description =
+  headTag(
+    (entry) => entry.tag === "meta" && entry.attrs?.name === "description"
+  )?.attrs?.content ?? route.entry.data.description ?? "";
+
+const structuredData = buildStructuredData({
+  site: new URL(Astro.site ?? "https://personalclaw.dev/"),
+  pathname: Astro.url.pathname.replace(/\/$/, "") || "/",
+  title,
+  description: String(description)
+});
+
+// The robots policy. Two independent reasons a docs page must not be indexed, and both
+// need per-page or per-environment knowledge, so this lives here rather than in
+// astro.config.mjs's static `head` — one tag, never two conflicting ones:
+//   · a Vercel PREVIEW deployment must never be indexable, or a throwaway branch URL
+//     competes with personalclaw.dev in search results (`validate:preview` enforces
+//     this, and caught the original omission);
+//   · Starlight's generated 404 page (`route.id === "404"`,
+//     @astrojs/starlight/utils/routing/data.js `get404Route`) has nothing to rank and
+//     must never appear in a result list. Vercel also serves `404.html` with an HTTP
+//     404 for a static build; this is the belt to that braces.
+const isPreview = import.meta.env.VERCEL_ENV === "preview";
+const robots = isPreview
+  ? "noindex, nofollow"
+  : route.id === "404"
+    ? "noindex, follow"
+    : "index, follow";
+---
+
+<Default><slot /></Default>
+<meta name="robots" content={robots} />
+{/*
+  The BARE heading, not the suffixed `<title>` — matching the `og:title` Starlight
+  already emits. A share card renders `og:site_name` beside the title, so repeating
+  "| PersonalClaw docs" inside it spends the card's headline on the site's name twice.
+*/}
+<meta name="twitter:title" content={route.entry.data.title} />
+{description && <meta name="twitter:description" content={String(description)} />}
+<script
+  type="application/ld+json"
+  is:inline
+  set:html={JSON.stringify(structuredData)}
+></script>

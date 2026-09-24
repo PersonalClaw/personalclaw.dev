@@ -3,6 +3,7 @@
   "framework": "astro",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
+  "trailingSlash": false,
   "headers": [
     {
       "source": "/install",
@@ -10,6 +11,10 @@
         {
           "key": "Content-Type",
           "value": "text/plain; charset=utf-8"
+        },
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex"
         }
       ]
     },

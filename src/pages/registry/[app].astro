@@ -1,7 +1,12 @@
 ---
 import { ArrowLeft, ArrowUpRight } from "lucide-react";
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import { readmeFor, registryListing } from "../../data/registry.mjs";
+import {
+  INSTALL_GATE_SENTENCE,
+  STORE_CONSENT,
+  readmeFor,
+  registryListing
+} from "../../data/registry.mjs";
 
 // One page per readable listing. With no listings, this emits nothing — and
 // scripts/validate-build.mjs derives the contracted route set from the same normalizer,
@@ -31,10 +36,20 @@ const { source } = registryListing();
       <p class="kicker">{app.types.join(" · ")}</p>
       <h1 class="section-title" translate="no">{app.name}</h1>
 
+      {/*
+        The Store's consent contract, in the Store's order (src/data/registry.mjs:
+        STORE_CONSENT). This page is reachable by URL without passing /registry, so it
+        carries all three jobs itself: the non-endorsement BEFORE the badge, the verdict
+        attributed to the registry inside `verdict.detail`, and the install-time rescan
+        last. scripts/validate-registry-render.mjs asserts the order, not just presence.
+      */}
+      <p class="registry-not-endorsed">{STORE_CONSENT.notEndorsed}</p>
+
       <p class:list={["registry-verdict", `verdict-${app.verdict.tone}`]}>
         <span>{app.verdict.label}</span>
       </p>
       <p class="verdict-detail">{app.verdict.detail}</p>
+      <p class="install-gate">{INSTALL_GATE_SENTENCE}</p>
 
       <div class="listing-grid">
         <section class="permissions" aria-labelledby="declared-permissions">
@@ -56,26 +71,29 @@ const { source } = registryListing();
 
         <section class="facts" aria-labelledby="listing-facts">
           <h2 id="listing-facts">Listing</h2>
+          {/* See the note in src/pages/registry.astro: `data-field` lets the render
+              validator address each fact by name, so two swapped monospace strings red
+              instead of passing. */}
           <dl>
             <div>
               <dt>Capability types</dt>
-              <dd translate="no">{app.types.join(", ")}</dd>
+              <dd translate="no" data-field="types">{app.types.join(", ")}</dd>
             </div>
             <div>
               <dt>License</dt>
-              <dd translate="no">{app.license}</dd>
+              <dd translate="no" data-field="license">{app.license}</dd>
             </div>
             <div>
               <dt>Maintainer</dt>
-              <dd translate="no">{app.maintainer}</dd>
+              <dd translate="no" data-field="maintainer">{app.maintainer}</dd>
             </div>
             <div>
               <dt>Listed</dt>
-              <dd><time datetime={app.added}>{app.added}</time></dd>
+              <dd data-field="added"><time datetime={app.added}>{app.added}</time></dd>
             </div>
             <div>
               <dt>Last validated</dt>
-              <dd>
+              <dd data-field="lastValidated">
                 {app.lastValidated ? (
                   <time datetime={app.lastValidated}>{app.lastValidated}</time>
                 ) : (
@@ -146,6 +164,26 @@ const { source } = registryListing();
     max-width: 22ch;
     margin: 0.4rem 0 1.5rem;
     overflow-wrap: anywhere;
+  }
+
+  /* Job 1 of the Store's consent contract, so it sits ABOVE the badge and reads before
+     it. Not styled as an alarm: it frames every listing rather than accusing this one.
+     Sized from `var(--fs-label)` because scripts/validate-design-tokens.mjs ratchets
+     off-scale `font-size` declarations; the rules below it predate that ratchet. */
+  .registry-not-endorsed {
+    margin: 0 0 0.8rem;
+    color: var(--ink);
+    font-size: var(--fs-label);
+    font-weight: 650;
+  }
+
+  /* Job 3, last, because it is the sentence that makes a stale or absent verdict safe to
+     have shown at all: the scan that can actually stop an install happens later. */
+  .install-gate {
+    margin: 0.75rem 0 0;
+    max-width: 58ch;
+    color: var(--ink-soft);
+    font-size: var(--fs-label);
   }
 
   /* Same four treatments as the index, for the same reason: an absent verdict must not

@@ -11,7 +11,11 @@ const links = [
   { href: "/compare", label: "Compare" },
   { href: "/apps", label: "Apps" },
   { href: "/security", label: "Security" },
-  { href: "/docs/guides/getting-started", label: "Docs" },
+  // `/docs`, not a specific guide. This pointed at /docs/guides/getting-started for as
+  // long as there was no docs landing to send a reader to — which meant the nav chose a
+  // page on the reader's behalf and gave them no view of the rest. The label and its
+  // rendered box are unchanged, so the committed visual baselines still hold.
+  { href: "/docs", label: "Docs" },
   { href: "/release", label: "Release" }
 ];
 ---
