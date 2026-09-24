@@ -16,7 +16,38 @@ import {
   Terminal
 } from "lucide-react";
 import BaseLayout from "../layouts/BaseLayout.astro";
-import { GITHUB_URL } from "../data/site";
+import { releaseFacts } from "../data/release";
+
+/*
+ * THE "GUARDED EGRESS" CARD IS DELIBERATELY NARROW NOW. It used to say network access passes
+ * through allow and deny host policy instead of ambient fetch, which overclaimed twice — and
+ * the launch post had already cut both halves as unpublishable:
+ *
+ *   - There is no exclusive "only these hosts" stance at this release. The tier resolver
+ *     returns the same profile for `listed` and `all`, and the flag that would make a tier
+ *     exclusive is not in this release's policy module. Worse, an operator allow-list entry
+ *     is UNIONED onto whichever preset a tier selected, so adding one widens what a tier can
+ *     reach rather than narrowing it.
+ *   - It is not the whole machine. It is a real chokepoint for core's own fetch surfaces,
+ *     where the range checks and address pinning apply, but an app backend is a separate
+ *     process with its own network stack and its traffic never passes this guard.
+ *
+ * What survives is what the code actually does: block the loopback, private and link-local
+ * classes, and pin the resolved address so the connection dials what was checked. The
+ * `egress_default_deny`, `single_chokepoint` and `egress_allowlist_exclusive` rows on
+ * /compare carry the same three findings with their sources.
+ */
+
+// The threat model and the limitations page are LINKED IN-SITE, not to GitHub. Both are
+// part of the synchronized /docs corpus, which is generated from the pinned release — so
+// an in-site link is the only one guaranteed to show the reader the version this page
+// describes. The previous `blob/main` links pointed at core's development branch: a
+// security document read there can describe controls the released build does not have,
+// which is exactly the failure /compare exists to prevent. SECURITY.md is not in the docs
+// corpus (it is a repository-root file), so it is pinned to the release commit instead.
+// scripts/validate-source-pins.mjs fails the build if a branch-pinned source link returns.
+const securityPolicyUrl =
+  `${releaseFacts.core.source.repositoryUrl}/blob/${releaseFacts.core.source.commit}/SECURITY.md`;
 ---
 
 <BaseLayout
@@ -103,7 +134,11 @@ import { GITHUB_URL } from "../data/site";
           <span>03</span>
           <Network size={25} aria-hidden="true" />
           <h3>Guarded egress</h3>
-          <p>Network access passes through allow and deny host policy instead of ambient fetch.</p>
+          <p>
+            Core fetch surfaces route through one policy check that blocks LAN,
+            loopback and link-local targets and pins the resolved address. It is
+            not a destination allow-list.
+          </p>
         </article>
         <article>
           <span>04</span>
@@ -226,25 +261,15 @@ import { GITHUB_URL } from "../data/site";
         threat model before relying on it for sensitive, irreplaceable workflows.
       </p>
       <div class="honesty-links">
-        <a
-          class="button button-secondary"
-          href={`${GITHUB_URL}/blob/main/docs/security/threat-model.md`}
-          target="_blank"
-          rel="noreferrer"
-        >
+        <a class="button button-secondary" href="/docs/security/threat-model">
           Read the threat model <ArrowRight size={18} aria-hidden="true" />
         </a>
-        <a
-          class="button button-secondary"
-          href={`${GITHUB_URL}/blob/main/docs/security/limitations.md`}
-          target="_blank"
-          rel="noreferrer"
-        >
+        <a class="button button-secondary" href="/docs/security/limitations">
           Known limitations <ArrowRight size={18} aria-hidden="true" />
         </a>
         <a
           class="button button-secondary"
-          href={`${GITHUB_URL}/blob/main/SECURITY.md`}
+          href={securityPolicyUrl}
           target="_blank"
           rel="noreferrer"
         >

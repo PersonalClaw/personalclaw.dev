@@ -228,14 +228,29 @@ const changelogUrl = `${releaseFacts.core.source.repositoryUrl}/blob/${releaseFa
             <h3>{releaseFacts.core.changelog.unreleased.heading}</h3>
           </div>
           {
-            releaseFacts.core.changelog.unreleased.sections.map((section) => (
-              <div class="change-group">
-                <h4>{section.title}</h4>
-                <ul>
-                  {section.items.map((item) => <li>{item}</li>)}
-                </ul>
-              </div>
-            ))
+            /* An empty Unreleased section is the NORMAL state of a freshly cut release, and
+               it used to render as this heading followed by nothing — a blank panel that
+               reads as a broken build rather than as a fact. The sibling article prints its
+               summary; this one printed only its sections. Say the true thing instead. The
+               emptiness is derived, not asserted: it is whatever the pinned changelog holds
+               above its newest version heading. */
+            releaseFacts.core.changelog.unreleased.sections.length === 0 ? (
+              <p class="change-empty">
+                The pinned changelog records nothing above
+                <span translate="no"> v{releaseFacts.core.version}</span>, so this
+                release is its own newest entry. Work landing after it appears here
+                when the pin moves.
+              </p>
+            ) : (
+              releaseFacts.core.changelog.unreleased.sections.map((section) => (
+                <div class="change-group">
+                  <h4>{section.title}</h4>
+                  <ul>
+                    {section.items.map((item) => <li>{item}</li>)}
+                  </ul>
+                </div>
+              ))
+            )
           }
         </article>
 
@@ -635,6 +650,19 @@ const changelogUrl = `${releaseFacts.core.source.repositoryUrl}/blob/${releaseFa
 
   .change-group + .change-group {
     margin-top: 1.5rem;
+  }
+
+  /* Muted, not coral: "nothing has landed yet" is a settled fact about the pin, not
+     something a reader needs to act on. `--fs-label` rather than a raw rem — this rule is
+     new text, and the type-scale ratchet in scripts/validate-design-tokens.mjs counts a new
+     raw font-size as new debt and fails. The role token is the fix; raising the ceiling
+     would have been the same defect with the gate switched off. */
+  .change-empty {
+    margin: 0;
+    max-width: 60ch;
+    color: var(--ink-muted);
+    font-size: var(--fs-label);
+    line-height: 1.7;
   }
 
   .change-group h4 {

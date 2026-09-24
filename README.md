@@ -174,6 +174,7 @@ The build runs Astro diagnostics before producing the static site in `dist/`.
 | `npm run validate:registry` | Rebuilds `/registry` against fixture registries that carry listings and asserts what it renders |
 | `npm run validate:blog` | Asserts `/blog` renders one listing item per readable post, and that each post is published, contracted, and not an empty body |
 | `npm run validate:compare` | Refuses a `/compare` matrix that renders no rows, drifts from its data, sources a row to a branch instead of the pinned release, or stops carrying the rows that do not hold |
+| `npm run validate:source-pins` | Refuses any hand-authored link into core or apps at a moving ref (`main`, `master`, `HEAD`, `latest`) — the same release-not-branch rule `validate:compare` applies to matrix rows, applied to page copy |
 | `npm run test:static` | Validates production and preview publication artifacts |
 | `npm run test:browser` | Builds and runs the complete Playwright suite |
 | `npm run test:lighthouse` | Builds and enforces Lighthouse budgets on every route |
@@ -320,6 +321,19 @@ and it is held to the release, not to the branch.
   scope serves a reader better than our characterisation of anyone else's.
 - **Corrections outrank the page.** A row that cannot be re-sourced gets removed rather than
   defended.
+
+The tag-not-branch half of that rule is **not** limited to `/compare` rows. `npm run
+validate:source-pins` applies it to every hand-authored link into core or apps: a URL at
+`main`, `master`, `HEAD` or `latest` fails the build, because it answers a different
+question than the page is asking. Such a link resolves, renders and passes a link check
+while showing the reader a version they cannot install — which is why it went unnoticed on
+`/security` (the threat model, the limitations page and the vulnerability policy all pointed
+at core's default branch), on `/apps` (the app-creation guide), and across all of the app
+directory's per-card links. Build these from `releaseFacts.core.source.commit` /
+`releaseFacts.apps.source.commit`, or link the in-site `/docs` route, which is generated
+from the pin. The one deliberate exception — `/registry`'s `absent-at-pin` fallback, where
+no pinned path exists — is recorded with its reason in the script, and the gate also fails
+if a listed exception stops being needed.
 
 ### <a name="release-parity"></a>Release parity
 
