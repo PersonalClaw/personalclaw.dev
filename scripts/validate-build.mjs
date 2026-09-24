@@ -3,6 +3,8 @@ import path from "node:path";
 import { load } from "cheerio";
 import {
   canonicalUrl,
+  descriptionExemptOutputPaths,
+  outputPathRoute,
   routeOutputPath,
   allRoutePaths,
   blogRoutes,
@@ -10,11 +12,17 @@ import {
   crossLinkedDocsRoutes,
   DOCS_BODY_TEXT_FLOOR,
   docsRoutes,
+  HEAD_CONTRACT_PAGE_FLOOR,
+  llmsFullPath,
+  llmsIndexPath,
+  LLMS_FULL_BYTE_FLOOR,
+  LLMS_INDEX_BYTE_FLOOR,
   qualityRoutes,
   registryAppRoutePaths,
   RESEARCH_CROSS_LINK_FLOOR,
   routes,
-  siteOrigin
+  siteOrigin,
+  socialImagePath
 } from "../tests/support/site-contract.mjs";
 import { registryArtifactExists, registryListing } from "../src/data/registry.mjs";
 
@@ -139,14 +147,231 @@ for (const filePath of contractedHtml) {
   if (!generatedHtml.has(filePath)) fail(`route contract references missing generated page ${filePath}`);
 }
 
-// Docs pages are generated from core, so their WORDS are not contracted — but their
-// existence, their having real metadata, and their having a BODY are. A doc that
-// renders with an empty title is a sync bug, and it would otherwise ship silently.
+// ── The universal head contract ──────────────────────────────────────────────────
 //
-// The body check is the one that cannot be inferred from the others: frontmatter is
-// written from a filename and an H1, so a page whose document body came out empty
-// passes every metadata assertion and still serves an HTTP 200 over nothing. A route
-// that exists is not a document that published — see DOCS_BODY_TEXT_FLOOR.
+// Derived from the BUILD OUTPUT, not from a list of routes. That is the whole point: a
+// new page — a docs topic, a registry listing, a route another branch adds — is held to
+// this the moment it renders, with no edit here and no edit to the route contract's
+// per-tier tables. What each TIER additionally contracts (exact title strings, a docs
+// body floor, a registry render) stays in its own block below; this block owns the head
+// fields that every indexable page needs regardless of who wrote its words.
+//
+// It exists because the per-tier tables left most of the site uncovered, and the gap was
+// invisible: on origin/main all 33 generated /docs pages shipped with NO `og:image` (so
+// every shared docs link rendered as a bare text row) and NO JSON-LD at all, and the
+// per-listing registry pages were swept by a loop over a list that is EMPTY until the
+// pin moves — a metadata contract that passes because it measures nothing.
+const socialImageUrl = `${siteOrigin}${socialImagePath}`;
+// Measured from the artifact rather than compared against a second copy of the numbers:
+// a PNG's IHDR is bytes 16..24 of the file. A card whose declared dimensions do not match
+// its pixels is cropped by the consumer, and nothing else in the build would notice.
+const socialImageHeader = await readFile(path.join(distDir, socialImagePath.slice(1)));
+const socialImageWidth = String(socialImageHeader.readUInt32BE(16));
+const socialImageHeight = String(socialImageHeader.readUInt32BE(20));
+
+/** Absolute in-site URLs a BreadcrumbList claims; resolved after the sweep. */
+const breadcrumbItemUrls = new Map();
+let headContractPages = 0;
+
+for (const outputPath of [...generatedHtml].sort()) {
+  const routePath = outputPathRoute(outputPath);
+  const $ = load(await readFile(path.join(distDir, outputPath), "utf8"));
+  const canonical = canonicalUrl(routePath);
+  headContractPages += 1;
+
+  const title = $("title").text().trim();
+  const description = metaContent($, 'meta[name="description"]');
+  const requiresDescription = !descriptionExemptOutputPaths.has(outputPath);
+
+  if ($("html").attr("lang") !== "en") fail(`${routePath}: html lang must be "en"`);
+  if (!title) fail(`${routePath}: page has no title`);
+  else if (!title.includes("PersonalClaw")) {
+    fail(`${routePath}: title "${title}" is missing the site name`);
+  }
+  if (requiresDescription && !description) {
+    fail(`${routePath}: page has no meta description`);
+  }
+  if ($("h1").length !== 1) {
+    fail(`${routePath}: expected exactly one h1, found ${$("h1").length}`);
+  }
+  if ($('link[rel="canonical"]').attr("href") !== canonical) {
+    fail(
+      `${routePath}: canonical must be ${canonical} ` +
+        `(got ${$('link[rel="canonical"]').attr("href") ?? "none"})`
+    );
+  }
+
+  // ONE robots tag, and the right one. Exactly one, because the policy is stated in two
+  // renderers (BaseLayout and the Starlight head override) and Google resolves
+  // conflicting tags to the most restrictive — a second tag would silently deindex a
+  // page. `/404` is `noindex` on both renderers' terms: nothing there ranks.
+  const robotsTags = $('meta[name="robots"]');
+  const expectedRobots = expectNoIndex
+    ? "noindex, nofollow"
+    : routePath === "/404"
+      ? "noindex, follow"
+      : "index, follow";
+  if (robotsTags.length !== 1) {
+    fail(`${routePath}: expected exactly one robots meta tag, found ${robotsTags.length}`);
+  } else if (robotsTags.attr("content")?.trim() !== expectedRobots) {
+    fail(
+      `${routePath}: robots meta must be "${expectedRobots}" ` +
+        `(got "${robotsTags.attr("content")}")`
+    );
+  }
+
+  // The share card. Every tag here is required on every page: a page with og:title but
+  // no og:image renders in Slack, X and LinkedIn as a bare text row, which is the exact
+  // state /docs shipped in.
+  const socialContract = [
+    ['meta[property="og:site_name"]', "PersonalClaw"],
+    ['meta[property="og:locale"]', "en_US"],
+    ['meta[property="og:url"]', canonical],
+    ['meta[property="og:image"]', socialImageUrl],
+    ['meta[property="og:image:width"]', socialImageWidth],
+    ['meta[property="og:image:height"]', socialImageHeight],
+    ['meta[name="twitter:card"]', "summary_large_image"],
+    ['meta[name="twitter:image"]', socialImageUrl]
+  ];
+  if (requiresDescription) {
+    socialContract.push(
+      ['meta[property="og:description"]', description],
+      ['meta[name="twitter:description"]', description]
+    );
+  }
+  for (const [selector, expected] of socialContract) {
+    if (metaContent($, selector) !== expected) {
+      fail(
+        `${routePath}: ${selector} must equal "${expected}" ` +
+          `(got "${metaContent($, selector)}")`
+      );
+    }
+  }
+  // The card headline must be non-empty and must be describing THIS page. Prefix, not
+  // equality, because the two tiers differ for a reason: the marketing routes carry the
+  // suffixed `<title>` verbatim, while /docs carries the bare heading, since a card
+  // renders `og:site_name` beside the title and would otherwise print the site's name
+  // twice. A prefix check accepts both and still fails a headline from another page.
+  for (const selector of ['meta[property="og:title"]', 'meta[name="twitter:title"]']) {
+    const value = metaContent($, selector);
+    if (!value) fail(`${routePath}: ${selector} must be non-empty`);
+    else if (!title.startsWith(value)) {
+      fail(`${routePath}: ${selector} "${value}" does not match the <title> "${title}"`);
+    }
+  }
+  // Alt text on the card, non-empty: a share preview is an image a screen reader has to
+  // describe, and the a11y gate cannot see a meta tag.
+  for (const selector of [
+    'meta[property="og:image:alt"]',
+    'meta[name="twitter:image:alt"]'
+  ]) {
+    if (!metaContent($, selector)) fail(`${routePath}: ${selector} must be non-empty`);
+  }
+  if (!metaContent($, 'meta[property="og:type"]')) {
+    fail(`${routePath}: og:type must be set`);
+  }
+
+  // Structured data. One document, valid, and anchored to this page: an invalid graph is
+  // worse than no graph, because a consumer that fails to parse it discards every claim
+  // in it rather than the one that is wrong.
+  const jsonLdScripts = $('script[type="application/ld+json"]');
+  if (jsonLdScripts.length !== 1) {
+    fail(
+      `${routePath}: expected exactly one JSON-LD document, found ${jsonLdScripts.length}`
+    );
+  } else {
+    try {
+      const jsonLd = JSON.parse(jsonLdScripts.text());
+      const graph = Array.isArray(jsonLd["@graph"]) ? jsonLd["@graph"] : [];
+      if (jsonLd["@context"] !== "https://schema.org" || graph.length === 0) {
+        fail(`${routePath}: JSON-LD must be a non-empty schema.org @graph`);
+      }
+      const ofType = (type) => graph.filter((node) => node["@type"] === type);
+
+      const [webPage] = ofType("WebPage");
+      if (!webPage) fail(`${routePath}: JSON-LD graph must carry a WebPage node`);
+      else {
+        if (webPage.url !== canonical) fail(`${routePath}: JSON-LD URL must match canonical`);
+        if (webPage.name !== title) {
+          fail(`${routePath}: JSON-LD WebPage name must equal the <title>`);
+        }
+        if (requiresDescription && webPage.description !== description) {
+          fail(`${routePath}: JSON-LD WebPage description must equal the meta description`);
+        }
+      }
+
+      const [webSite] = ofType("WebSite");
+      if (webSite?.url !== `${siteOrigin}/`) {
+        fail(`${routePath}: JSON-LD website URL must be ${siteOrigin}/`);
+      }
+      if (ofType("Organization").length !== 1) {
+        fail(`${routePath}: JSON-LD graph must carry exactly one Organization node`);
+      }
+      // The product identity node is scoped to the home page: exactly one there, none
+      // anywhere else — a second SoftwareApplication would compete with it.
+      const appNodes = ofType("SoftwareApplication").length;
+      if (routePath === "/" ? appNodes !== 1 : appNodes !== 0) {
+        fail(`${routePath}: SoftwareApplication node must appear on / only (found ${appNodes})`);
+      }
+
+      // Breadcrumbs. Positions must be a 1..n run, and every `item` is collected for
+      // resolution against the build below — a crumb pointing at a page that does not
+      // exist is the one breadcrumb failure that renders as valid markup and reads as a
+      // broken trail to every consumer. There is no /docs index, so this is a live
+      // hazard rather than a hypothetical.
+      const trails = ofType("BreadcrumbList");
+      if (trails.length > 1) {
+        fail(`${routePath}: expected at most one BreadcrumbList, found ${trails.length}`);
+      }
+      for (const trail of trails) {
+        const items = Array.isArray(trail.itemListElement) ? trail.itemListElement : [];
+        if (items.length < 2) {
+          fail(`${routePath}: a BreadcrumbList must carry at least two crumbs`);
+        }
+        items.forEach((item, index) => {
+          if (item.position !== index + 1) {
+            fail(`${routePath}: breadcrumb positions must run 1..n (got ${item.position})`);
+          }
+          if (!item.name) fail(`${routePath}: breadcrumb ${index + 1} has no name`);
+          if (typeof item.item === "string") breadcrumbItemUrls.set(item.item, routePath);
+          else fail(`${routePath}: breadcrumb ${index + 1} has no item URL`);
+        });
+      }
+    } catch (error) {
+      fail(`${routePath}: invalid JSON-LD (${error.message})`);
+    }
+  }
+
+  // Explicit media dimensions are a repository contract (README → "Design for
+  // inspection"): without them the page reflows as images decode, which is a CLS
+  // regression the Lighthouse budget only catches once it is already large.
+  for (const image of $("img").toArray()) {
+    const width = Number($(image).attr("width"));
+    const height = Number($(image).attr("height"));
+    if (!Number.isFinite(width) || width <= 0 || !Number.isFinite(height) || height <= 0) {
+      fail(`${routePath}: image "${$(image).attr("src")}" needs explicit dimensions`);
+    }
+  }
+}
+
+if (headContractPages < HEAD_CONTRACT_PAGE_FLOOR) {
+  fail(
+    `the head contract swept only ${headContractPages} pages (floor ` +
+      `${HEAD_CONTRACT_PAGE_FLOOR}) — it is derived from the build output, so a low ` +
+      `count means the build produced almost nothing, not that the site shrank`
+  );
+}
+
+for (const [itemUrl, sourceRoute] of breadcrumbItemUrls) {
+  await validateInternalUrl(itemUrl, sourceRoute, "breadcrumb item");
+}
+
+// Docs pages are generated from core, so their WORDS are not contracted — the head
+// contract above covers their metadata. What is left here is the one thing it cannot
+// infer: a BODY. Frontmatter is written from a filename and an H1, so a page whose
+// document body came out empty satisfies every metadata assertion and still serves an
+// HTTP 200 over nothing. A route that exists is not a document that published — see
+// DOCS_BODY_TEXT_FLOOR.
 for (const routePath of docsRoutes) {
   const filePath = path.join(distDir, routeOutputPath(routePath));
   if (!(await exists(filePath))) {
@@ -154,8 +379,6 @@ for (const routePath of docsRoutes) {
     continue;
   }
   const $ = load(await readFile(filePath, "utf8"));
-  const title = $("title").text().trim();
-  const description = metaContent($, 'meta[name="description"]');
   // `.sl-markdown-content` is the rendered document only, deliberately: measuring
   // `main` would count Starlight's own sidebar, pagination and footer chrome, so a
   // page with no document at all would clear any floor on the strength of furniture.
@@ -165,25 +388,15 @@ for (const routePath of docsRoutes) {
       `${routePath}: expected exactly one rendered document container, found ` +
         `${body.length} — the page is registered as a route but published no document`
     );
-  } else {
-    const bodyText = body.text().replace(/\s+/g, " ").trim();
-    if (bodyText.length < DOCS_BODY_TEXT_FLOOR) {
-      fail(
-        `${routePath}: docs page rendered only ${bodyText.length} characters of body ` +
-          `text (floor ${DOCS_BODY_TEXT_FLOOR}) — it serves a 200 over a blank or stub ` +
-          `page, which is what an allowlist entry without a working sync produces`
-      );
-    }
+    continue;
   }
-  if (!title) fail(`${routePath}: docs page has no title`);
-  if (title && !title.includes("PersonalClaw")) {
-    fail(`${routePath}: docs title "${title}" is missing the site suffix`);
-  }
-  if (!description) fail(`${routePath}: docs page has no meta description`);
-  if ($("html").attr("lang") !== "en") fail(`${routePath}: html lang must be "en"`);
-  const robots = metaContent($, 'meta[name="robots"]');
-  if (expectNoIndex && robots !== "noindex, nofollow") {
-    fail(`${routePath}: preview docs page must be noindex (got ${robots ?? "none"})`);
+  const bodyText = body.text().replace(/\s+/g, " ").trim();
+  if (bodyText.length < DOCS_BODY_TEXT_FLOOR) {
+    fail(
+      `${routePath}: docs page rendered only ${bodyText.length} characters of body ` +
+        `text (floor ${DOCS_BODY_TEXT_FLOOR}) — it serves a 200 over a blank or stub ` +
+        `page, which is what an allowlist entry without a working sync produces`
+    );
   }
 }
 
@@ -228,6 +441,12 @@ if (researchLinksChecked < RESEARCH_CROSS_LINK_FLOOR) {
   );
 }
 
+// The hand-authored tiers: marketing, registry index, blog and the capability matrix.
+// The head contract above already checked that every page HAS metadata, that it is
+// internally consistent, and that its structured data parses. What only these tiers can
+// contract is the EXACT WORDS — their titles and descriptions are written in this
+// repository, so a drifted string is a change to published copy and must be deliberate.
+// (The /docs tier has no equivalent block on purpose: core owns those words.)
 for (const route of qualityRoutes) {
   const filePath = path.join(distDir, routeOutputPath(route.path));
   if (!(await exists(filePath))) {
@@ -236,75 +455,14 @@ for (const route of qualityRoutes) {
   }
 
   const $ = load(await readFile(filePath, "utf8"));
-  const canonical = canonicalUrl(route.path);
-  const robots = expectNoIndex ? "noindex, nofollow" : "index, follow";
 
-  if ($("html").attr("lang") !== "en") fail(`${route.path}: html lang must be "en"`);
   if ($("title").text().trim() !== route.title) fail(`${route.path}: title does not match route contract`);
   if (metaContent($, 'meta[name="description"]') !== route.description) {
     fail(`${route.path}: description does not match route contract`);
   }
-  if (metaContent($, 'meta[name="robots"]') !== robots) {
-    fail(`${route.path}: robots meta must be "${robots}"`);
-  }
-  if ($('link[rel="canonical"]').attr("href") !== canonical) {
-    fail(`${route.path}: canonical must be ${canonical}`);
-  }
-  if ($("h1").length !== 1) fail(`${route.path}: expected exactly one h1`);
-
-  const expectedMetadata = [
-    ['meta[property="og:type"]', "website"],
-    ['meta[property="og:site_name"]', "PersonalClaw"],
-    ['meta[property="og:title"]', route.title],
-    ['meta[property="og:description"]', route.description],
-    ['meta[property="og:url"]', canonical],
-    ['meta[property="og:image"]', `${siteOrigin}/brand/social-preview.png`],
-    ['meta[name="twitter:card"]', "summary_large_image"],
-    ['meta[name="twitter:title"]', route.title],
-    ['meta[name="twitter:description"]', route.description],
-    ['meta[name="twitter:image"]', `${siteOrigin}/brand/social-preview.png`]
-  ];
-  for (const [selector, expected] of expectedMetadata) {
-    if (metaContent($, selector) !== expected) {
-      fail(`${route.path}: ${selector} must equal "${expected}"`);
-    }
-  }
-
-  const jsonLdScripts = $('script[type="application/ld+json"]');
-  if (jsonLdScripts.length !== 1) {
-    fail(`${route.path}: expected exactly one JSON-LD document`);
-  } else {
-    try {
-      const jsonLd = JSON.parse(jsonLdScripts.text());
-      const graph = Array.isArray(jsonLd["@graph"]) ? jsonLd["@graph"] : [];
-      if (jsonLd["@context"] !== "https://schema.org" || graph.length === 0) {
-        fail(`${route.path}: JSON-LD must be a schema.org @graph`);
-      }
-      const ofType = (type) => graph.filter((node) => node["@type"] === type);
-      const [webPage] = ofType("WebPage");
-      if (!webPage) fail(`${route.path}: JSON-LD graph must carry a WebPage node`);
-      else if (webPage.url !== canonical) fail(`${route.path}: JSON-LD URL must match canonical`);
-      const [webSite] = ofType("WebSite");
-      if (webSite?.url !== `${siteOrigin}/`) {
-        fail(`${route.path}: JSON-LD website URL must be ${siteOrigin}/`);
-      }
-      // The product identity node is scoped to the home page: exactly one there,
-      // none anywhere else — a second SoftwareApplication would compete with it.
-      const appNodes = ofType("SoftwareApplication").length;
-      if (route.path === "/" ? appNodes !== 1 : appNodes !== 0) {
-        fail(`${route.path}: SoftwareApplication node must appear on / only (found ${appNodes})`);
-      }
-    } catch (error) {
-      fail(`${route.path}: invalid JSON-LD (${error.message})`);
-    }
-  }
-
-  for (const image of $("img").toArray()) {
-    const width = Number($(image).attr("width"));
-    const height = Number($(image).attr("height"));
-    if (!Number.isFinite(width) || width <= 0 || !Number.isFinite(height) || height <= 0) {
-      fail(`${route.path}: image "${$(image).attr("src")}" needs explicit dimensions`);
-    }
+  // `website`, not Starlight's `article`: these are product pages, not documents.
+  if (metaContent($, 'meta[property="og:type"]') !== "website") {
+    fail(`${route.path}: og:type must be "website"`);
   }
 
   for (const anchor of $("a[href]").toArray()) {
@@ -434,6 +592,75 @@ if (!(await exists(robotsPath))) {
     if (!robots.includes(`Sitemap: ${siteOrigin}/sitemap-index.xml`)) {
       fail("production robots.txt must name the canonical sitemap");
     }
+    // robots.txt is the first file an agent fetches, and it is the only place this site
+    // can point one at the machine-readable corpus — there is no directive for it, so
+    // the pointer is a comment. Contracted so the pointer and the files cannot drift
+    // apart: the pair below is asserted to exist in the same run.
+    for (const llmsPath of [llmsIndexPath, llmsFullPath]) {
+      if (!robots.includes(`${siteOrigin}${llmsPath}`)) {
+        fail(`production robots.txt must point at ${siteOrigin}${llmsPath}`);
+      }
+    }
+  }
+}
+
+// ── The machine-readable corpus (llmstxt.org) ────────────────────────────────────
+//
+// Generated by scripts/sync-docs.mjs from the same pinned commit as /docs and gitignored,
+// so nothing in the repository proves they were written. `public/` is copied verbatim: a
+// writer that threw, a renamed output, or a broadened ignore rule each produce a site
+// that looks complete and has quietly stopped being legible to an agent — the same shape
+// as a docs route that 200s over a blank page.
+{
+  const versionLabel = releaseFacts.core.versionLabel;
+  for (const [llmsPath, floor] of [
+    [llmsIndexPath, LLMS_INDEX_BYTE_FLOOR],
+    [llmsFullPath, LLMS_FULL_BYTE_FLOOR]
+  ]) {
+    const filePath = path.join(distDir, llmsPath.slice(1));
+    if (!(await exists(filePath))) {
+      fail(`missing ${llmsPath} — run \`npm run sync:docs\``);
+      continue;
+    }
+    const body = await readFile(filePath, "utf8");
+    if (body.length < floor) {
+      fail(
+        `${llmsPath} is ${body.length} bytes (floor ${floor}) — a header-only or ` +
+          `truncated write, not a corpus`
+      );
+    }
+    // The corpus must name the release it was generated from, for the same reason every
+    // other surface here does: an undated document about a moving product is a guess.
+    if (!body.includes(versionLabel)) {
+      fail(`${llmsPath} does not name the pinned release ${versionLabel}`);
+    }
+  }
+
+  const indexPath = path.join(distDir, llmsIndexPath.slice(1));
+  if (await exists(indexPath)) {
+    const index = await readFile(indexPath, "utf8");
+    const linked = new Set(
+      [...index.matchAll(new RegExp(`${siteOrigin}(/[\\w\\-/.]*)`, "g"))].map(
+        (match) => match[1].replace(/[.,)]$/, "")
+      )
+    );
+    // Every URL it advertises must resolve. An index of 404s is worse than no index:
+    // the agent that reads it has no other way to discover it was wrong.
+    for (const linkedPath of linked) {
+      await validateInternalUrl(`${siteOrigin}${linkedPath}`, llmsIndexPath, "llms.txt link");
+    }
+    // …and it must advertise the WHOLE corpus. Set equality both ways, so a doc published
+    // without an llms.txt entry fails as loudly as an entry for a doc that was withdrawn.
+    // This is what makes the human-facing and agent-facing views of /docs one surface.
+    const linkedDocs = new Set([...linked].filter((entry) => entry.startsWith("/docs")));
+    for (const docsRoute of docsRoutes) {
+      if (!linkedDocs.has(docsRoute)) fail(`${llmsIndexPath} does not list ${docsRoute}`);
+    }
+    for (const linkedDoc of linkedDocs) {
+      if (!docsRoutes.includes(linkedDoc)) {
+        fail(`${llmsIndexPath} lists ${linkedDoc}, which is not a published docs route`);
+      }
+    }
   }
 }
 
@@ -473,6 +700,18 @@ const vercel = JSON.parse(await readFile(path.join(root, "vercel.json"), "utf8")
 if (vercel.framework !== "astro") fail('vercel.json framework must be "astro"');
 if (vercel.buildCommand !== "npm run build") fail('vercel.json must use "npm run build"');
 if (vercel.outputDirectory !== "dist") fail('vercel.json outputDirectory must be "dist"');
+// ONE URL per page. Astro is configured `trailingSlash: "never"` and writes the
+// slash-free form into every canonical, og:url and sitemap entry — but Astro only
+// decides what it EMITS. With this key absent, Vercel serves `/product/index.html` at
+// both `/product` and `/product/` with a 200 and no redirect, which was measured on
+// production: two URLs for one page, held together by nothing but rel=canonical. `false`
+// makes Vercel 308 the slashed form onto the canonical one, so the two halves agree.
+if (vercel.trailingSlash !== false) {
+  fail(
+    'vercel.json must set "trailingSlash": false to agree with astro.config.mjs ' +
+      "(trailingSlash: \"never\"); without it both /x and /x/ answer 200"
+  );
+}
 const securityHeaders = new Set(
   (vercel.headers ?? []).flatMap((rule) => (rule.headers ?? []).map((header) => header.key))
 );
@@ -484,6 +723,18 @@ for (const header of [
   "X-Frame-Options"
 ]) {
   if (!securityHeaders.has(header)) fail(`vercel.json is missing ${header}`);
+}
+// The install script is served as text/plain, so it cannot carry a robots meta tag and
+// nothing else can keep it out of a result list. A header is the only mechanism available,
+// and an installer ranking for the product's name is noise at best.
+{
+  const installRule = (vercel.headers ?? []).find((rule) => rule.source === "/install");
+  const installHeaders = new Map(
+    (installRule?.headers ?? []).map((header) => [header.key, header.value])
+  );
+  if (installHeaders.get("X-Robots-Tag") !== "noindex") {
+    fail('vercel.json must serve /install with "X-Robots-Tag: noindex"');
+  }
 }
 
 // ── CTA canon + nav parity (PRODUCT.md: the primary CTA is "Get PersonalClaw") ──
@@ -585,5 +836,14 @@ if (failures.length > 0) {
       `${path.relative(root, distDir)} (${expectNoIndex ? "preview" : "production"} policy); ` +
       `resolved ${researchLinksChecked} research cross-links across ` +
       `${crossLinkedDocsRoutes.length} republished topics.`
+  );
+  // Printed so a green can be read against a real denominator: the head contract is
+  // derived from the build output, so its coverage is a measurement rather than a list.
+  console.log(
+    `Head contract: ${headContractPages} page(s) swept (floor ` +
+      `${HEAD_CONTRACT_PAGE_FLOOR}); ${breadcrumbItemUrls.size} distinct breadcrumb ` +
+      `target(s) resolved; social card ${socialImageWidth}x${socialImageHeight} verified ` +
+      `against ${socialImagePath}; ${llmsIndexPath} + ${llmsFullPath} published and ` +
+      `cross-checked against ${docsRoutes.length} docs route(s).`
   );
 }
