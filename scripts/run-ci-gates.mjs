@@ -37,6 +37,14 @@ const independentGates = [
     command: "npm",
     args: ["run", "validate:design-tokens"],
   },
+  // Independent on purpose: it reads source text, so it needs neither a build nor the
+  // generated release facts, and a branch-pinned link should be reported even when the
+  // build is broken for an unrelated reason.
+  {
+    name: "validate:source-pins",
+    command: "npm",
+    args: ["run", "validate:source-pins"],
+  },
   {
     name: "validate:release-parity",
     command: "npm",
