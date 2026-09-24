@@ -191,9 +191,28 @@ function extractSummary(markdown, { allowEmphasisLead = false } = {}) {
     // (`pip install -e .`) — that truncated the CLI page's summary mid-thought.
     const sentences = flattened.split(/(?<=[a-z0-9)"”])\.\s+(?=[A-Z])/);
     const sentence = sentences[0].replace(/\.$/, "") + ".";
-    return sentence.length > 220 ? `${sentence.slice(0, 217)}…` : sentence;
+    return cap(sentence);
   }
   return "";
+}
+
+/**
+ * Cap a description at a meta-description length, cutting on a WORD boundary.
+ *
+ * Why the boundary matters: this string is published as `<meta name="description">` and
+ * as the page's line in llms.txt, so a mid-word cut is what a human reads in a result
+ * list. A blind `slice(0, 217)` produced seven of them at the pinned commit — the
+ * architecture overview ended "…all behind a local w…". Falling back to the hard slice
+ * keeps the cap absolute for text with no space to cut at (a long URL or identifier).
+ */
+function cap(text) {
+  if (text.length <= 220) return text;
+  const hard = text.slice(0, 217);
+  const lastSpace = hard.lastIndexOf(" ");
+  // Only honour a boundary in the last fifth of the budget; a space near the start
+  // would throw away most of the description to save one partial word.
+  const body = lastSpace > 173 ? hard.slice(0, lastSpace) : hard;
+  return `${body.replace(/[,;:\s]+$/, "")}…`;
 }
 
 /** Flatten inline markdown to one line and cap it at a meta-description length. */
@@ -203,7 +222,7 @@ function condense(text) {
     .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
     .replace(/[`*]/g, "")
     .trim();
-  return flattened.length > 220 ? `${flattened.slice(0, 217)}…` : flattened;
+  return cap(flattened);
 }
 
 /**

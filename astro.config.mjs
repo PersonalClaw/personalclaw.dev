@@ -3,6 +3,15 @@ import react from "@astrojs/react";
 import sitemap from "@astrojs/sitemap";
 import starlight from "@astrojs/starlight";
 import { rehypeScrollableTables } from "./scripts/rehype-scrollable-tables.mjs";
+// Dependency-free by design so importing it here cannot pull generated JSON into the
+// config's load graph — see the header of src/data/social-card.ts.
+import {
+  SITE_URL,
+  SOCIAL_IMAGE_ALT,
+  SOCIAL_IMAGE_HEIGHT,
+  SOCIAL_IMAGE_PATH,
+  SOCIAL_IMAGE_WIDTH
+} from "./src/data/social-card";
 
 // Starlight owns ONLY /docs. The marketing routes (/, /product, /apps, /security,
 // /release) keep their own layout and design tokens — Starlight's `prerender` scope is
@@ -12,8 +21,13 @@ import { rehypeScrollableTables } from "./scripts/rehype-scrollable-tables.mjs";
 // pinned core commit and is gitignored. Never commit a copy of a core doc here: one
 // canonical source is the whole point, and a committed copy is a copy that drifts.
 export default defineConfig({
-  site: "https://personalclaw.dev",
+  site: SITE_URL,
   output: "static",
+  // ONE URL per page. Astro emits `/product/index.html` and writes `/product` into every
+  // canonical, og:url and sitemap entry; `vercel.json`'s `"trailingSlash": false` is the
+  // other half of this and 308-redirects `/product/` onto it. Both halves are required:
+  // with Vercel's default (the key absent) BOTH forms answered 200 on production, which
+  // is duplicate content that only rel=canonical was holding together.
   trailingSlash: "never",
   // Starlight's integration sets `scopedStyleStrategy: 'where'` GLOBALLY
   // (@astrojs/starlight/index.ts, in its astro:config:setup updateConfig call).
@@ -53,24 +67,58 @@ export default defineConfig({
         // says so before a reader gets to a topic.
         { label: "Research", items: [{ autogenerate: { directory: "docs/research" } }] }
       ],
-      // Starlight does not use BaseLayout.astro, so it needs the same robots policy
-      // stated here: a Vercel PREVIEW deployment must never be indexable, or a
-      // throwaway branch URL competes with personalclaw.dev in search results.
-      // (validate:preview enforces this — it caught the omission.)
+      // Starlight does not use BaseLayout.astro, so every head tag BaseLayout emits has
+      // to be restated for /docs — which is three quarters of the indexable site.
+      //
+      // How this merges: Starlight's `createHead(defaults, config.head, frontmatter.head)`
+      // dedupes `<meta>` by `name`/`property` and the LATER source wins
+      // (@astrojs/starlight/utils/head.js `mergeHead`). So entries here both ADD tags
+      // Starlight has no default for and OVERRIDE the defaults it does — no duplicate
+      // tag is emitted either way. Per-PAGE metadata (the JSON-LD graph) cannot come
+      // from this static array; it comes from the `Head` override below.
+      // The robots policy is NOT here: it needs per-page knowledge (Starlight's generated
+      // 404 must be noindex while every real doc is indexable), so it is emitted by the
+      // `Head` override below. Stating it in both places would put two conflicting
+      // `<meta name="robots">` tags on one page.
       head: [
+        // The social card. Measured on origin/main: docs pages carried NO og:image at
+        // all, so every shared /docs link rendered as a bare text row in Slack, X and
+        // LinkedIn. Same file, dimensions and alt text as the marketing routes
+        // (src/data/structured-data.ts) — the numbers are the PNG's real size.
         {
           tag: "meta",
           attrs: {
-            name: "robots",
-            content:
-              process.env.VERCEL_ENV === "preview"
-                ? "noindex, nofollow"
-                : "index, follow"
+            property: "og:image",
+            content: `${SITE_URL}${SOCIAL_IMAGE_PATH}`
           }
-        }
+        },
+        { tag: "meta", attrs: { property: "og:image:width", content: SOCIAL_IMAGE_WIDTH } },
+        { tag: "meta", attrs: { property: "og:image:height", content: SOCIAL_IMAGE_HEIGHT } },
+        { tag: "meta", attrs: { property: "og:image:alt", content: SOCIAL_IMAGE_ALT } },
+        {
+          tag: "meta",
+          attrs: {
+            name: "twitter:image",
+            content: `${SITE_URL}${SOCIAL_IMAGE_PATH}`
+          }
+        },
+        { tag: "meta", attrs: { name: "twitter:image:alt", content: SOCIAL_IMAGE_ALT } },
+        // OVERRIDES of Starlight's own defaults, both of which made /docs look like a
+        // separate property:
+        //   · og:site_name defaults to Starlight's `title` ("PersonalClaw docs"), so a
+        //     docs card and a marketing card advertised two different sites. The same
+        //     reasoning already governs the favicon a few lines down.
+        //   · og:locale defaults to the bare lang tag ("en"); the Open Graph spec wants
+        //     `language_TERRITORY`, which is what the marketing routes emit.
+        { tag: "meta", attrs: { property: "og:site_name", content: "PersonalClaw" } },
+        { tag: "meta", attrs: { property: "og:locale", content: "en_US" } }
       ],
       // The marketing site is the home; don't strand a reader inside /docs.
-      components: {},
+      components: {
+        // Adds the per-page JSON-LD graph, built by the SAME module BaseLayout uses so
+        // the two renderers cannot publish two different shapes. See the file's header.
+        Head: "./src/components/DocsHead.astro"
+      },
       editLink: {
         // Docs are owned by core, so "edit this page" must point AT core — pointing
         // at this repo would invite a PR that the drift check then deletes.
