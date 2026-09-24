@@ -32,6 +32,60 @@ import triggersCapture from "../assets/triggers.png";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { releaseFacts } from "../data/release";
 import { GITHUB_URL } from "../data/site";
+
+/*
+ * WHY SEVERAL CLAIMS ON THIS PAGE ARE NARROWER THAN THEY WERE.
+ *
+ * Every feature bullet below was read against the RELEASED tag this site publishes, and the
+ * ones that only held on core's development branch were narrowed or cut. Recorded here in
+ * the frontmatter rather than beside the markup on purpose: an Astro template comment is
+ * emitted into the HTML, and a retracted claim quoted verbatim in the shipped page is a
+ * string a reader — or a scraper — can still find and believe.
+ *
+ * CUT ENTIRELY — the safety-profile bullet. `guardrails/policy.py` is a closed island at
+ * this release: `SafetyProfile`, `profile_for_session`, `tool_grants`, `tool_allowlist` and
+ * `egress_tier` have no reference outside that module, its re-export and its own test file,
+ * and the gateway still picks between auto-approve and hook-based approval in exactly the
+ * branch the module's own docstring claims to have replaced. It was wired a week AFTER the
+ * tag, so it is a development-branch feature. /compare's `tool_approval` row carries the
+ * same finding, including the correction that the profile is as inert as the two list
+ * fields it already disclosed.
+ *
+ * GUARDRAILS, narrowed. The incident kill switch reaches four automation paths — cron,
+ * event triggers, script hooks, subagent spawn — not "every automation": the module names
+ * seven seams and three are unwired. The app's own guardrails panel already listed the
+ * four, so this page was the only surface overstating it. Budgets are enforced per DAY; the
+ * per-run limit is a settable control nothing reads, and a per-run DOLLAR ceiling has never
+ * existed in any version. The three prompt-scanning modes are real but do not cover the
+ * native tool-calling path.
+ *
+ * DOCTOR. "Read-only" now says "dashboard Doctor", which earns it — sqlite opened ro, and
+ * probes that decline the mutating helpers. The CLI `personalclaw doctor` rewrites
+ * `personalclaw.json` unprompted when it finds a fixable defect, so the unqualified
+ * sentence was false about the command a reader is most likely to type.
+ *
+ * MEMORY. Procedural moved out of the RECALL list. All three layers are written, but
+ * procedural is a write-only sink here: its single reader has no production caller and
+ * procedural rows are explicitly excluded from the injection query. Correction learning and
+ * fact promotion are both real, with live callers and a visible surface.
+ *
+ * STACK. "SQLite state" was the wrong shape, not a wrong word — the project's own
+ * durability inventory is five SQLite entries against twenty-one trees, eighteen JSON files
+ * and five JSONL logs. Chat history is JSONL and config is JSON; SQLite holds memory,
+ * knowledge, the lexicon and loops.
+ *
+ * TRIGGERS. There is no webhook trigger KIND at this release — the trigger id parser
+ * accepts schedule, lifecycle and event only. What exists is a Bearer-authenticated inbound
+ * endpoint that runs an agent turn, wired with curl rather than picked from a list.
+ *
+ * ARTIFACTS. Previews really render for widgets, HTML, React, documents, SVG and images,
+ * but office and video types are routed down the image path and show a broken glyph — so
+ * "not placeholder tiles" was true of the types named and false of the rest. Dedup matches
+ * on NAME: there is no content hash anywhere in the artifacts package.
+ *
+ * CHAT. The memory mode is chosen when a session is created and frozen after the first
+ * turn; no route changes it later and the control disappears once a chat starts.
+ */
 ---
 
 <BaseLayout
@@ -153,7 +207,7 @@ import { GITHUB_URL } from "../data/site";
         <ul class="feature-list">
           <li>Session fork and undo</li>
           <li>Folders, tags, and kanban</li>
-          <li>Temporary and incognito memory modes</li>
+          <li>Temporary and incognito memory modes, set when a chat starts</li>
           <li>Per-session model overrides</li>
         </ul>
       </div>
@@ -216,8 +270,9 @@ import { GITHUB_URL } from "../data/site";
             <div>
               <h3>Memory learns how you work.</h3>
               <p>
-                Semantic, episodic, and procedural layers support recall,
-                correction learning, and promotion of repeated facts.
+                Semantic and episodic layers support recall, correction learning,
+                and promotion of repeated facts. A procedural layer records
+                tool-outcome priors alongside them.
               </p>
             </div>
           </div>
@@ -278,7 +333,7 @@ import { GITHUB_URL } from "../data/site";
           skill, an approval you walked away from.
         </p>
         <ul class="feature-list">
-          <li>Cron, interval, and webhook triggers</li>
+          <li>Cron and interval triggers, plus an inbound webhook endpoint</li>
           <li>One inbox for decisions, approvals, and messages</li>
           <li>Delivery per kind: notify, badge, digest, or never</li>
           <li>Background subagents</li>
@@ -370,9 +425,9 @@ import { GITHUB_URL } from "../data/site";
           into collections instead of scattered through a chat log.
         </p>
         <ul class="feature-list">
-          <li>Live previews, not placeholder tiles</li>
+          <li>Live previews for widgets, documents, SVG and images</li>
           <li>Version history and diffs between revisions</li>
-          <li>Collections, and dedup at save time</li>
+          <li>Collections, and name collisions caught at save time</li>
         </ul>
       </div>
     </div>
@@ -421,15 +476,16 @@ import { GITHUB_URL } from "../data/site";
         <h2 class="section-title">Autonomy with a floor under it.</h2>
         <p>
           Before you hand the system unattended work, it gives you the controls
-          to trust it: a kill switch that suspends every automation at once, daily
-          spend ceilings, outbound secret scanning, and per-provider circuit
-          breakers. Interactive chat is never affected.
+          to trust it: a kill switch that halts scheduled runs, triggers, script
+          hooks and subagent spawns at once, daily spend ceilings, outbound
+          secret scanning, and per-provider circuit breakers. Interactive chat is
+          never affected.
         </p>
         <ul class="feature-list">
           <li>Incident kill switch, explicit resume</li>
-          <li>Token and dollar budgets per day and per run</li>
-          <li>Outbound prompt scanning: warn, redact, or block</li>
-          <li>Named safety profiles for unattended runs</li>
+          <li>Token and dollar budgets per day</li>
+          <li>Outbound prompt scanning on agentic calls: warn, redact, or block</li>
+          <li>Per-provider circuit breakers, with provider health on view</li>
         </ul>
       </div>
       <div class="automation-media">
@@ -462,11 +518,11 @@ import { GITHUB_URL } from "../data/site";
         <p class="kicker">Diagnoses itself</p>
         <h2 class="section-title">See what's healthy, and fix what isn't.</h2>
         <p>
-          The Doctor runs read-only health probes across every subsystem —
-          memory, channels, local models, app backends, the SPA, model-provider
-          breakers. A degraded capability is never mistaken for a dead gateway,
-          confirm-gated fixes repair the common faults, and a health-scored engine
-          keeps the stores tidy on its own.
+          The dashboard Doctor runs read-only health probes across every
+          subsystem — memory, channels, local models, app backends, the SPA,
+          model-provider breakers. A degraded capability is never mistaken for a
+          dead gateway, confirm-gated fixes repair the common faults, and a
+          health-scored engine keeps the stores tidy on its own.
         </p>
         <ul class="feature-list">
           <li>Tiered probes with per-capability evidence</li>
@@ -483,8 +539,8 @@ import { GITHUB_URL } from "../data/site";
       <p class="kicker">Open source · self-hosted</p>
       <h2 class="section-title">Run the system on your machine.</h2>
       <p>
-        Python 3.12, an aiohttp gateway, React dashboard, SQLite state, and no
-        product telemetry.
+        Python 3.12, an aiohttp gateway, React dashboard, state on disk as SQLite
+        plus plain JSON and JSONL, and no product telemetry.
       </p>
       <div>
         <a

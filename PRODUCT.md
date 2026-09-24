@@ -38,10 +38,17 @@ The personal AI agent platform you fully own: one local gateway, observable auto
   6. The project is honest about its pre-1.0 lifecycle and current limits.
 - Proof on hand:
   - Real, reproducible light and dark product captures in the core repository.
-  - An MIT-licensed public codebase with a documented v0.1.0 release.
-  - Zero product telemetry.
-  - Thirty-six first-party apps spanning models, search, speech, agents, tools, channels, and full contributed interfaces.
+  - An MIT-licensed public codebase with a documented tagged release.
+  - No analytics, crash reporting, or usage telemetry — and one unprompted GitHub release check that has no off switch, which `/compare` states rather than rounds away.
+  - A first-party app catalogue spanning models, search, speech, agents, tools, channels, and full contributed interfaces.
   - Published architecture and security documents covering the gateway, app lifecycle, approval controls, scoped tokens, egress, and supply-chain scanning.
+
+  Deliberately no numbers in that list. It carried "Thirty-six first-party apps" and
+  "a documented v0.1.0 release" long after both went stale — at the currently pinned
+  release the catalogue is thirty-nine apps and the release is v0.1.3. Every count and
+  version the site actually renders is derived from the pinned manifests
+  (`releaseFacts`), so the brief should point at the mechanism rather than keep its own
+  copy of the answer. Ask the build, not this file.
 
 ## Brand Personality
 

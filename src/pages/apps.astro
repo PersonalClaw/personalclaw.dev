@@ -5,6 +5,15 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 import { appCategories, apps } from "../data/apps";
 import { releaseFacts } from "../data/release";
 import { APPS_URL } from "../data/site";
+
+// Pinned to the released apps commit, not `main`. The guide on the development branch can
+// document a manifest field or a provider type the released core does not accept yet, and
+// this page describes the release. scripts/validate-source-pins.mjs enforces it.
+const appGuideUrl =
+  `${releaseFacts.apps.source.repositoryUrl}/blob/${releaseFacts.apps.source.commit}/docs/app-creation-guide.md`;
+
+// Trailing slash: AppDirectory appends the slug directly.
+const appTreeBase = `${releaseFacts.apps.source.repositoryUrl}/tree/${releaseFacts.apps.source.commit}/`;
 ---
 
 <BaseLayout
@@ -44,7 +53,12 @@ import { APPS_URL } from "../data/site";
 
   <section class="directory-section section-rule">
     <div class="shell">
-      <AppDirectory apps={apps} categories={appCategories} client:load />
+      <AppDirectory
+        apps={apps}
+        categories={appCategories}
+        treeBase={appTreeBase}
+        client:load
+      />
     </div>
   </section>
 
@@ -117,7 +131,7 @@ import { APPS_URL } from "../data/site";
         </div>
         <a
           class="button button-primary"
-          href={`${APPS_URL}/blob/main/docs/app-creation-guide.md`}
+          href={appGuideUrl}
           target="_blank"
           rel="noreferrer"
         >

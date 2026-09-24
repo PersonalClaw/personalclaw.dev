@@ -22,23 +22,72 @@ import loopsCapture from "../assets/loops.png";
 import SystemWindow from "../components/SystemWindow.astro";
 import { CopyCommand } from "../components/CopyCommand";
 import BaseLayout from "../layouts/BaseLayout.astro";
+import { apps } from "../data/apps";
 import { releaseFacts } from "../data/release";
 import { GITHUB_URL, INSTALL_COMMAND } from "../data/site";
 
-const featuredApps = [
-  "OpenAI",
-  "Anthropic",
-  "Amazon Bedrock",
-  "Google Gemini",
-  "Ollama",
-  "Claude Code",
-  "OpenAI Codex",
-  "Tavily",
-  "Slack Channel",
-  "MCP Tool Servers",
-  "Minutes",
-  "Growth Tracker"
+// The tape names apps by SLUG and resolves each one through src/data/apps.ts, whose names
+// and categories src/data/release.ts already checks against every manifest at the pinned
+// apps commit. So a bundle renamed or dropped between releases fails the build here
+// instead of leaving the homepage advertising an app that /apps cannot show.
+//
+// It used to be a literal array of twelve display strings. All twelve happened to be
+// correct, which is the problem with a transcribed list: it is only ever verified by
+// somebody choosing to re-check it, and nothing here was going to.
+const featuredSlugs = [
+  "openai-models",
+  "anthropic-models",
+  "bedrock-models",
+  "google-models",
+  "ollama-models",
+  "claude-code-agent",
+  "codex-agent",
+  "tavily-search",
+  "slack-channel",
+  "mcp-tools",
+  "minutes",
+  "growth"
 ];
+
+/*
+ * THE INSTALL LINE BELOW NO LONGER SAYS "every path installs the same release artifact".
+ * That held for three of the four paths: uv, pipx and pip each install the one published
+ * PyPI wheel. The container path does not. `deploy/compose/compose.yaml` PULLS two prebuilt
+ * images — `personalclaw-gateway` and `personalclaw-web` — rather than installing the wheel,
+ * so it is a different artifact and a different topology, and "one artifact" made Compose
+ * sound like a packaging preference. It also does not BUILD: an earlier draft of this line
+ * said Compose builds the tagged source, which is only true of the separate
+ * `compose.build.yaml`; the default file resolves image tags and starts them.
+ *
+ * WORTH KNOWING BEFORE THIS LINE GROWS ANY CLAIM ABOUT THE CONTAINER DASHBOARD: the
+ * published gateway image for this release does not serve the SPA — measured today,
+ * `GET /` on `personalclaw-gateway:latest` answers 503 "PersonalClaw — Build the dashboard"
+ * while `/api/healthz` reports 200 and version 0.1.3. Compose still reaches a dashboard
+ * because the `personalclaw-web` image serves it, which is exactly why this sentence names
+ * a PAIR. Do not shorten it to "run the gateway in Docker and open the dashboard".
+ *
+ * (All of this is frontmatter, not a template comment: Astro emits template comments into
+ * the HTML, and a retracted claim should not ship inside the page that retracted it.)
+ *
+ * THE `{" "}` IN THAT PARAGRAPH IS LOAD-BEARING. Astro's HTML compression drops the
+ * newline-plus-indent between `see the` and the `<a>` on the next line, so the built markup
+ * read `see the<a …>install guide</a>` — one glued word. The old sentence hid it: `theinstall`
+ * did not fit the line, so `overflow-wrap` broke it mid-token at exactly the point the missing
+ * space would have been, and the page looked correct. The rewrite above shortened the line
+ * enough for both words to share it, and the defect became visible at 390px. An explicit
+ * `{" "}` is the fix the release note below already uses for the same reason.
+ */
+const appsBySlug = new Map(apps.map((app) => [app.slug, app]));
+const unknownFeatured = featuredSlugs.filter((slug) => !appsBySlug.has(slug));
+if (unknownFeatured.length > 0) {
+  throw new Error(
+    `src/pages/index.astro features app slug(s) that are not in the pinned app ` +
+      `directory: ${unknownFeatured.join(", ")}. Either the bundle was renamed or ` +
+      `removed upstream, or the slug is a typo — the homepage must not name an app ` +
+      `that /apps cannot show.`
+  );
+}
+const featuredApps = featuredSlugs.map((slug) => appsBySlug.get(slug)!.name);
 ---
 
 <BaseLayout>
@@ -329,8 +378,9 @@ const featuredApps = [
       <p class="quickstart-lede">
         The installer brings its own Python 3.12 via <code>uv</code> — nothing to
         set up first. The dashboard opens at <code>localhost:10000</code> after
-        the gateway starts. Prefer <code>uv</code> directly, pipx, pip, or Docker
-        Compose? Every path installs the same release artifact — see the
+        the gateway starts. Prefer <code>uv</code> directly, pipx, or pip? All
+        three install the same published wheel. Docker Compose runs a published
+        gateway and dashboard image pair instead — see the{" "}
         <a href="/docs/guides/getting-started">install guide</a
         >.
       </p>

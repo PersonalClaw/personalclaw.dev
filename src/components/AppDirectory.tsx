@@ -7,10 +7,22 @@ type Category = "All" | AppCategory;
 
 export function AppDirectory({
   apps,
-  categories
+  categories,
+  treeBase
 }: {
   apps: App[];
   categories: Category[];
+  /**
+   * The pinned-commit tree URL every card links into, ending in a slash. Passed in from
+   * src/pages/apps.astro rather than built here, because the pin lives in the generated
+   * release facts and this component is a client island that must not import them.
+   *
+   * It used to be a hardcoded `.../tree/main/${slug}`. That was 39 links into the apps
+   * DEVELOPMENT branch on a page whose counts are all derived from the RELEASED commit —
+   * so a bundle renamed or removed after the release gave a reader a 404 or, worse, a
+   * manifest declaring a provider type the released core rejects.
+   */
+  treeBase: string;
 }) {
   const [category, setCategory] = useState<Category>("All");
   const [query, setQuery] = useState("");
@@ -112,7 +124,7 @@ export function AppDirectory({
             <a
               key={app.slug}
               className="app-card"
-              href={`https://github.com/PersonalClaw/PersonalClawApps/tree/main/${app.slug}`}
+              href={`${treeBase}${app.slug}`}
               target="_blank"
               rel="noreferrer"
             >

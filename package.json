@@ -24,6 +24,7 @@
     "validate:visual-baselines": "node scripts/validate-visual-baselines.mjs",
     "validate:marketing-manifest": "node scripts/validate-marketing-manifest.mjs",
     "validate:design-tokens": "node scripts/validate-design-tokens.mjs",
+    "validate:source-pins": "node scripts/validate-source-pins.mjs",
     "validate:release-parity": "node scripts/validate-release-parity.mjs",
     "validate:release-parity:offline": "RELEASE_PARITY_OFFLINE=1 node scripts/validate-release-parity.mjs",
     "validate:release-parity:strict": "RELEASE_PARITY_REQUIRE_REMOTE=1 node scripts/validate-release-parity.mjs",
