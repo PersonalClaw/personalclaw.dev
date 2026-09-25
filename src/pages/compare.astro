@@ -25,10 +25,10 @@ const order = ["yes", "partial", "no"] as const;
 
       <p class="lede">
         Feature lists are written to be believed. This one is written to be checked. Every
-        row below names the file it was verified against in
+        row below names the file it was verified against in{" "}
         <span translate="no">{release.version}</span> — the release this website publishes,
         pinned at <span translate="no">{release.commit.slice(0, 8)}</span> — and not core's
-        development branch, where more is true. Checked on
+        development branch, where more is true. Checked on{" "}
         <time datetime={checkedOn}>{checkedOn}</time>.
       </p>
 
@@ -148,9 +148,9 @@ const order = ["yes", "partial", "no"] as const;
       </section>
 
       <p class="provenance">
-        Read from <span translate="no">{release.version}</span>
-        (<span translate="no">{release.commit.slice(0, 12)}</span>) ·
-        {counts.yes} holding · {counts.partial} narrower than stated ·
+        Read from <span translate="no">{release.version}</span>{" "}
+        (<span translate="no">{release.commit.slice(0, 12)}</span>) ·{" "}
+        {counts.yes} holding · {counts.partial} narrower than stated ·{" "}
         {counts.no} not in this release ·
         checked <time datetime={checkedOn}>{checkedOn}</time>
       </p>
