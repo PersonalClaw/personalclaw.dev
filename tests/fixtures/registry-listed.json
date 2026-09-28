@@ -2,10 +2,14 @@
   "schemaVersion": 1,
   "generatedAt": "2026-08-26T00:00:00.000Z",
   "source": {
+    "repository": "PersonalClaw/registry",
+    "commit": "0000000000000000000000000000000000000000",
+    "path": "app-registry.json"
+  },
+  "release": {
     "repository": "PersonalClaw/PersonalClaw",
     "commit": "0000000000000000000000000000000000000000",
-    "tag": "v9.9.9-fixture",
-    "path": "scratch/registry/app-registry.json"
+    "tag": "v9.9.9-fixture"
   },
   "availability": {
     "status": "present"

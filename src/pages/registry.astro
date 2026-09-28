@@ -11,12 +11,11 @@ import {
 // One read, at build time. The page is static and same-origin: nothing here is fetched
 // in a reader's browser. See scripts/sync-registry.mjs for where the data comes from.
 const listing = registryListing();
-const { apps, problems, source, state } = listing;
+const { apps, problems, source, release, state } = listing;
 
-const registryTreeUrl =
-  state === "absent-at-pin"
-    ? `https://github.com/${source.repository}/tree/main/${source.path.replace(/\/[^/]+$/, "")}`
-    : `https://github.com/${source.repository}/tree/${source.commit}/${source.path.replace(/\/[^/]+$/, "")}`;
+// Commit-pinned in every state: the registry has a pin of its own whether or not the
+// release this site publishes lists it, so there is always an immutable path to link.
+const registryTreeUrl = `https://github.com/${source.repository}/tree/${source.commit}`;
 ---
 
 <BaseLayout
@@ -44,7 +43,7 @@ const registryTreeUrl =
 
     <p class="shell registry-provenance">
       Generated from <span translate="no">{source.repository}</span>
-      {source.tag ? ` ${source.tag}` : ""} · <span translate="no">{source.path}</span>
+      {` @ ${source.commit.slice(0, 12)}`} · <span translate="no">{source.path}</span>
     </p>
   </section>
 
@@ -131,11 +130,11 @@ const registryTreeUrl =
         <div class="registry-notice">
           <h2>The registry is not part of this release yet.</h2>
           <p>
-            This website is generated from a pinned PersonalClaw release, and the
-            community registry landed after it. There is no registry file to read at
-            <span translate="no"> {source.repository} {source.tag ?? source.commit}</span>,
-            so no listings are published here. This page begins showing them when the
-            site is regenerated from a release that contains the registry.
+            This website is generated from a pinned PersonalClaw release,{" "}
+            <span translate="no">{release.repository} {release.tag ?? release.commit}</span>,
+            and that release's Store does not read the community registry yet, so no
+            listings are published here. This page begins showing them when the site is
+            regenerated from a release whose Store does.
           </p>
         </div>
       )}

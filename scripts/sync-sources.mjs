@@ -93,10 +93,15 @@ async function runGit(directory, args) {
 async function resolveLocalSource(key, source) {
   if (process.env.SOURCE_SYNC_REMOTE_ONLY === "1") return null;
 
-  const environmentPath =
-    key === "core"
-      ? process.env.PERSONALCLAW_CORE_DIR
-      : process.env.PERSONALCLAW_APPS_DIR;
+  // One override per source key. A key with none gets no override, rather than borrowing
+  // another source's: a registry checkout named by PERSONALCLAW_APPS_DIR would be refused as
+  // not matching its pin, and a wrong-but-matching one would be worse.
+  const environmentVariable = {
+    core: "PERSONALCLAW_CORE_DIR",
+    apps: "PERSONALCLAW_APPS_DIR",
+    registry: "PERSONALCLAW_REGISTRY_DIR"
+  }[key];
+  const environmentPath = environmentVariable ? process.env[environmentVariable] : undefined;
   const repositoryName = source.repository.split("/").at(-1);
   const candidate = path.resolve(root, environmentPath ?? `../${repositoryName}`);
 
@@ -178,8 +183,8 @@ async function fetchText(url) {
     const error = new Error(`Pinned source request failed (${response.status}) for ${url}`);
     // Carried so a caller can tell "this file is not in the pinned tree" (404) from
     // "GitHub is unhappy" (everything else) without matching on the message text.
-    // scripts/sync-registry.mjs needs that distinction: a registry that does not exist
-    // at the pinned release is a state to render, not a build failure.
+    // scripts/sync-registry.mjs needs that distinction: a file missing from a pinned tree
+    // tells it which of its own paths is wrong, and a failed request tells it nothing.
     /** @type {Error & { status?: number }} */ (error).status = response.status;
     throw error;
   }

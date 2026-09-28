@@ -134,7 +134,7 @@ const { source } = registryListing();
 
       <p class="provenance">
         Listing read from <span translate="no">{source.repository}</span>
-        {source.tag ? ` ${source.tag}` : ""} · <span translate="no">{source.path}</span>
+        {` @ ${source.commit.slice(0, 12)}`} · <span translate="no">{source.path}</span>
       </p>
     </div>
   </section>

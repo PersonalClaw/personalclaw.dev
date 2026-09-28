@@ -3,7 +3,9 @@
 # until someone happened to push. This runs the strict parity check on a schedule
 # (and on demand) and opens/updates a single tracking issue when core has moved
 # ahead — so "core published a tag" always produces a website obligation that is
-# visible, not tribal knowledge.
+# visible, not tribal knowledge. The same check holds the registry pin to the
+# registry's current commit, so a delisting produces the same obligation. The
+# issue title stays as it is: both steps below find the open issue by it.
 name: Release follow
 
 on:
@@ -65,7 +67,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           REPORT: ${{ steps.parity.outputs.report }}
         run: |
-          body=$(printf 'The scheduled release-parity check failed — the website is not publishing the current core release.\n\n```\n%s\n```\n\nTo resolve: re-pin `sources/personalclaw.sources.json` to the new tag + commit, bump `package.json` to the matching version, refresh release-sensitive content, and run `npm run test:prepush`. See `docs/release-runbook.md`.\n\n_Updated by the release-follow workflow._\n' "$REPORT")
+          body=$(printf 'The scheduled release-parity check failed — the website is not publishing the current core release or the current registry.\n\n```\n%s\n```\n\nTo resolve: for a core release, re-pin `sources/personalclaw.sources.json` to the new tag + commit, bump `package.json` to the matching version, and refresh release-sensitive content; for the registry, re-pin `data.registry` to its current commit. Then run `npm run test:prepush`. See `docs/release-runbook.md`.\n\n_Updated by the release-follow workflow._\n' "$REPORT")
           existing=$(gh issue list --state open --search "$TITLE in:title" --json number --jq '.[0].number // empty')
           if [ -n "$existing" ]; then
             gh issue comment "$existing" --body "$body"
@@ -81,7 +83,7 @@ jobs:
         run: |
           existing=$(gh issue list --state open --search "$TITLE in:title" --json number --jq '.[0].number // empty')
           if [ -n "$existing" ]; then
-            body=$(printf 'The scheduled release-parity check is green again — the website is publishing the current core release.\n\n```\n%s\n```\n\n_Closed by the release-follow workflow._\n' "$REPORT")
+            body=$(printf 'The scheduled release-parity check is green again — the website is publishing the current core release and the current registry.\n\n```\n%s\n```\n\n_Closed by the release-follow workflow._\n' "$REPORT")
             gh issue close "$existing" --comment "$body"
           fi
 

@@ -8,7 +8,8 @@
     "$schema",
     "schemaVersion",
     "channel",
-    "sources"
+    "sources",
+    "data"
   ],
   "properties": {
     "$schema": {
@@ -36,6 +37,19 @@
         },
         "apps": {
           "$ref": "#/$defs/appsSource"
+        }
+      }
+    },
+    "data": {
+      "description": "Data this site renders that is published continuously rather than released: pinned by commit, never by tag, so it takes no part in release parity.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "registry"
+      ],
+      "properties": {
+        "registry": {
+          "$ref": "#/$defs/registrySource"
         }
       }
     }
@@ -181,6 +195,22 @@
           }
         }
       ]
+    },
+    "registrySource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository",
+        "commit"
+      ],
+      "properties": {
+        "repository": {
+          "const": "PersonalClaw/registry"
+        },
+        "commit": {
+          "$ref": "#/$defs/commit"
+        }
+      }
     }
   }
 }
