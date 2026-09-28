@@ -17,7 +17,7 @@ part that is hard to fake: the mechanisms that make it true, and the places wher
 not true yet.
 
 **How to read it.** Every claim below names the file that proves it, in the tagged release
-this website publishes — `v0.1.3`, pinned commit `bc185c02`. Where a claim was true in
+this website publishes — `v0.1.3`, pinned commit `04389c96`. Where a claim was true in
 development but not in this release, it was cut, and the cut list at the end says which
 ones and why. That list is the most informative part of the post.
 
