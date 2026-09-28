@@ -36,6 +36,13 @@ created), because every step below verifies against the published tag.
    Pinning the tag object SHA instead of the commit is the classic mistake here;
    `validate:release-parity` and `sync:sources` both catch it.
 
+   Check the registry pin in the same edit. `data.registry.commit` must be the
+   registry's current commit (see [Between releases](#between-releases-the-registry)):
+
+   ```bash
+   git ls-remote https://github.com/PersonalClaw/registry HEAD
+   ```
+
 3. **Bump the website version.** Set `package.json` `version` to the release
    without its `v` prefix (`vX.Y.Z` → `X.Y.Z`), in the *same* change as step 2.
    Skipping this is the drift the parity check exists to prevent.
@@ -78,9 +85,9 @@ created), because every step below verifies against the published tag.
 
 | Check | Where it runs | What it catches |
 |---|---|---|
-| `validate:release-parity` | `test:static` → `test:ci` → pre-push, and the **Release version parity** CI job (strict) | website version ≠ published core tag; a `released` channel with no tag or no commit pin; a tag that doesn't resolve to the pinned commit; **core having published a newer release than the site pins** |
+| `validate:release-parity` | `test:static` → `test:ci` → pre-push, and the **Release version parity** CI job (strict) | website version ≠ published core tag; a `released` channel with no tag or no commit pin; a tag that doesn't resolve to the pinned commit; **core having published a newer release than the site pins**; **the registry having moved past its pin** |
 | `sync:sources` | every `build` | manifest schema, pinned-tree verification against GitHub, core tag ≠ `pyproject` version, changelog/app-manifest sanity |
-| **Release follow** workflow | daily schedule + manual | a core release published *after* the last website commit — opens/updates a tracking issue so a stale site can't sit unnoticed between pushes |
+| **Release follow** workflow | daily schedule + manual | a core release, or a registry change, published *after* the last website commit — opens/updates a tracking issue so a stale site can't sit unnoticed between pushes |
 | `validate:marketing-manifest` | `test:static` | a screenshot committed without a manifest entry, a manifest entry whose asset is missing, a shipping shot with no placement |
 | `validate:build` / `validate:preview` | `test:static` | publication contract of the built output (production and noindex preview) |
 
@@ -97,3 +104,18 @@ commits and no tags. In that state the site presents itself as a pinned
 development snapshot, and the tag-dependent parity assertions are reported as
 skipped (not silently passed). Return to `released` by following the sequence
 above.
+
+## Between releases: the registry
+
+The community registry, `PersonalClaw/registry`, is published continuously rather
+than released, so `data.registry` pins it by commit with no tag and no version.
+The pin is still a frozen copy of a consent surface: a listing the registry
+delists stays on `/registry`, with its permissions and its verdict, until the pin
+moves. So `validate:release-parity` fails, on either channel, whenever the
+registry's default branch is not at the pin, and the **Release follow** workflow
+reports it.
+
+To follow it, set `data.registry.commit` to the registry's current commit and run
+`npm run test:prepush`. Nothing else changes: no `package.json` bump, no
+`channel` change. What `/registry` shows is still decided by the pinned core
+release (see `scripts/sync-registry.mjs`).

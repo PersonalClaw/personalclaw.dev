@@ -163,7 +163,7 @@ The build runs Astro diagnostics before producing the static site in `dist/`.
 | Command | What it does |
 |---|---|
 | `npm run sync:sources` | Validates source pins and generates ignored release facts from exact revisions |
-| `npm run sync:registry` | Reads the community app registry, and one README per listing, from the pinned core commit |
+| `npm run sync:registry` | Reads the community app registry, and one README per listing, from the registry repository at its pinned commit, once the pinned core release lists it in its Store |
 | `npm run dev` | Starts the local Astro development server |
 | `npm run check` | Runs Astro and TypeScript diagnostics |
 | `npm run build` | Runs diagnostics and creates the production static build |
@@ -172,7 +172,7 @@ The build runs Astro diagnostics before producing the static site in `dist/`.
 | `npm run validate:registry` | Rebuilds `/registry` against fixture registries that carry listings and asserts what it renders |
 | `npm run validate:blog` | Asserts `/blog` renders one listing item per readable post, and that each post is published, contracted, and not an empty body |
 | `npm run validate:compare` | Refuses a `/compare` matrix that renders no rows, drifts from its data, sources a row to a branch instead of the pinned release, or stops carrying the rows that do not hold |
-| `npm run validate:source-pins` | Refuses any hand-authored link into core or apps at a moving ref (`main`, `master`, `HEAD`, `latest`) — the same release-not-branch rule `validate:compare` applies to matrix rows, applied to page copy |
+| `npm run validate:source-pins` | Refuses any hand-authored link into core, apps or the registry at a moving ref (`main`, `master`, `HEAD`, `latest`) — the same release-not-branch rule `validate:compare` applies to matrix rows, applied to page copy |
 | `npm run test:static` | Validates production and preview publication artifacts |
 | `npm run test:browser` | Builds and runs the complete Playwright suite |
 | `npm run test:lighthouse` | Builds and enforces Lighthouse budgets on every route |
@@ -278,7 +278,7 @@ PersonalClaw spans three repositories, with deliberately separate ownership:
 |---|---|
 | Product capabilities, version, docs, security posture, and changelog | [PersonalClaw](https://github.com/PersonalClaw/PersonalClaw) |
 | First-party app manifests, permissions, requirements, and compatibility | [PersonalClawApps](https://github.com/PersonalClaw/PersonalClawApps) |
-| Community app listings, their declared permissions, and their scan verdicts | [PersonalClaw](https://github.com/PersonalClaw/PersonalClaw) `scratch/registry/` |
+| Community app listings, their declared permissions, and their scan verdicts | [registry](https://github.com/PersonalClaw/registry) `app-registry.json`, pinned by commit as `data.registry` |
 | Presentation, public routing, synchronized docs build, and `/install` endpoint | This repository |
 
 Every build pins full source SHAs. The manifest supports two fail-closed channels:
@@ -286,9 +286,11 @@ Every build pins full source SHAs. The manifest supports two fail-closed channel
 - `pre-release` requires both tags to be `null` and renders a pinned development snapshot.
 - `released` requires tags for both repositories, verifies that each tag resolves to its declared SHA, and requires the core tag to match the package version.
 
+The registry is pinned beside them under `data`, by commit alone: it is data published continuously, not a release, so it has no tag and takes no part in version parity. Its pin is still held current, because a pin is a frozen copy: see [Release parity](#release-parity).
+
 The manifest is currently on `released`. Generated files and fetched source caches are ignored; copied source content is never committed to this repository.
 
-That rule has a visible consequence today. The community registry landed in core **after** the pinned release, so there is no registry file to read at the pinned commit and `/registry` says so rather than reading core's default branch — which would publish unreleased core state as released state. The listing surface starts showing listings when the pin moves to a release that contains the registry; nothing about the page changes then.
+That rule has a visible consequence today. What makes a community listing part of released PersonalClaw is a release whose Store reads the registry, and the pinned release's does not: its catalog seeds no registry source. So `/registry` says so, and the registry is not read, rather than publishing a Store feature the released product does not have. The listing surface starts showing listings when the core pin moves to a release whose Store reads the registry; nothing about the page changes then.
 
 ### Claims about our own capabilities
 
@@ -320,24 +322,26 @@ and it is held to the release, not to the branch.
   defended.
 
 The tag-not-branch half of that rule is **not** limited to `/compare` rows. `npm run
-validate:source-pins` applies it to every hand-authored link into core or apps: a URL at
-`main`, `master`, `HEAD` or `latest` fails the build, because it answers a different
-question than the page is asking. Such a link resolves, renders and passes a link check
-while showing the reader a version they cannot install — which is why it went unnoticed on
-`/security` (the threat model, the limitations page and the vulnerability policy all pointed
-at core's default branch), on `/apps` (the app-creation guide), and across all of the app
-directory's per-card links. Build these from `releaseFacts.core.source.commit` /
-`releaseFacts.apps.source.commit`, or link the in-site `/docs` route, which is generated
-from the pin. The one deliberate exception — `/registry`'s `absent-at-pin` fallback, where
-no pinned path exists — is recorded with its reason in the script, and the gate also fails
-if a listed exception stops being needed.
+validate:source-pins` applies it to every hand-authored link into core, apps or the
+registry: a URL at `main`, `master`, `HEAD` or `latest` fails the build, because it answers
+a different question than the page is asking. Such a link resolves, renders and passes a
+link check while showing the reader a version they cannot install — which is why it went
+unnoticed on `/security` (the threat model, the limitations page and the vulnerability
+policy all pointed at core's default branch), on `/apps` (the app-creation guide), and
+across all of the app directory's per-card links. Build these from
+`releaseFacts.core.source.commit` / `releaseFacts.apps.source.commit`
+(`registryListing().source.commit` for the registry), or link the in-site `/docs` route,
+which is generated from the pin. A link that genuinely cannot be pinned is recorded with its
+reason in the script; none is listed today, and the gate also fails if a listed exception
+stops being needed.
 
 ### <a name="release-parity"></a>Release parity
 
-Because the site publishes a released version, its own release identity must match core's: **`package.json` version == the pinned core tag == core's `pyproject.toml` version.** `npm run validate:release-parity` enforces that, plus two things a schema can't:
+Because the site publishes a released version, its own release identity must match core's: **`package.json` version == the pinned core tag == core's `pyproject.toml` version.** `npm run validate:release-parity` enforces that, plus what a schema can't:
 
 - **Truthful pins** — each tag must dereference to the pinned commit (these repositories use annotated tags, so a tag object's SHA is not the commit).
 - **Freshness** — if core has published a newer release tag than the manifest pins, the check FAILS. A published core release is an obligation on this repository, not an optional follow-up.
+- **Registry freshness** — the registry pin must be the registry's current default-branch commit. A merged listing or delisting is the same obligation as a core release: a stale pin would keep showing a reader a listing, its permissions and its verdict after the registry withdrew them. It re-pins `data.registry` alone, with no version bump.
 
 It runs inside `test:static` (so `test:ci` and the pre-push hook include it) and as a dedicated strict CI job; a daily **Release follow** workflow re-checks freshness between pushes and files a tracking issue when the site falls behind. Strict runs treat an unreachable GitHub API as a failure rather than a skip. The step-by-step release sequence is [docs/release-runbook.md](./docs/release-runbook.md).
 

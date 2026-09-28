@@ -1,7 +1,7 @@
 // Prove the registry pages actually render a registry.
 //
-// THE FAILURE THIS EXISTS TO CATCH. The production registry is EMPTY today — in fact it
-// does not exist at the pinned core release at all (see scripts/sync-registry.mjs). A
+// THE FAILURE THIS EXISTS TO CATCH. The production registry renders nothing today — the
+// pinned core release's Store does not read it at all (see scripts/sync-registry.mjs). A
 // generator written against that input renders zero cards, the page looks clean, and
 // every check over the shipped build passes VACUOUSLY. So the shipped build is not
 // evidence. This script rebuilds the site against fixture registries that DO carry
@@ -18,9 +18,9 @@
 // the site after rebuild and card data matches the Store consent surface", and the two
 // halves fail for the same reason, which is a RELEASE, not a gap in the work:
 //
-//   * "a merged registry PR appears on the site" — four listings ARE merged in core, but
-//     the site is generated from the newest core RELEASE, and `scratch/registry/` does not
-//     exist at v0.1.3 at all. The clause becomes measurable when the pin moves.
+//   * "a merged registry PR appears on the site" — listings ARE merged in the registry
+//     repository, but the site is generated from the newest core RELEASE, and v0.1.3's
+//     Store does not read the registry. The clause becomes measurable when the pin moves.
 //   * "card data matches the Store consent surface" — the Store's registry-listing consent
 //     surface ALSO postdates v0.1.3: `web/src/lib/provenance.ts` (which owns that copy) is
 //     not in the pinned tree, and `RegistryPointer` at v0.1.3 carries none of `types`,
@@ -419,7 +419,7 @@ try {
 const restored = existsSync(artifactPath)
   ? JSON.parse(readFileSync(artifactPath, "utf8"))
   : null;
-if (restored?.source?.tag === "v9.9.9-fixture") {
+if (restored?.release?.tag === "v9.9.9-fixture") {
   fail("the probe left a fixture registry in .generated/registry.json");
 }
 

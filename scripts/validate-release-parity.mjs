@@ -24,6 +24,13 @@
 //        website to follow.
 //     7. The pinned tag resolves (through annotated-tag dereference) to the
 //        pinned commit, in both core and apps.
+//     8. REGISTRY FRESHNESS, on either channel: the registry (`data.registry`) is
+//        pinned by commit alone, because it is published continuously rather than
+//        released. A pin is still a frozen copy, so it must be the registry's
+//        current commit: a merged listing or delisting obliges the website to
+//        follow, the same way a core release does. A stale pin would keep showing
+//        a reader a listing, its permissions and its verdict after the registry
+//        withdrew them.
 //
 // Set RELEASE_PARITY_OFFLINE=1 to force local-only (CI can run the full check;
 // the pre-push hook stays fast and offline-tolerant). Set
@@ -186,10 +193,22 @@ if (channel === "released" && coreTag && existsSync(pyprojectPath)) {
 const offline = process.env.RELEASE_PARITY_OFFLINE === "1";
 const requireRemote = process.env.RELEASE_PARITY_REQUIRE_REMOTE === "1";
 
+/** A remote check that could not run: a failure in strict mode, a printed skip otherwise. */
+function remoteCheckFailed(error) {
+  const message = error instanceof Error ? error.message : String(error);
+  if (requireRemote) {
+    problems.push(`remote release check could not complete: ${message}`);
+  } else {
+    notices.push(
+      `remote checks skipped (GitHub API unreachable: ${message}): staleness NOT verified`
+    );
+  }
+}
+
 if (offline) {
   notices.push("remote checks skipped (RELEASE_PARITY_OFFLINE=1): staleness NOT verified");
 } else if (channel !== "released") {
-  notices.push("remote checks skipped: channel is not \"released\"");
+  notices.push("remote release-tag checks skipped: channel is not \"released\"");
 } else {
   try {
     for (const [key, source] of Object.entries(manifest.sources ?? {})) {
@@ -216,14 +235,31 @@ if (offline) {
       }
     }
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    if (requireRemote) {
-      problems.push(`remote release check could not complete: ${message}`);
-    } else {
-      notices.push(
-        `remote checks skipped (GitHub API unreachable: ${message}): staleness NOT verified`
+    remoteCheckFailed(error);
+  }
+}
+
+// 8. REGISTRY FRESHNESS — on either channel, because the registry pin is not a release:
+//    a pre-release snapshot shows the same /registry a release does.
+const registry = manifest.data?.registry;
+if (!offline && registry?.commit) {
+  try {
+    const head = await fetchJson(
+      `https://api.github.com/repos/${registry.repository}/commits/HEAD`
+    );
+    if (typeof head?.sha !== "string") {
+      throw new Error(`GitHub returned no commit for ${registry.repository} HEAD`);
+    }
+    if (head.sha !== registry.commit) {
+      problems.push(
+        `${registry.repository} is at ${head.sha} on its default branch, but the ` +
+          `website pins data.registry at ${registry.commit} — re-pin data.registry in ` +
+          `sources/personalclaw.sources.json to the registry's current commit (no ` +
+          `package.json bump: the registry is not a release)`
       );
     }
+  } catch (error) {
+    remoteCheckFailed(error);
   }
 }
 
@@ -238,6 +274,7 @@ if (problems.length > 0) {
 } else {
   console.log(
     `Release parity OK: channel ${channel}, website ${websiteVersion}, ` +
-      `core ${coreTag ?? "untagged"}, apps ${manifest.sources?.apps?.tag ?? "untagged"}.`
+      `core ${coreTag ?? "untagged"}, apps ${manifest.sources?.apps?.tag ?? "untagged"}, ` +
+      `registry ${registry?.commit?.slice(0, 12) ?? "unpinned"}.`
   );
 }

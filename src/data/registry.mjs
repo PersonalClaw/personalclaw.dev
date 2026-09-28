@@ -6,7 +6,8 @@
 // disagree with itself.
 //
 // Its input is .generated/registry.json, written by scripts/sync-registry.mjs from the
-// pinned core commit and gitignored (see that script for why nothing is committed).
+// registry repository at its pinned commit and gitignored (see that script for why
+// nothing is committed, and for why the pinned core release decides what is shown).
 //
 // WHAT THIS SURFACE PROMISES A READER, and therefore what the rules below protect:
 //
@@ -199,9 +200,9 @@ function nonEmptyString(value) {
  * Read one registry row, or say why it cannot be read.
  *
  * The checks are structural — enough to know the row is renderable and that its
- * security-relevant fields are really the shapes the schema promises. The registry's
- * own CI (core's scratch/registry/validate_registry.py) owns semantic validation such
- * as the capability-type enum; re-deriving that list here would be a second copy of it.
+ * security-relevant fields are really the shapes the schema promises. The registry
+ * repository's own CI (its validate_registry.py) owns semantic validation such as the
+ * capability-type enum; re-deriving that list here would be a second copy of it.
  *
  * @param {unknown} row
  * @param {number} index
@@ -290,9 +291,9 @@ export function normalizeRegistry(registry) {
  * THREE STATES, rendered differently on purpose. Collapsing any pair of them would make
  * the page lie by omission:
  *
- *   absent-at-pin  the released core this site is generated from has no registry file
- *                  at all (true today: the registry landed after v0.1.3). "There is no
- *                  registry here yet."
+ *   absent-at-pin  the released core this site is generated from does not list the
+ *                  registry in its Store (true today: v0.1.3 predates it), so the
+ *                  registry is not read at all. "There is no registry here yet."
  *   empty          the registry exists and lists nothing. "The registry is open and
  *                  nothing has been accepted into it yet."
  *   listed         one or more listings. Cards.
@@ -307,6 +308,7 @@ function buildListing(artifact) {
     : { apps: [], problems: [] };
   return {
     source: artifact.source,
+    release: artifact.release,
     generatedAt: artifact.generatedAt,
     availability: artifact.availability ?? { status: "present" },
     state: !available ? "absent-at-pin" : apps.length === 0 ? "empty" : "listed",
