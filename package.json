@@ -64,9 +64,5 @@
     "lighthouse": "13.5.0",
     "smol-toml": "^1.8.0",
     "typescript": "^6.0.3"
-  },
-  "//overrides": "sharp: Astro 7 allows ^0.34 || ^0.35 and npm resolved 0.34.5, which carries the libvips advisory GHSA-f88m-g3jw-g9cj (4 CVEs, high). Astro already permits the patched line, so this pins the resolution up rather than adding sharp as a direct dependency the site does not import. Drop when Astro floors it itself.",
-  "overrides": {
-    "sharp": "^0.35.3"
   }
 }
