@@ -16,6 +16,7 @@
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { assertPublishable, isWithheld } from "./docs-publication.mjs";
+import { installerPython } from "../src/data/installer.mjs";
 import {
   loadManifest,
   resolveSource,
@@ -574,7 +575,7 @@ async function main() {
     "## Install",
     "",
     "```",
-    "uv tool install personalclaw && personalclaw gateway",
+    `uv tool install --python ${installerPython()} personalclaw && personalclaw gateway`,
     "```",
     "",
     "## Documentation",

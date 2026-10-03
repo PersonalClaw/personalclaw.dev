@@ -1,8 +1,8 @@
 export const GITHUB_URL = "https://github.com/PersonalClaw/PersonalClaw";
 export const APPS_URL = "https://github.com/PersonalClaw/PersonalClawApps";
-// The released install path (core Distribution plan): one command via uv (which
-// brings its own Python 3.12), then setup. The /install bootstrap this site
-// serves wraps the same flow and installs uv first when it's absent. The old
+// The released install path: one command via uv, on the Python the installer names
+// (src/data/installer.mjs reads it for the home page), then setup. The /install bootstrap
+// this site serves wraps the same flow and installs uv first when it's absent. The old
 // clone-and-build sequence is the CONTRIBUTOR path and lives in core's
 // CONTRIBUTING.md — not the end-user quickstart.
 export const INSTALL_COMMAND =
