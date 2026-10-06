@@ -23,8 +23,13 @@ import SystemWindow from "../components/SystemWindow.astro";
 import { CopyCommand } from "../components/CopyCommand";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { apps } from "../data/apps";
+import { installerPython } from "../data/installer.mjs";
 import { releaseFacts } from "../data/release";
 import { GITHUB_URL, INSTALL_COMMAND } from "../data/site";
+
+// The quickstart names the Python the one-liner installs on, read from the installer /install
+// serves (src/data/installer.mjs), so the page and the script cannot name two versions.
+const INSTALLER_PYTHON = installerPython();
 
 // The tape names apps by SLUG and resolves each one through src/data/apps.ts, whose names
 // and categories src/data/release.ts already checks against every manifest at the pinned
@@ -376,7 +381,7 @@ const featuredApps = featuredSlugs.map((slug) => appsBySlug.get(slug)!.name);
       <p class="kicker">Run it yourself</p>
       <h2 class="section-title">One command to a local gateway.</h2>
       <p class="quickstart-lede">
-        The installer brings its own Python 3.12 via <code>uv</code> — nothing to
+        The installer brings its own Python {INSTALLER_PYTHON} via <code>uv</code> — nothing to
         set up first. The dashboard opens at <code>localhost:10000</code> after
         the gateway starts. Prefer <code>uv</code> directly, pipx, or pip? All
         three install the same published wheel. Docker Compose runs a published
