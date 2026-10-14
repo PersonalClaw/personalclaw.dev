@@ -27,17 +27,35 @@ const categoryOrder = [
   "Tools",
   "Speech",
   "Channels",
-  "Actions",
+  "Inboxes",
+  "Knowledge",
+  "Automation",
+  "Sync",
+  "Sandboxes",
   "Skills",
-  "Products"
+  "Products",
+  "Companions"
 ];
+// The public directory groups core's provider types into the families a reader looks for,
+// so a type core adds is a decision made here rather than a category of one by default. A
+// manifest whose type is not listed fails the sync (validateAppManifest) instead of
+// rendering under a raw type name.
 const providerCategory = {
   model: "Models",
   search: "Search",
   agent: "Agents",
   tool: "Tools",
   channel: "Channels",
-  action: "Actions",
+  notification: "Channels",
+  inbox: "Inboxes",
+  knowledge: "Knowledge",
+  vector_store: "Knowledge",
+  ocr: "Knowledge",
+  action: "Automation",
+  trigger: "Automation",
+  trigger_source: "Automation",
+  sync: "Sync",
+  sandbox: "Sandboxes",
   skills: "Skills"
 };
 const speechCapabilities = new Set(["diarization", "stt", "tts"]);
@@ -438,24 +456,30 @@ function validateAppManifest(manifest, relativePath) {
   }
 
   if (manifest.provider != null) {
+    // `capabilities` is optional in core's manifest (it defaults to none), so an absent
+    // list is an empty one; a present one must still be a list of names.
+    const capabilities = manifest.provider?.capabilities ?? [];
     if (
       typeof manifest.provider !== "object" ||
       !Object.hasOwn(providerCategory, manifest.provider.type) ||
-      !Array.isArray(manifest.provider.capabilities) ||
-      manifest.provider.capabilities.some(
-        (capability) => typeof capability !== "string" || !capability
-      )
+      !Array.isArray(capabilities) ||
+      capabilities.some((capability) => typeof capability !== "string" || !capability)
     ) {
       throw new Error(`${relativePath} has an unsupported provider contract`);
     }
-  } else if (manifest.ui == null && manifest.backend == null) {
-    throw new Error(`${relativePath} is neither a provider nor a product app`);
+  } else if (manifest.ui == null && manifest.backend == null && !isCompanion(manifest)) {
+    throw new Error(`${relativePath} is neither a provider, a product app nor a companion`);
   }
 }
 
+/** An app installed on the owner's own machine beside a gateway, rather than into it. */
+function isCompanion(manifest) {
+  return manifest.platform?.installMode === "client";
+}
+
 function deriveCategory(manifest) {
-  if (manifest.provider == null) return "Products";
-  const capabilities = manifest.provider.capabilities;
+  if (manifest.provider == null) return isCompanion(manifest) ? "Companions" : "Products";
+  const capabilities = manifest.provider.capabilities ?? [];
   if (
     manifest.provider.type === "model" &&
     capabilities.length > 0 &&
@@ -469,27 +493,47 @@ function deriveCategory(manifest) {
 function displayCapability(capability) {
   const names = {
     acp: "ACP runtimes",
+    attachments: "Attachments",
     chat: "Chat",
+    code: "Code review",
     code_tools: "Code tools",
+    companion: "Day companion",
+    deliver: "Notification delivery",
+    design: "Design critique",
     diarization: "Diarization",
+    documents: "Documents",
     embedding: "Embeddings",
     execute: "Actions",
     fetch: "Page fetch",
     image_gen: "Image generation",
     install: "Skill install",
+    isolated: "VM isolation",
+    issues: "Issue triage",
     messaging: "Messaging",
+    notes: "Notes",
+    ocr: "Text recognition",
+    ops: "On-call",
+    poll: "Mailbox polling",
     reactions: "Reactions",
+    research: "Research campaigns",
+    rows: "Shared trigger rows",
     search: "Search",
+    send: "Reply sending",
+    source: "Knowledge sources",
+    specs: "Specs",
     streaming: "Streaming",
     stt: "Speech to text",
+    sync: "State sync",
     threads: "Threads",
     tool_discovery: "Tool discovery",
     tool_execution: "Tool execution",
     tts: "Text to speech",
     uninstall: "Skill uninstall",
+    vector_store: "Vector store",
     video_gen: "Video generation",
     vision: "Vision",
-    web: "Web tools"
+    web: "Web tools",
+    "write-back": "Trigger write-back"
   };
   return names[capability] ?? capability.replaceAll("_", " ");
 }

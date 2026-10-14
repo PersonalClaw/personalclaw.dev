@@ -13,9 +13,12 @@ import test from "node:test";
 
 import {
   assertPublishable,
+  DEAD_FRAGMENTS,
   DOCS_SOURCE_TEXT_FLOOR,
   isWithheld,
-  WITHHELD
+  staleDeadFragments,
+  WITHHELD,
+  withoutDeadFragment
 } from "../scripts/docs-publication.mjs";
 
 /** Prose long enough to clear the floor, with nothing else going on. */
@@ -91,4 +94,41 @@ test("every withheld entry names a directory the site actually publishes", () =>
         `exclusion applies to nothing. Check it against TREES in scripts/sync-docs.mjs.`
     );
   }
+});
+
+// ── Dead anchors in core's own text ─────────────────────────────────────────────────────
+
+const [listedSource, listedTargets] = Object.entries(DEAD_FRAGMENTS)[0] ?? [];
+const listedTarget = Object.keys(listedTargets ?? {})[0];
+
+test("every listed dead fragment carries a reason", () => {
+  for (const [source, targets] of Object.entries(DEAD_FRAGMENTS)) {
+    for (const [target, reason] of Object.entries(targets)) {
+      assert.match(target, /#/, `${source} → ${target} has no fragment to drop`);
+      assert.ok(reason.trim().length > 20, `${source} → ${target} needs a real reason`);
+    }
+  }
+});
+
+test("a listed dead fragment is published as a link to the page", { skip: !listedTarget }, () => {
+  const used = new Set();
+  assert.equal(withoutDeadFragment(listedSource, listedTarget, used), listedTarget.split("#")[0]);
+  assert.deepEqual(staleDeadFragments(used), []);
+});
+
+test("an unlisted fragment is left alone, so validate:build still judges it", () => {
+  const used = new Set();
+  assert.equal(
+    withoutDeadFragment("docs/guides/getting-started.md", "desktop.md#updating", used),
+    "desktop.md#updating"
+  );
+  assert.equal(
+    withoutDeadFragment(listedSource ?? "docs/x.md", "desktop.md#another-anchor", used),
+    "desktop.md#another-anchor"
+  );
+  assert.equal(used.size, 0);
+});
+
+test("an entry the pinned text no longer contains is reported stale", { skip: !listedTarget }, () => {
+  assert.deepEqual(staleDeadFragments(new Set()), [`${listedSource} → ${listedTarget}`]);
 });

@@ -290,7 +290,7 @@ The registry is pinned beside them under `data`, by commit alone: it is data pub
 
 The manifest is currently on `released`. Generated files and fetched source caches are ignored; copied source content is never committed to this repository.
 
-That rule has a visible consequence today. What makes a community listing part of released PersonalClaw is a release whose Store reads the registry, and the pinned release's does not: its catalog seeds no registry source. So `/registry` says so, and the registry is not read, rather than publishing a Store feature the released product does not have. The listing surface starts showing listings when the core pin moves to a release whose Store reads the registry; nothing about the page changes then.
+That rule decides what `/registry` shows. What makes a community listing part of released PersonalClaw is a release whose Store reads the registry, which is a release whose catalog seeds the registry source. For a release that does not, such as v0.1.3, `/registry` says so and the registry is not read, rather than publishing a Store feature that release does not have. From v0.2.0 on, the Store reads it, so the page shows the registry at its pin: today an empty state, because the registry lists no apps at its current commit.
 
 ### Claims about our own capabilities
 

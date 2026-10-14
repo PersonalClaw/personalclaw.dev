@@ -23,17 +23,18 @@ import { releaseFacts } from "../data/release";
  * through allow and deny host policy instead of ambient fetch, which overclaimed twice — and
  * the launch post had already cut both halves as unpublishable:
  *
- *   - There is no exclusive "only these hosts" stance at this release. The tier resolver
- *     returns the same profile for `listed` and `all`, and the flag that would make a tier
- *     exclusive is not in this release's policy module. Worse, an operator allow-list entry
- *     is UNIONED onto whichever preset a tier selected, so adding one widens what a tier can
- *     reach rather than narrowing it.
+ *   - The exclusive "only these hosts" stance is not the default. v0.1.3 had none at all;
+ *     v0.2.0 adds `allow_only`, so a run whose egress tier the operator ceiling sets to
+ *     `listed` (or `registry`) reaches only those hosts. A run with no tier set gets the
+ *     default `all` profile, which blocks address classes rather than listing destinations,
+ *     so the card says "by default" and names the switch instead of promising a fence.
  *   - It is not the whole machine. It is a real chokepoint for core's own fetch surfaces,
  *     where the range checks and address pinning apply, but an app backend is a separate
  *     process with its own network stack and its traffic never passes this guard.
  *
  * What survives is what the code actually does: block the loopback, private and link-local
- * classes, and pin the resolved address so the connection dials what was checked. The
+ * classes, pin the resolved address so the connection dials what was checked, and hold a run
+ * to listed hosts only when its tier says so. The
  * `egress_default_deny`, `single_chokepoint` and `egress_allowlist_exclusive` rows on
  * /compare carry the same three findings with their sources.
  */
@@ -69,10 +70,12 @@ const securityPolicyUrl =
           </p>
           <p>
             That boundary is an approval and policy gate, plus credential paths
-            hidden from spawned agents &mdash; not an operating-system jail. An
-            approved command still runs with your user&rsquo;s filesystem and
-            network reach. Stronger confinement is designed and not yet shipped,
-            so nothing here claims it.
+            hidden from spawned agents &mdash; not an operating-system jail. By
+            default an approved command still runs with your user&rsquo;s
+            filesystem and network reach. A container or virtual-machine tier
+            (Docker, or the Lima Sandbox app) can hold a terminal session, an agent
+            CLI run or an app&rsquo;s backend instead. It is opt-in, and nothing
+            here claims it for the default path.
           </p>
           <a class="button button-primary" href="#controls">
             Inspect the controls <ArrowRight size={18} aria-hidden="true" />
@@ -135,16 +138,18 @@ const securityPolicyUrl =
           <Network size={25} aria-hidden="true" />
           <h3>Guarded egress</h3>
           <p>
-            Core fetch surfaces route through one policy check that blocks LAN,
-            loopback and link-local targets and pins the resolved address. It is
-            not a destination allow-list.
+            Core fetch surfaces, model providers and an app&rsquo;s SDK requests
+            route through one policy check that blocks LAN, loopback and link-local
+            targets and pins the resolved address. By default it is not a
+            destination allow-list; a run reaches only the hosts you list when the
+            operator ceiling sets its egress tier to listed.
           </p>
         </article>
         <article>
           <span>04</span>
           <KeyRound size={25} aria-hidden="true" />
           <h3>Scoped app tokens</h3>
-          <p>Apps call the gateway with bounded credentials rather than receiving broad authority.</p>
+          <p>Apps call the gateway with bounded tokens. An app&rsquo;s own code still runs as you, and its install review says so.</p>
         </article>
         <article>
           <span>05</span>
@@ -177,11 +182,12 @@ const securityPolicyUrl =
       <div class="path-heading">
         <div>
           <p class="kicker">A tool request</p>
-          <h2 class="section-title">Every effect crosses the gate.</h2>
+          <h2 class="section-title">Every tool request crosses the gate.</h2>
         </div>
         <p>
-          The decision path stays explicit whether the request came from native
-          chat, an autonomous loop, or an ACP coding agent.
+          The decision path stays explicit for native chat and autonomous loops.
+          An ACP coding agent meets it for every call it asks about; a call it
+          runs without asking is shown and logged as ungated once it has run.
         </p>
       </div>
 

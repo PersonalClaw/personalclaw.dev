@@ -22,7 +22,7 @@ export const routes = [
     path: "/apps",
     title: "Apps \u00b7 PersonalClaw",
     description:
-      "Browse the first-party PersonalClaw app ecosystem: models, search, agents, tools, speech, channels, actions, skills, and full product apps."
+      "Browse the first-party PersonalClaw app ecosystem: models, search, agents, tools, speech, channels, knowledge, automation, sync, and full product apps."
   },
   {
     name: "security",

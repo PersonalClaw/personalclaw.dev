@@ -25,23 +25,20 @@
 // WHAT DECIDES WHETHER THE PAGE LISTS ANYTHING IS THE PINNED CORE RELEASE, not the
 // registry. The registry is published continuously; what makes its listings part of
 // released PersonalClaw is a release whose Store reads it, which is a release whose
-// catalog seeds the registry repository as a git source (`coreListsRegistry`). v0.1.3,
-// which this site pins today, reads a source's `app-registry.json` but seeds no registry,
-// so its Store lists no community apps. Rendering the registry anyway would publish a
-// Store feature the released product does not have — the exact thing the projection rule
-// forbids. So that is recorded as `availability: "absent-at-pin"`, the registry is not
-// read at all, and the page says so plainly. The listing surface goes live when the core
-// pin moves to a release whose Store reads the registry; nothing about it needs to change
-// then.
+// catalog seeds the registry repository as a git source (`coreListsRegistry`). v0.1.3
+// reads a source's `app-registry.json` but seeds no registry, so its Store lists no
+// community apps; v0.2.0 is the first release that seeds it. Rendering the registry for a
+// release like v0.1.3 would publish a Store feature that release does not have — the exact
+// thing the projection rule forbids. So that is recorded as `availability:
+// "absent-at-pin"`, the registry is not read at all, and the page says so plainly.
 //
 // NEITHER IS THE STORE'S OWN CONSENT COPY, and for the same reason. The Store is the other
 // surface a reader meets a listing on, and core owns its wording in
 // `web/src/lib/provenance.ts` — a file that also postdates v0.1.3 (and at that tag
 // `RegistryPointer` carries none of `maintainer`, `last_validated` or `last_scan_verdict`).
-// So `checkStoreConsentParity` records `absent-at-pin` today and starts ENFORCING the
-// moment the pin moves to a release whose Store lists the registry. That is what makes the
-// three strings in `src/data/registry.mjs: STORE_CONSENT` an assertion about core rather
-// than a copy of it.
+// So `checkStoreConsentParity` records `absent-at-pin` for such a release and ENFORCES for
+// every release whose Store lists the registry. That is what makes the three strings in
+// `src/data/registry.mjs: STORE_CONSENT` an assertion about core rather than a copy of it.
 //
 // FAIL-OPEN vs FAIL-CLOSED, deliberately split:
 //   - the REGISTRY read is fail-closed. Once the pinned release lists the registry, an
@@ -260,8 +257,8 @@ export async function readRegistry(registrySource, registryPin) {
  * 🔴 THE SAME TWO-FAILURES-ONE-404 TRAP AS `coreListsRegistry`, and the same
  * resolution. A missing module means either:
  *
- *   1. the pinned release predates the Store's registry-listing surface — true today:
- *      `web/src/lib/provenance.ts` is not in v0.1.3, and `RegistryPointer` there carries
+ *   1. the pinned release predates the Store's registry-listing surface — true of v0.1.3:
+ *      `web/src/lib/provenance.ts` is not in that tree, and `RegistryPointer` there carries
  *      none of `maintainer`, `last_validated` or `last_scan_verdict`. There is nothing to
  *      compare against, which is a state; or
  *   2. core MOVED the module, and recording "absent" would retire this check permanently

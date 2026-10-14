@@ -15,7 +15,12 @@
 
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { assertPublishable, isWithheld } from "./docs-publication.mjs";
+import {
+  assertPublishable,
+  isWithheld,
+  staleDeadFragments,
+  withoutDeadFragment
+} from "./docs-publication.mjs";
 import { installerPython } from "../src/data/installer.mjs";
 import {
   loadManifest,
@@ -455,6 +460,7 @@ async function main() {
 
   const synced = [];
   const rewritten = []; // repo-escaping links sent to GitHub
+  const deadFragments = new Set(); // DEAD_FRAGMENTS entries this sync matched
   // Source dir → the filenames that dir publishes. Resolved for EVERY tree before any
   // body is rewritten, because a cross-tree link has to be judged against the target
   // tree's published set, not the current one's.
@@ -509,7 +515,7 @@ async function main() {
 
       body = body.replace(MARKDOWN_LINK, (whole, target) => {
         const { target: next, escaped } = rewriteLink(
-          target,
+          withoutDeadFragment(relativePath, target, deadFragments),
           tree,
           manifest.sources.core.repository,
           manifest.sources.core.commit,
@@ -529,6 +535,14 @@ async function main() {
     }
 
     prefaces.set(tree.dir, await writePreface(tree, synced, manifest.sources.core));
+  }
+
+  const stale = staleDeadFragments(deadFragments);
+  if (stale.length) {
+    throw new Error(
+      `scripts/docs-publication.mjs lists dead fragment(s) the pinned text no longer ` +
+        `contains: ${stale.join("; ")}. Core fixed or moved the link, so remove the entry.`
+    );
   }
 
   const landing = await writeLanding(TREES, synced, prefaces, manifest.sources.core);
@@ -721,6 +735,14 @@ async function main() {
     );
     for (const item of unique.slice(0, 12)) console.log(`  ${item}`);
     if (unique.length > 12) console.log(`  … and ${unique.length - 12} more`);
+  }
+  if (deadFragments.size) {
+    console.log(
+      `\n${deadFragments.size} link(s) in core's text name an anchor their target page ` +
+        `does not have, and were published as page links (scripts/docs-publication.mjs ` +
+        `DEAD_FRAGMENTS):`
+    );
+    for (const item of deadFragments) console.log(`  ${item.replace(" ", " → ")}`);
   }
 }
 

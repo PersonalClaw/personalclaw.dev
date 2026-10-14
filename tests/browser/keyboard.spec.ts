@@ -56,9 +56,9 @@ test("app search and category filters work by keyboard", async ({ page }) => {
 
   const search = page.getByRole("searchbox", { name: "Search first-party apps" });
   await tabTo(page, search);
-  await page.keyboard.type("Ollama");
+  await page.keyboard.type("vLLM");
   await expect(page.locator(".app-card")).toHaveCount(1);
-  await expect(page).toHaveURL(/q=Ollama/);
+  await expect(page).toHaveURL(/q=vLLM/);
 
   const models = page.getByRole("button", { name: "Models", exact: true });
   await tabTo(page, models);

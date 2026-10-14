@@ -292,7 +292,7 @@ export function normalizeRegistry(registry) {
  * the page lie by omission:
  *
  *   absent-at-pin  the released core this site is generated from does not list the
- *                  registry in its Store (true today: v0.1.3 predates it), so the
+ *                  registry in its Store (true of v0.1.3, which predates it), so the
  *                  registry is not read at all. "There is no registry here yet."
  *   empty          the registry exists and lists nothing. "The registry is open and
  *                  nothing has been accepted into it yet."

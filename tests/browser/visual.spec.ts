@@ -31,7 +31,7 @@ test("home loop state matches its visual baseline", async ({ page }, testInfo) =
 
 test("filtered app directory matches its visual baseline", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name === "reduced-motion");
-  await openPage(page, "/apps?q=Ollama&category=models");
+  await openPage(page, "/apps?q=vLLM&category=models");
   await expect(page.locator(".app-directory")).toHaveScreenshot("apps-filtered-state.png");
 });
 

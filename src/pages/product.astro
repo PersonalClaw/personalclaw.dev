@@ -30,7 +30,6 @@ import memoryCapture from "../assets/memory.png";
 import notificationRulesCapture from "../assets/notification-rules.png";
 import triggersCapture from "../assets/triggers.png";
 import BaseLayout from "../layouts/BaseLayout.astro";
-import { releaseFacts } from "../data/release";
 import { GITHUB_URL } from "../data/site";
 
 /*
@@ -146,10 +145,11 @@ import { GITHUB_URL } from "../data/site";
         <h2 class="section-title">One unedited run through the parts that matter.</h2>
       </div>
       <p class="tour-support">
-        A single recording of {releaseFacts.core.versionLabel} on one machine — the
-        version in the capture's status bar is the release this site publishes. Chat
-        against a local model, the approval it stops on, a goal loop, the local corpus,
-        and the file the agent actually wrote. No narration, no cuts, nothing sped up.
+        A single recording of v0.1.3 on one machine, made before the release this
+        site publishes, so some screens have changed since; the version in the
+        capture's status bar says which. Chat against a local model, the approval it
+        stops on, a goal loop, the local corpus, and the file the agent actually wrote.
+        No narration, no cuts, nothing sped up.
       </p>
       <!-- No autoplay: nothing else on this site plays media on load, and an 84-second
            capture that starts itself is a worse first impression than a good still. The
@@ -443,8 +443,9 @@ import { GITHUB_URL } from "../data/site";
         <div>
           <p>
             PersonalClaw can run its native agent or connect external coding
-            agents through ACP. Claude Code, OpenAI Codex, and Kiro CLI remain
-            behind the same host approval boundary.
+            agents through ACP. Claude Code, OpenAI Codex, Gemini CLI and Kiro CLI
+            meet the same host approval gate for every call they ask about, and a
+            call one runs without asking is recorded as ungated.
           </p>
           <a class="text-link" href="/apps">
             Explore agent apps <ArrowRight size={17} aria-hidden="true" />
@@ -476,8 +477,9 @@ import { GITHUB_URL } from "../data/site";
         <h2 class="section-title">Autonomy with a floor under it.</h2>
         <p>
           Before you hand the system unattended work, it gives you the controls
-          to trust it: a kill switch that halts scheduled runs, triggers, script
-          hooks and subagent spawns at once, daily spend ceilings, outbound
+          to trust it: a kill switch that holds scheduled runs, triggers, script
+          hooks, loop cycles and unattended subagent spawns at once, daily spend
+          ceilings, outbound
           secret scanning, and per-provider circuit breakers. Interactive chat is
           never affected.
         </p>
@@ -539,7 +541,7 @@ import { GITHUB_URL } from "../data/site";
       <p class="kicker">Open source · self-hosted</p>
       <h2 class="section-title">Run the system on your machine.</h2>
       <p>
-        Python 3.12, an aiohttp gateway, React dashboard, state on disk as SQLite
+        Python 3.12 or 3.13, an aiohttp gateway, React dashboard, state on disk as SQLite
         plus plain JSON and JSONL, and no product telemetry.
       </p>
       <div>

@@ -99,6 +99,48 @@ export const WITHHELD = {
  */
 export const DOCS_SOURCE_TEXT_FLOOR = 240;
 
+// ── Anchors core's own text points at that its target page does not have ────────
+//
+// validate:build fails a published link whose #fragment names no element on the target
+// page, and it should: a dead anchor renders as a working link that lands somewhere the
+// writer did not mean. When the dead anchor is in CORE's text at the pinned release, the
+// fix belongs in core, and the pin cannot take that fix before core's next release.
+//
+// Each entry names one such link exactly as core wrote it, keyed by its source path, with
+// the reason. The sync links the target PAGE without the fragment, and it FAILS when a
+// listed link no longer occurs in the pinned text, so an entry cannot outlive the defect
+// it covers. Anything not listed here still fails validate:build.
+export const DEAD_FRAGMENTS = {
+  "docs/guides/when-not-to-use-personalclaw.md": {
+    "desktop.md#windows--deferred-2026-09-05":
+      'At v0.2.0 the heading is "Windows — deferred" (#windows--deferred). The dated ' +
+      "anchor resolves neither on GitHub nor here."
+  }
+};
+
+/**
+ * The link target to publish for `target` in `relativePath`: the target itself, or the
+ * target without its fragment when DEAD_FRAGMENTS lists that exact link.
+ *
+ * @param {string} relativePath the source document, e.g. docs/guides/x.md
+ * @param {string} target the link target as core wrote it
+ * @param {Set<string>} used collects `relativePath target` for every entry that matched
+ */
+export function withoutDeadFragment(relativePath, target, used) {
+  if (!Object.hasOwn(DEAD_FRAGMENTS[relativePath] ?? {}, target)) return target;
+  used.add(`${relativePath} ${target}`);
+  return target.split("#")[0];
+}
+
+/** Every listed dead fragment that the pinned text no longer contains. */
+export function staleDeadFragments(used) {
+  return Object.entries(DEAD_FRAGMENTS).flatMap(([relativePath, targets]) =>
+    Object.keys(targets)
+      .filter((target) => !used.has(`${relativePath} ${target}`))
+      .map((target) => `${relativePath} → ${target}`)
+  );
+}
+
 /** True when `fileName` is deliberately withheld from the tree at `sourceDir`. */
 export function isWithheld(sourceDir, fileName) {
   return (WITHHELD[sourceDir] ?? []).includes(fileName);
