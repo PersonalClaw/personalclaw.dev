@@ -18,7 +18,7 @@ const appTreeBase = `${releaseFacts.apps.source.repositoryUrl}/tree/${releaseFac
 
 <BaseLayout
   title="Apps · PersonalClaw"
-  description="Browse the first-party PersonalClaw app ecosystem: models, search, agents, tools, speech, channels, actions, skills, and full product apps."
+  description="Browse the first-party PersonalClaw app ecosystem: models, search, agents, tools, speech, channels, knowledge, automation, sync, and full product apps."
 >
   <section class="apps-hero">
     <div class="shell apps-intro">
@@ -30,7 +30,8 @@ const appTreeBase = `${releaseFacts.apps.source.repositoryUrl}/tree/${releaseFac
         <p>
           Models, search, speech, channels, tools, agent runtimes, and complete
           interfaces are apps. Install what you need. Replace it when your needs
-          change.
+          change. Ollama and MCP Tool Servers ship inside PersonalClaw itself, so
+          this directory does not list them.
         </p>
         <a
           class="text-link"
@@ -98,7 +99,7 @@ const appTreeBase = `${releaseFacts.apps.source.repositoryUrl}/tree/${releaseFac
           <span>04</span>
           <KeyRound size={24} aria-hidden="true" />
           <h3>Enable</h3>
-          <p>The app receives scoped access through the gateway and begins in a bounded state.</p>
+          <p>The app receives a scoped gateway token. Its own code still runs as you, which the install review says before you consent.</p>
         </li>
       </ol>
 
@@ -118,8 +119,9 @@ const appTreeBase = `${releaseFacts.apps.source.repositoryUrl}/tree/${releaseFac
       <div>
         <p>
           Provider apps can be small Python adapters. Full apps can ship a
-          backend, mounted React interface, storage, cron work, and event access
-          behind declared permissions.
+          backend, mounted React interface, storage, cron work, and event access.
+          The manifest declares what the app may ask the gateway for; its network
+          permission is a declaration, not a fence.
         </p>
         <div class="manifest">
           <span>app.json</span>

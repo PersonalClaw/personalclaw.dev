@@ -1,7 +1,8 @@
 // Prove the registry pages actually render a registry.
 //
-// THE FAILURE THIS EXISTS TO CATCH. The production registry renders nothing today — the
-// pinned core release's Store does not read it at all (see scripts/sync-registry.mjs). A
+// THE FAILURE THIS EXISTS TO CATCH. The production registry renders nothing — at its
+// pinned commit it lists no apps (and a release whose Store does not read it renders
+// nothing either; see scripts/sync-registry.mjs). A
 // generator written against that input renders zero cards, the page looks clean, and
 // every check over the shipped build passes VACUOUSLY. So the shipped build is not
 // evidence. This script rebuilds the site against fixture registries that DO carry
@@ -14,18 +15,17 @@
 //
 //   node scripts/validate-registry-render.mjs
 //
-// WHAT IT CANNOT CLOSE. The criterion's last clause is "a merged registry PR appears on
-// the site after rebuild and card data matches the Store consent surface", and the two
-// halves fail for the same reason, which is a RELEASE, not a gap in the work:
+// WHAT IS CLOSED ELSEWHERE. The criterion's last clause is "a merged registry PR appears
+// on the site after rebuild and card data matches the Store consent surface". Neither half
+// was measurable while the site pinned v0.1.3, whose Store reads no registry and carries no
+// registry-listing consent surface. From v0.2.0 on, both are checked outside this script:
 //
-//   * "a merged registry PR appears on the site" — listings ARE merged in the registry
-//     repository, but the site is generated from the newest core RELEASE, and v0.1.3's
-//     Store does not read the registry. The clause becomes measurable when the pin moves.
-//   * "card data matches the Store consent surface" — the Store's registry-listing consent
-//     surface ALSO postdates v0.1.3: `web/src/lib/provenance.ts` (which owns that copy) is
-//     not in the pinned tree, and `RegistryPointer` at v0.1.3 carries none of `types`,
-//     `permissions_declared`, `license`, `maintainer`, `last_validated` or
-//     `last_scan_verdict`. So at the pin there is no Store surface to compare against.
+//   * "a merged registry PR appears on the site" — the registry is read at its own pin, and
+//     scripts/validate-release-parity.mjs fails whenever the registry's default branch is
+//     not at that pin, so a merged listing (or delisting) obliges the re-pin that shows it.
+//   * "card data matches the Store consent surface" — scripts/sync-registry.mjs checks the
+//     three STORE_CONSENT phrases against `web/src/lib/provenance.ts` at the pinned core
+//     release, and fails the sync when the Store's wording drifts.
 //
 // WHAT IS CLOSED HERE INSTEAD, and it is the half that matters. Core states the Store's
 // three non-negotiable jobs for presenting a registry listing in one module, and this site

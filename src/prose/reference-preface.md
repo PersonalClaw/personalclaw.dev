@@ -9,15 +9,17 @@ The reference pages themselves are synced verbatim from core (docs/reference/) b
 scripts/sync-docs.mjs and must never be edited here. The "The reference pages" list on
 the published page is GENERATED from what actually synced.
 
-The two page links below (api-overview, cli) are deliberate and deliberately load-bearing:
-scripts/validate-build.mjs resolves every in-site link on this page against the built
-output, so if core renames or drops either file this page reds the build with a broken-link
-failure instead of quietly shipping a dead link. Do not add links to pages that are not
-worth that coupling.
+The three page links below (api-overview, api-routes, cli) are deliberate and deliberately
+load-bearing: scripts/validate-build.mjs resolves every in-site link on this page against
+the built output, so if core renames or drops any of them this page reds the build with a
+broken-link failure instead of quietly shipping a dead link. Do not add links to pages that
+are not worth that coupling.
 
-The paragraph about hand-maintained route tables is not editorialising. It restates what
-core's own api-overview.md says at the pinned commit: "the handler docstrings are the
-authoritative per-route contract." Do not soften it into a completeness claim.
+The paragraph about the route reference restates what core's own pages say at the pinned
+commit: api-overview.md is "the orientation ... not the route list", api-routes.md is
+generated from the gateway's route registrations and byte-compared in CI, and "the
+docstring in the source is the authoritative per-route contract". Do not turn it into a
+stronger claim than those pages make.
 
 `{{coreRepoUrl}}` expands to the pinned core commit this site was built from.
 
@@ -39,9 +41,9 @@ Reference is the exact-surface section: the command-line interface, every config
 
 ## The API
 
-PersonalClaw's gateway is a real HTTP service, not only a dashboard backend. It serves a REST API under `/api/*` on the dashboard port, a WebSocket at `/api/ws` for chat streaming and event fan-out, and MCP in both directions — PersonalClaw consumes MCP servers, and exposes its own tools over MCP. [API overview](/docs/reference/api-overview) is the route index for all of it, grouped by domain, and it states the auth model each route runs under.
+PersonalClaw's gateway is a real HTTP service, not only a dashboard backend. It serves a REST API under `/api/*` on the dashboard port, a WebSocket at `/api/ws` for chat streaming and event fan-out, and MCP: PersonalClaw consumes MCP servers, and can expose a read-only MCP endpoint of its own, which is off until you turn it on. [API overview](/docs/reference/api-overview) is the orientation, covering what every route shares: base URL, auth, the error envelope and its conventions.
 
-One caveat, and it is core's own: those route tables are maintained by hand, and the page names the handler docstrings — not the table — as the authoritative per-route contract. So treat the overview as a map rather than a specification, and read the handler when a field matters. If you are automating against this API, read it out of the release you are running rather than out of a page you cached.
+The route list is the [HTTP route reference](/docs/reference/api-routes), and it is generated rather than written: core renders it from the gateway's own route registrations and fails its CI when the page and the code disagree. Each row carries the first line of the handler's docstring, and core names that docstring, not any prose, as the authoritative contract for a route. So read the handler when a field matters, and if you are automating against this API, read it out of the release you are running rather than out of a page you cached.
 
 The [CLI reference](/docs/reference/cli) covers the same system from the other side. Most of what the API does has a command, and for one-off work the command is usually the shorter path.
 

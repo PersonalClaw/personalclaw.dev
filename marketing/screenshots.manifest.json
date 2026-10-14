@@ -1,7 +1,7 @@
 {
   "$schema": "./screenshots.schema.json",
   "schemaVersion": 1,
-  "targetRelease": "0.1.3",
+  "targetRelease": "0.2.0",
   "capture": {
     "instance": "Clone the working dev home to an isolated screenshot home and run a SECOND gateway on a free port (e.g. cp -R .dev-home .screenshot-home; PERSONALCLAW_HOME=$PWD/.screenshot-home <gateway> --port 10001). Cloning inherits the already-configured providers (ollama chat, faster-whisper stt, bindings) rather than re-wiring them, and keeps marketing data out of the :10000 validation instance. Seed the per-shot scenarios (below) via the real UI/API before capturing.",
     "theme": "dark",
@@ -15,7 +15,7 @@
       "appView": "Dashboard home (the landing view)",
       "minWidth": 1200,
       "minHeight": 750,
-      "scenario": "A lived-in home: 2-3 recent chat conversations with real titles (e.g. 'Refactor the ingest pipeline', 'Weekly research digest'), one active goal loop shown running, a couple of scheduled runs due, and the bottom System Health rail green. Nothing empty — this is the 'whole system at a glance' shot.",
+      "scenario": "A lived-in home: the Jump back in row with recent chats, To triage, Active work with a loop running, Tasks, Suggestions and Agent world, and the bottom System Health rail green. Nothing empty: this is the 'whole system at a glance' shot.",
       "value": "One home surfaces current work, recent conversations, scheduled runs, and system state.",
       "placements": [
         {
@@ -78,12 +78,11 @@
     {
       "id": "knowledge",
       "asset": "src/assets/knowledge.png",
-      "appView": "Knowledge base (source documents + entity graph)",
+      "appView": "Knowledge base (source documents; the entity graph is a view of the same page)",
       "minWidth": 1440,
       "minHeight": 900,
       "scenario": "A populated knowledge base: several real source documents/notes ingested, with the entity graph showing linked entities. Distinct from memory — this is explicit, inspectable reference material.",
       "value": "Knowledge is explicit, inspectable source material; personal memory remains a separate system.",
-      "captureBlockedBy": "https://github.com/PersonalClaw/PersonalClaw/issues/47 — embedding registry is empty in the knowledge/memory embed path, so a freshly-seeded knowledge base won't show a populated entity graph. Ships with the prior-release asset until #47 is fixed, then re-capture.",
       "placements": [
         {
           "file": "src/data/site.ts",
@@ -102,10 +101,10 @@
     {
       "id": "apps",
       "asset": "src/assets/apps.png",
-      "appView": "App directory / Store (Settings -> Apps)",
+      "appView": "App Store (Apps -> Store tab)",
       "minWidth": 1440,
       "minHeight": 900,
-      "scenario": "The Store showing the first-party app catalog across categories (models: OpenAI/Anthropic/Bedrock/Ollama, search, speech, channels, tools) — a mix of installed + available, so the 'replace any provider' boundary is legible. v0.1.2 ships first-party apps in the Store on a plain install, so this should look full.",
+      "scenario": "The Store showing the first-party app catalog across categories (models, search, speech, channels, tools, sync) with installed apps moved to the Library, so the 'replace any provider' boundary is legible. A plain install lists the PersonalClawApps catalog in the Store, so this should look full.",
       "value": "Models, search, speech, channels, tools, and complete interfaces install through one app boundary.",
       "placements": [
         {
@@ -126,10 +125,10 @@
     {
       "id": "agents",
       "asset": "src/assets/agents.png",
-      "appView": "Agents / runtimes (Settings -> Providers, runtimes view)",
+      "appView": "Agents page (configured agents)",
       "minWidth": 1440,
       "minHeight": 900,
-      "scenario": "Configured agent runtimes shown ready — a couple of runtimes bound, so the 'configured agents' story reads as a working setup.",
+      "scenario": "The configured agents shown ready: the default native agent and the built-in workers, so the 'configured agents' story reads as a working setup.",
       "value": "Configured agent runtimes are explicit and swappable.",
       "placements": [
         {
@@ -149,7 +148,6 @@
       "minHeight": 613,
       "scenario": "Memory showing layered learned context: some semantic facts + episodic entries the assistant has captured over time, so the 'it remembers, distinct from knowledge' story is visible with real-feeling entries.",
       "value": "Layered, learned personal context — a separate system from knowledge.",
-      "captureBlockedBy": "https://github.com/PersonalClaw/PersonalClaw/issues/47 — the memory semantic layer can't embed (empty LLM registry in the embed path), so a seeded memory view won't render the semantic layer convincingly. Ships with the prior-release asset until #47 is fixed, then re-capture.",
       "placements": [
         {
           "file": "src/pages/product.astro",
@@ -184,7 +182,7 @@
       "appView": "Settings -> Doctor (health probes + maintenance)",
       "minWidth": 1280,
       "minHeight": 800,
-      "scenario": "The v0.1.2 Doctor tab: capability cards mostly green (memory, channels, local-models, apps, serving-fs, model-providers), the overall 'All systems healthy' banner, and the Maintenance section showing a recent remediation run. A NEW capability shipped in v0.1.2 — showcases the resilience story.",
+      "scenario": "The Doctor tab: capability cards mostly green (memory, channels, local-models, apps, serving-fs, model-providers), the overall status line, and a Fix offered on anything degraded. Showcases the resilience story.",
       "value": "PersonalClaw diagnoses itself: tiered health probes, degraded-mode honesty, and one health-scored maintenance engine.",
       "placements": [
         {
@@ -202,7 +200,7 @@
       "appView": "Settings -> Guardrails (safety floor)",
       "minWidth": 1280,
       "minHeight": 800,
-      "scenario": "The v0.1.2 Guardrails panel: the incident kill switch (off/normal), daily spend budgets set to sensible ceilings, outbound scan mode = redact, and the provider-health view with a couple of providers listed. Showcases the autonomy-safety story.",
+      "scenario": "The Guardrails panel: the incident kill switch (off/normal), the daily spend budgets, outbound scan mode = redact, and the provider circuit breakers. Showcases the autonomy-safety story.",
       "value": "Autonomy with a safety floor: kill switch, spend budgets, outbound scanning, provider health.",
       "placements": [
         {

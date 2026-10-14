@@ -5,9 +5,14 @@ export type AppCategory =
   | "Tools"
   | "Speech"
   | "Channels"
-  | "Actions"
+  | "Inboxes"
+  | "Knowledge"
+  | "Automation"
+  | "Sync"
+  | "Sandboxes"
   | "Skills"
-  | "Products";
+  | "Products"
+  | "Companions";
 
 export type App = {
   slug: string;
@@ -47,18 +52,30 @@ export const appCategories: Array<"All" | AppCategory> = [
   "Tools",
   "Speech",
   "Channels",
-  "Actions",
+  "Inboxes",
+  "Knowledge",
+  "Automation",
+  "Sync",
+  "Sandboxes",
   "Skills",
-  "Products"
+  "Products",
+  "Companions"
 ];
 
 export const apps: App[] = [
   {
+    slug: "a2a-action",
+    name: "A2A Agent Call",
+    category: "Automation",
+    description: "Hand one task to an external A2A agent when a trigger fires, on hosts you allow-list.",
+    tags: ["A2A", "Triggers"]
+  },
+  {
     slug: "alibaba-models",
     name: "Alibaba Model Studio",
     category: "Models",
-    description: "Qwen chat, embedding, image generation, video generation, and more through DashScope.",
-    tags: ["Qwen", "Embedding", "Image", "Video"]
+    description: "Qwen chat, vision, and embedding models, plus image generation, through DashScope.",
+    tags: ["Qwen", "Embedding", "Image"]
   },
   {
     slug: "anthropic-compatible",
@@ -89,11 +106,32 @@ export const apps: App[] = [
     tags: ["Web", "Recency"]
   },
   {
+    slug: "browser-connector",
+    name: "Browser Connector",
+    category: "Companions",
+    description: "Let a browse task act in your own signed-in browser, only in a tab it opens for itself.",
+    tags: ["Extension", "Browse"]
+  },
+  {
     slug: "claude-code-agent",
     name: "Claude Code",
     category: "Agents",
-    description: "Run Claude Code over ACP with every tool call routed through the host approval gate.",
+    description: "Run Claude Code over ACP in a config of its own; every tool beyond its own reads asks the host approval gate.",
     tags: ["ACP", "Coding", "Approvals"]
+  },
+  {
+    slug: "claude-subscription",
+    name: "Claude (Subscription)",
+    category: "Models",
+    description: "Claude models over your existing Claude Code sign-in, with no API key.",
+    tags: ["Claude", "Chat", "Subscription"]
+  },
+  {
+    slug: "code-review",
+    name: "Code Review",
+    category: "Tools",
+    description: "Review a GitHub pull request file by file, riskiest changes first; nothing is posted back.",
+    tags: ["GitHub", "Review"]
   },
   {
     slug: "codex-agent",
@@ -103,11 +141,25 @@ export const apps: App[] = [
     tags: ["ACP", "Coding", "Approvals"]
   },
   {
+    slug: "companion",
+    name: "Companion",
+    category: "Tools",
+    description: "Opt-in reminders, a folder watchlist, and a day plan, each off until you turn it on.",
+    tags: ["Reminders", "Watchlist"]
+  },
+  {
     slug: "deepseek-models",
     name: "DeepSeek",
     category: "Models",
     description: "DeepSeek chat and reasoner models through its OpenAI-compatible API.",
     tags: ["Chat", "Reasoning"]
+  },
+  {
+    slug: "design-critique",
+    name: "Design Critique",
+    category: "Tools",
+    description: "Accessibility and craft findings for a URL or screenshot, each with the change that clears it.",
+    tags: ["Accessibility", "Review"]
   },
   {
     slug: "diarization-onnx",
@@ -127,12 +179,47 @@ export const apps: App[] = [
     local: true
   },
   {
+    slug: "dir-notification",
+    name: "Folder Notification Drop",
+    category: "Channels",
+    description: "Deliver teammate-addressed notifications into a shared folder, for a roster you declare.",
+    tags: ["Team", "Folder"]
+  },
+  {
+    slug: "dir-sync",
+    name: "Folder Sync",
+    category: "Sync",
+    description: "Sync state between your machines through a shared or synced folder, with no server.",
+    tags: ["Folder", "NFS", "USB"]
+  },
+  {
+    slug: "discord-channel",
+    name: "Discord Channel",
+    category: "Channels",
+    description: "Pair a DM, converse in servers, and answer approvals with buttons through a Discord bot.",
+    tags: ["Messaging", "Threads", "Reactions"]
+  },
+  {
+    slug: "docs-slides",
+    name: "Docs & Slides",
+    category: "Tools",
+    description: "Turn a markdown brief into a PowerPoint deck or a Word or PDF document on your machine.",
+    tags: ["PPTX", "DOCX", "PDF"]
+  },
+  {
     slug: "duckduckgo-search",
     name: "DuckDuckGo",
     category: "Search",
     description: "Keyless, zero-config web search with links and snippets.",
     tags: ["Web"],
     keyless: true
+  },
+  {
+    slug: "email-channel",
+    name: "Email Channel",
+    category: "Channels",
+    description: "Converse with your agent by email over IMAP and SMTP, with replies threaded back.",
+    tags: ["Email", "Threads"]
   },
   {
     slug: "exa-search",
@@ -158,6 +245,27 @@ export const apps: App[] = [
     keyless: true
   },
   {
+    slug: "gemini-cli-agent",
+    name: "Gemini CLI",
+    category: "Agents",
+    description: "Run Google's Gemini CLI over ACP with its own sign-in; PersonalClaw stores no key.",
+    tags: ["ACP", "Coding"]
+  },
+  {
+    slug: "git-repo",
+    name: "Git Repository",
+    category: "Knowledge",
+    description: "Index a git repository's code and docs into your knowledge library, re-reading only changed files.",
+    tags: ["Git", "Code", "Docs"]
+  },
+  {
+    slug: "git-sync",
+    name: "Git Sync",
+    category: "Sync",
+    description: "Sync state between your machines through a git remote you own, as a readable history.",
+    tags: ["Git", "Audit"]
+  },
+  {
     slug: "google-models",
     name: "Google Gemini",
     category: "Models",
@@ -179,6 +287,20 @@ export const apps: App[] = [
     tags: ["Career", "Projects", "Tasks"]
   },
   {
+    slug: "inbox-github-notifications",
+    name: "GitHub Notifications Inbox",
+    category: "Inboxes",
+    description: "Your GitHub notifications as read-only inbox items to triage.",
+    tags: ["GitHub", "Notifications"]
+  },
+  {
+    slug: "issue-radar",
+    name: "Issue Radar",
+    category: "Tools",
+    description: "Triage a repository's open issues through gh or glab without changing the tracker.",
+    tags: ["GitHub", "GitLab", "Triage"]
+  },
+  {
     slug: "kiro-cli-agent",
     name: "Kiro CLI",
     category: "Agents",
@@ -187,11 +309,34 @@ export const apps: App[] = [
     local: true
   },
   {
-    slug: "mcp-tools",
-    name: "MCP Tool Servers",
-    category: "Tools",
-    description: "Connect Model Context Protocol servers over stdio or SSE transport.",
-    tags: ["MCP", "stdio", "SSE"]
+    slug: "lima-sandbox",
+    name: "Lima Sandbox",
+    category: "Sandboxes",
+    description: "Run agent-influenced commands inside a Lima virtual machine instead of on the host.",
+    tags: ["VM", "Isolation"]
+  },
+  {
+    slug: "local-image-gen",
+    name: "Local Image Generation",
+    category: "Models",
+    description: "Generate images with a ComfyUI server you run on your own machine.",
+    tags: ["Image", "ComfyUI"],
+    local: true,
+    keyless: true
+  },
+  {
+    slug: "mail-inbox",
+    name: "Mail Inbox",
+    category: "Inboxes",
+    description: "IMAP mail from a sender allowlist as inbox items, with threaded reply drafts.",
+    tags: ["Email", "Attachments"]
+  },
+  {
+    slug: "menu-bar-companion",
+    name: "Menu Bar Companion",
+    category: "Companions",
+    description: "Running loops and waiting approvals in your Mac's menu bar.",
+    tags: ["macOS", "Approvals"]
   },
   {
     slug: "meta-muse-spark",
@@ -215,13 +360,11 @@ export const apps: App[] = [
     tags: ["Chat", "Compatible"]
   },
   {
-    slug: "ollama-models",
-    name: "Ollama",
-    category: "Models",
-    description: "Use local or remote Ollama models for chat and embedding.",
-    tags: ["Chat", "Embedding"],
-    local: true,
-    keyless: true
+    slug: "notes",
+    name: "Notes",
+    category: "Tools",
+    description: "A git-backed markdown notebook whose notes stay plain files on your machine.",
+    tags: ["Markdown", "Git"]
   },
   {
     slug: "openai-compatible",
@@ -252,6 +395,13 @@ export const apps: App[] = [
     tags: ["Chat", "Vision", "Embedding", "Image", "Video"]
   },
   {
+    slug: "ops",
+    name: "Ops",
+    category: "Tools",
+    description: "An on-call responder that files alarms as incidents and works them against your runbook.",
+    tags: ["On-call", "Incidents"]
+  },
+  {
     slug: "perplexity-search",
     name: "Perplexity Sonar",
     category: "Search",
@@ -266,6 +416,36 @@ export const apps: App[] = [
     tags: ["TTS"],
     local: true,
     keyless: true
+  },
+  {
+    slug: "rapidocr",
+    name: "RapidOCR (Offline)",
+    category: "Knowledge",
+    description: "Read text from scans and screenshots offline, so a scanned page becomes searchable knowledge.",
+    tags: ["OCR", "Offline"],
+    local: true,
+    keyless: true
+  },
+  {
+    slug: "research-lab",
+    name: "Research Lab",
+    category: "Tools",
+    description: "Unattended research campaigns that end in one sourced markdown report.",
+    tags: ["Research", "Unattended"]
+  },
+  {
+    slug: "rsync-sync",
+    name: "Rsync Sync",
+    category: "Sync",
+    description: "Sync state between your machines with rsync over ssh, encrypted end to end by default.",
+    tags: ["rsync", "SSH"]
+  },
+  {
+    slug: "s3-sync",
+    name: "S3 Sync",
+    category: "Sync",
+    description: "Sync state between your machines through an S3-compatible store you own, encrypted end to end.",
+    tags: ["S3", "MinIO"]
   },
   {
     slug: "searxng-search",
@@ -286,6 +466,13 @@ export const apps: App[] = [
     keyless: true
   },
   {
+    slug: "shared-automations",
+    name: "Shared Automations",
+    category: "Automation",
+    description: "Serve automations from a shared file; each machine fires only its own owner's rows.",
+    tags: ["Team", "Triggers"]
+  },
+  {
     slug: "skills-sh",
     name: "Skills.sh Marketplace",
     category: "Skills",
@@ -300,6 +487,13 @@ export const apps: App[] = [
     tags: ["Messaging", "Threads"]
   },
   {
+    slug: "spec-builder",
+    name: "Spec Builder",
+    category: "Tools",
+    description: "Write a spec and compile it into a workflow definition the engine runs.",
+    tags: ["Specs", "Workflows"]
+  },
+  {
     slug: "tavily-search",
     name: "Tavily",
     category: "Search",
@@ -307,11 +501,25 @@ export const apps: App[] = [
     tags: ["Answers", "Extract"]
   },
   {
+    slug: "telegram-channel",
+    name: "Telegram Channel",
+    category: "Channels",
+    description: "Pair a chat and converse through a Telegram bot, with inline approvals.",
+    tags: ["Messaging", "Threads"]
+  },
+  {
     slug: "together-models",
     name: "Together AI",
     category: "Models",
     description: "Serverless model inference through Together AI's compatible API.",
     tags: ["Chat", "Compatible"]
+  },
+  {
+    slug: "vector-store-qdrant",
+    name: "Qdrant Vector Store",
+    category: "Knowledge",
+    description: "Use your own Qdrant for the vector half of knowledge retrieval.",
+    tags: ["Qdrant", "Retrieval"]
   },
   {
     slug: "vllm-models",
@@ -323,8 +531,23 @@ export const apps: App[] = [
     keyless: true
   },
   {
+    slug: "voice-clone-tts",
+    name: "Voice Clone TTS",
+    category: "Speech",
+    description: "Clone a voice from a short clip and speak with it on your own machine.",
+    tags: ["TTS", "Voice cloning"],
+    local: true
+  },
+  {
+    slug: "watched-source-github",
+    name: "GitHub Repo Watcher",
+    category: "Automation",
+    description: "Fire automations when a watched GitHub repo ships a release or opens an issue.",
+    tags: ["GitHub", "Releases"]
+  },
+  {
     slug: "web-tools",
-    name: "Native Tools (Web)",
+    name: "Web Tools",
     category: "Tools",
     description: "Give agents guarded web search, fetch, and structured extraction primitives.",
     tags: ["Search", "Fetch", "Extract"]
@@ -332,7 +555,7 @@ export const apps: App[] = [
   {
     slug: "webhook-action",
     name: "HTTP Webhook Hooks",
-    category: "Actions",
+    category: "Automation",
     description: "Send templated agent lifecycle events to an HTTP endpoint.",
     tags: ["Webhook", "Automation"]
   },

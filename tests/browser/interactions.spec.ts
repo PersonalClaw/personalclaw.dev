@@ -23,15 +23,15 @@ test("app directory preserves deep-linked filters and can recover from no result
   baseURL
 }) => {
   const runtime = monitorRuntime(page, baseURL!);
-  await openPage(page, "/apps?q=Ollama&category=models");
+  await openPage(page, "/apps?q=vLLM&category=models");
 
   const search = page.getByRole("searchbox", { name: "Search first-party apps" });
   const models = page.getByRole("button", { name: "Models", exact: true });
-  await expect(search).toHaveValue("Ollama");
+  await expect(search).toHaveValue("vLLM");
   await expect(models).toHaveAttribute("aria-pressed", "true");
   await expect(page.locator(".app-card")).toHaveCount(1);
-  await expect(page.locator(".app-card").getByRole("heading")).toHaveText("Ollama");
-  await expect(page).toHaveURL(/q=Ollama&category=models$/);
+  await expect(page.locator(".app-card").getByRole("heading")).toHaveText("vLLM");
+  await expect(page).toHaveURL(/q=vLLM&category=models$/);
 
   await page.getByRole("button", { name: "Search", exact: true }).click();
   await expect(page.getByText("No apps match those filters.")).toBeVisible();
@@ -42,8 +42,8 @@ test("app directory preserves deep-linked filters and can recover from no result
     "true"
   );
   // Exact on purpose: a directory entry disappearing should fail, not be tolerated.
-  // Tracks the first-party app count of the pinned release (39 at v0.1.3).
-  await expect(page.locator(".app-card")).toHaveCount(39);
+  // Tracks the first-party app count of the pinned release (69 at v0.2.0).
+  await expect(page.locator(".app-card")).toHaveCount(69);
   await expect(page).toHaveURL("/apps");
   runtime.assertClean();
 });
@@ -67,7 +67,12 @@ test("every declared local and keyless app renders its derived chip, once", asyn
   }
 
   for (const app of apps) {
-    const characteristics = page.getByRole("list", { name: `${app.name} characteristics` });
+    // Exact: an accessible name otherwise matches as a substring, and "Companion
+    // characteristics" is inside "Menu Bar Companion characteristics".
+    const characteristics = page.getByRole("list", {
+      name: `${app.name} characteristics`,
+      exact: true
+    });
     await expect(characteristics.getByRole("listitem")).toHaveText([
       ...appFacts(app),
       ...app.tags

@@ -56,6 +56,9 @@ const SHOTS = [
       ? `#/chat/${encodeURIComponent(process.env.SESSION_KEY)}`
       : "#/chat",
     settle: 3200,
+    // The thread opens at its top, and the approval card the manifest asks for sits under
+    // the last turn.
+    scrollToEnd: true,
   },
   { id: "knowledge", hash: "#/knowledge", settle: 2600 },
   { id: "artifacts", hash: "#/artifacts", settle: 2600 },
@@ -71,8 +74,9 @@ const SHOTS = [
     settle: 3000,
   },
   { id: "triggers", hash: "#/triggers", settle: 2400 },
-  { id: "apps", hash: "#/settings/apps", settle: 2800 },
-  { id: "agents", hash: "#/settings/providers", settle: 2600 },
+  // The Store is a view of the Apps page; `#/settings/apps` is the Store-sources settings.
+  { id: "apps", hash: "#/apps?view=store", settle: 2800 },
+  { id: "agents", hash: "#/agents", settle: 2600 },
   { id: "memory", hash: "#/settings/memory", settle: 2600 },
   {
     id: "notification-rules",
@@ -136,6 +140,20 @@ for (const shot of wanted) {
     await page.reload({ waitUntil: "domcontentloaded", timeout: 60000 });
   }
   await page.waitForTimeout(shot.settle);
+
+  if (shot.scrollToEnd) {
+    // The same inner-pane rule as scrollToText below: scroll every scrollable pane to its
+    // end, since the window itself does not scroll.
+    await page.evaluate(() => {
+      for (const pane of document.querySelectorAll("*")) {
+        const style = getComputedStyle(pane);
+        if (/auto|scroll/.test(style.overflowY) && pane.scrollHeight > pane.clientHeight + 8) {
+          pane.scrollTop = pane.scrollHeight;
+        }
+      }
+    });
+    await page.waitForTimeout(800);
+  }
 
   if (shot.scrollToText) {
     // The dashboard scrolls an INNER pane, not the window, so `window.scrollBy` is a no-op
