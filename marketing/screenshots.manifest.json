@@ -1,7 +1,7 @@
 {
   "$schema": "./screenshots.schema.json",
   "schemaVersion": 1,
-  "targetRelease": "0.2.0",
+  "targetRelease": "0.2.1",
   "capture": {
     "instance": "Clone the working dev home to an isolated screenshot home and run a SECOND gateway on a free port (e.g. cp -R .dev-home .screenshot-home; PERSONALCLAW_HOME=$PWD/.screenshot-home <gateway> --port 10001). Cloning inherits the already-configured providers (ollama chat, faster-whisper stt, bindings) rather than re-wiring them, and keeps marketing data out of the :10000 validation instance. Seed the per-shot scenarios (below) via the real UI/API before capturing.",
     "theme": "dark",

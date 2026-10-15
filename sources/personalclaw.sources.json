@@ -5,13 +5,13 @@
   "sources": {
     "core": {
       "repository": "PersonalClaw/PersonalClaw",
-      "commit": "5810e25d4976efe6d1a68994b3e547078c1f0323",
-      "tag": "v0.2.0"
+      "commit": "be97147cb38147e9c769f502f812f3b3e6347b17",
+      "tag": "v0.2.1"
     },
     "apps": {
       "repository": "PersonalClaw/PersonalClawApps",
-      "commit": "0e5cb4aecb612c3ea3e36cadadd77bb9989de983",
-      "tag": "v0.2.0"
+      "commit": "4721d5b20e677ca825709f3087565a8ad3f69d59",
+      "tag": "v0.2.1"
     }
   },
   "data": {

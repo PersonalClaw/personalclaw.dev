@@ -110,13 +110,7 @@ export const DOCS_SOURCE_TEXT_FLOOR = 240;
 // the reason. The sync links the target PAGE without the fragment, and it FAILS when a
 // listed link no longer occurs in the pinned text, so an entry cannot outlive the defect
 // it covers. Anything not listed here still fails validate:build.
-export const DEAD_FRAGMENTS = {
-  "docs/guides/when-not-to-use-personalclaw.md": {
-    "desktop.md#windows--deferred-2026-09-05":
-      'At v0.2.0 the heading is "Windows — deferred" (#windows--deferred). The dated ' +
-      "anchor resolves neither on GitHub nor here."
-  }
-};
+export const DEAD_FRAGMENTS = {};
 
 /**
  * The link target to publish for `target` in `relativePath`: the target itself, or the
