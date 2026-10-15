@@ -26,7 +26,7 @@ concurrency:
 jobs:
   check:
     name: Check the website against the newest core release
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     env:
       TITLE: "Website is behind the published core release"
