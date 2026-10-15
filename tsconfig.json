@@ -1,6 +1,10 @@
 {
   "extends": "astro/tsconfigs/strict",
-  "include": [".astro/types.d.ts", "**/*"],
+  // `**/*.astro` and `index.html` make this file claim two kinds of importer that Vite's
+  // tsconfig discovery would otherwise walk past, out of the project: `.astro` modules,
+  // and the `index.html` Vite assumes as the importer while Astro loads its config (there
+  // is no such file). See `vite.tsconfig` in astro.config.mjs for why that walk matters.
+  "include": [".astro/types.d.ts", "**/*", "**/*.astro", "index.html"],
   "exclude": [
     ".lighthouse",
     ".preview-dist",
