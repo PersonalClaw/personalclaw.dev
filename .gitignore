@@ -11,6 +11,11 @@ test-results/
 .generated/
 .source-cache/
 
+# Linked git worktrees (`git worktree add .worktrees/<name>`), as core and apps ignore them.
+# Each one is an embedded git repository: `git add -A` would stage it as a gitlink to a path
+# that exists on no other machine, and every clone of this public repository would be broken.
+/.worktrees/
+
 # Raw screenshot captures staged for review before promotion into src/assets/
 # (scripts/capture-app-shots.mjs). Review artifacts, not release content.
 marketing/.captures/
