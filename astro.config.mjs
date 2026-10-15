@@ -170,5 +170,17 @@ export default defineConfig({
   },
   image: {
     responsiveStyles: true
+  },
+  // Name the tsconfig rather than let Vite discover one. Discovery starts at the importing
+  // file and walks up until some tsconfig.json claims that file, loading each one it
+  // passes, and a virtual importer (Astro's renderers module, for one) is resolved from
+  // the project root, which no tsconfig can claim. In a worktree checked out inside
+  // another clone of this repository (`.worktrees/<name>`), the walk reached that clone's
+  // tsconfig.json, could not resolve its `extends` because the clone has no node_modules,
+  // and failed the build. Astro loads this file, and transforms `.astro` modules, through
+  // discovery this option does not reach, which is why tsconfig.json also claims those
+  // importers. Upstream: https://github.com/vitejs/vite/issues/23672
+  vite: {
+    tsconfig: "./tsconfig.json"
   }
 });
