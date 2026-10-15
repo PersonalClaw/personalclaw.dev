@@ -25,7 +25,7 @@ jobs:
     # a failure rather than a skip: staleness is exactly what this job exists to
     # catch, so it must never pass by being unable to look.
     name: Release version parity with core
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - name: Check out repository
@@ -45,7 +45,7 @@ jobs:
 
   static-contract:
     name: Static build and publication contract
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - name: Check out repository
@@ -65,7 +65,7 @@ jobs:
 
   browser:
     name: Browser, accessibility, privacy, and visual regression
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - name: Check out repository
@@ -99,7 +99,7 @@ jobs:
 
   performance:
     name: Lighthouse performance budgets
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - name: Check out repository
