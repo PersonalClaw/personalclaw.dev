@@ -30,7 +30,7 @@
     "validate:release-parity:offline": "RELEASE_PARITY_OFFLINE=1 node scripts/validate-release-parity.mjs",
     "validate:release-parity:strict": "RELEASE_PARITY_REQUIRE_REMOTE=1 node scripts/validate-release-parity.mjs",
     "check:served-installer": "node scripts/check-served-installer.mjs",
-    "test:unit": "node --test tests/ci-contract.test.mjs tests/run-ci-gates.test.mjs tests/docs-publication.test.mjs tests/sync-registry.test.mjs tests/served-installer.test.mjs",
+    "test:unit": "node --test tests/ci-contract.test.mjs tests/supply-chain.test.mjs tests/run-ci-gates.test.mjs tests/docs-publication.test.mjs tests/sync-registry.test.mjs tests/served-installer.test.mjs",
     "test:static": "node scripts/run-ci-gates.mjs --static",
     "test:browser": "npm run build && playwright test",
     "test:browser:report": "playwright show-report",
@@ -65,6 +65,7 @@
     "chrome-launcher": "^1.2.2",
     "lighthouse": "13.5.0",
     "smol-toml": "^1.9.1",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "yaml": "^2.9.1"
   }
 }
