@@ -36,6 +36,18 @@ created), because every step below verifies against the published tag.
    Pinning the tag object SHA instead of the commit is the classic mistake here;
    `validate:release-parity` and `sync:sources` both catch it.
 
+   Then run the sync, and commit what it writes in the same change:
+
+   ```bash
+   npm run sync:sources
+   ```
+
+   It writes `public/install`, the installer served at `/install`, from the
+   pinned commit's `deploy/website/install.sh`, and records the commit it read
+   and the file's sha256 as `core.installCommit` and `core.installSha256`. Never
+   edit `public/install` or those two fields by hand: a changed byte, or a pin
+   moved without a sync, fails `validate:release-parity` offline.
+
    Check the registry pin in the same edit. `data.registry.commit` must be the
    registry's current commit (see [Between releases](#between-releases-the-registry)):
 
@@ -55,8 +67,9 @@ created), because every step below verifies against the published tag.
    - any page section describing capabilities the release added.
 
    Content that is *generated* from the pins (`/release` facts, app directory
-   names/categories/counts) needs no editing — `sync:sources` regenerates it and
-   fails the build on drift.
+   names/categories/counts, the `/install` installer in `public/install` and its
+   `installSha256`) needs no editing — `sync:sources` regenerates it and fails
+   the build on drift.
 
 5. **Run the full local gate.** Never push on the strength of remote CI:
 
@@ -86,8 +99,18 @@ created), because every step below verifies against the published tag.
 | Check | Where it runs | What it catches |
 |---|---|---|
 | `validate:release-parity` | `test:static` → `test:ci` → pre-push, and the **Release version parity** CI job (strict) | website version ≠ published core tag; a `released` channel with no tag or no commit pin; a tag that doesn't resolve to the pinned commit; **core having published a newer release than the site pins**; **the registry having moved past its pin** |
-| `sync:sources` | every `build` | manifest schema, pinned-tree verification against GitHub, core tag ≠ `pyproject` version, changelog/app-manifest sanity |
+| `validate:release-parity` (installer) | the same places | offline: `public/install` hand-edited (its sha256 ≠ `core.installSha256`), or the pin moved without a sync (`core.installCommit` ≠ `core.commit`); strict: `public/install` ≠ the pinned commit's `deploy/website/install.sh` |
+| `sync:sources` | every `build` | manifest schema, pinned-tree verification against GitHub, core tag ≠ `pyproject` version, changelog/app-manifest sanity; writes `public/install` and records its digest |
 | **Release follow** workflow | daily schedule + manual | a core release, or a registry change, published *after* the last website commit — opens/updates a tracking issue so a stale site can't sit unnoticed between pushes |
+| **Release follow**: served installer | the same run | the bytes served at `/install` differ from `public/install` on `main`, are not the newest core release's installer (an older release's installer fails even though it matches its own checksum), or disagree with that release's `install.sh.sha256` or `SHA256SUMS`; a signature in the release fails until a release key and verifier are configured here. A run that cannot fetch reports **unproven**; once the last proven run is older than 36 hours it reports **stale** and files the issue |
+
+The served-installer check measures freshness from its own record: each proven
+run uploads a `served-installer-proof` artifact (kept 7 days), and the next run
+reads when the newest one was made. Core publishes no installer signature yet,
+so every run reports the signature leg as unproven — never as a pass — and that
+alone files no issue. Once a release attaches `SHA256SUMS`, its `install.sh`
+line is a hard check; once it attaches a signature, the leg fails closed until
+the release key and its verifier are configured here.
 | `validate:marketing-manifest` | `test:static` | a screenshot committed without a manifest entry, a manifest entry whose asset is missing, a shipping shot with no placement |
 | `validate:build` / `validate:preview` | `test:static` | publication contract of the built output (production and noindex preview) |
 
