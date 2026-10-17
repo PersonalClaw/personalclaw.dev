@@ -1,0 +1,40 @@
+# Supply-chain policy for this repository's CI, read by tests/support/supply-chain.mjs
+# (npm run test:unit, and the unit tier of npm run test:static). See "Supply chain" in
+# README.md for how to pin, how a refresh arrives, and how to add or renew an exception.
+
+# Each Node release line CI may pin, and the date it reaches end of life, from the
+# Node.js release schedule (github.com/nodejs/Release, schedule.json). A pin on a line
+# past its date, or on a line not listed here, fails. Add a line when the repository
+# moves to it; leave past lines in place, so a pin on one fails on its date.
+[node_end_of_life]
+"20" = 2026-04-30
+"22" = 2027-04-30
+"24" = 2028-04-30
+"26" = 2029-04-30
+
+# Audited write steps. Every write permission a job holds, its own or inherited from
+# the top of its workflow, and every actions/checkout that keeps its credentials
+# (permission = "persist-credentials"), must be named here with the steps that use it
+# and why. Anything not listed fails, and an entry that matches nothing fails.
+[[audited_write]]
+workflow = "release-follow.yml"
+job = "check"
+permission = "issues: write"
+steps = [
+  "Open or update the tracking issue",
+  "Close the tracking issue when parity is restored",
+]
+reason = "Files, updates and closes the one tracking issue that says the website is behind the published core release or is serving another installer."
+
+# Exceptions. One waives one rule (scope) for one reference in one file, and expires at
+# most 30 days after the day it is written or renewed. Renewing is a new expiry with a
+# new reason. An expired entry, one more than 30 days out, one that matches nothing,
+# and one missing a field all fail. There are none today; the shape is:
+#
+# [[exception]]
+# file = ".github/workflows/ci.yml"
+# reference = "browser Install Chromium"   # the reference the violation reports
+# scope = "run-install"                    # the rule it waives
+# owner = "maintainers"
+# reason = "Why the pin cannot hold yet, and what ends the exception."
+# expires = 2026-11-15

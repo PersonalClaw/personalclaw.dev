@@ -25,7 +25,6 @@ on:
 
 permissions:
   contents: read
-  issues: write
 
 concurrency:
   group: release-follow
@@ -36,9 +35,10 @@ jobs:
     name: Check the website against the newest core release
     runs-on: ubuntu-24.04
     timeout-minutes: 5
-    # A job-level block replaces the workflow's, so it restates contents and issues.
-    # actions: read is for this job alone: the served-installer step lists this
-    # repository's artifacts to find when the check last passed.
+    # A job-level block replaces the workflow's read-only one. issues: write is for the
+    # two tracking-issue steps, and is listed as an audited write step in
+    # .github/supply-chain.toml. actions: read is for the served-installer step, which
+    # lists this repository's artifacts to find when the check last passed.
     permissions:
       contents: read
       issues: write
@@ -56,6 +56,8 @@ jobs:
 
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Set up Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0

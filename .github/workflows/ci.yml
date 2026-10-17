@@ -10,9 +10,9 @@ on:
 permissions:
   contents: read
 
-env:
-  GITHUB_TOKEN: ${{ github.token }}
-
+# The token is set on the steps that call the GitHub API (the syncs and the parity
+# check inside each npm run below), not on the workflow: a workflow-wide env would hand
+# it to npm ci's install scripts too. .github/supply-chain.toml's check holds that.
 concurrency:
   group: website-ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -38,6 +38,8 @@ jobs:
 
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Set up Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
@@ -49,6 +51,8 @@ jobs:
         run: npm ci
 
       - name: Validate release parity (strict)
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: npm run validate:release-parity:strict
 
   static-contract:
@@ -66,6 +70,8 @@ jobs:
 
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Set up Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
@@ -77,6 +83,8 @@ jobs:
         run: npm ci
 
       - name: Validate production and preview artifacts
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: npm run test:static
 
   browser:
@@ -94,6 +102,8 @@ jobs:
 
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Set up Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
@@ -108,6 +118,8 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Run browser quality suite
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: npm run test:browser
 
       - name: Upload browser diagnostics
@@ -136,6 +148,8 @@ jobs:
 
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Set up Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
@@ -150,6 +164,8 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Run Lighthouse budgets
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: npm run test:lighthouse
 
       - name: Upload Lighthouse reports

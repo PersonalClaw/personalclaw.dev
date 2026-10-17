@@ -242,6 +242,28 @@ Playwright HTML reports, traces, videos, screenshots from failed tests, and Ligh
 
 GitHub Actions exposes three stable jobs that can be required by branch protection: `static-contract`, `browser`, and `performance`. Dependabot checks npm and action updates weekly.
 
+### Supply chain
+
+What CI runs is pinned, and every job holds only the token permissions it needs. `tests/supply-chain.test.mjs` holds that over `.github/workflows/*.yml`, every `package.json` CI installs from, any Dockerfile, and `.github/supply-chain.toml`. It runs in `npm run test:unit` and in the unit tier of `npm run test:static`, so the **Static build and publication contract** job fails on a broken pin. `tests/ci-contract.test.mjs` holds the runner rules beside it, and both read the workflows through one YAML reader, `tests/support/workflows.mjs`.
+
+How to pin:
+
+- **Actions** by full commit SHA, with the release tag as a comment: `uses: actions/checkout@<40-hex sha> # v7.0.1`. A `docker://` action is an image, below.
+- **Images** by digest for one platform: a workflow `container:` or `services:` image as `name@sha256:<digest> # linux/amd64`, and a Dockerfile `FROM` with `--platform=` or a `# linux/<arch>` comment on the line above. An image named through an `ARG` is judged by the `ARG`'s default.
+- **Tools** a `run:` step installs name an exact version, or install from the lock (`npm ci`, or `npx` of a binary a locked direct dependency provides). `npx playwright install --with-deps chromium` counts as installing from the lock: the locked Playwright fixes the browser build. The apt packages `--with-deps` adds come from the runner image, which each job's **Record runner identity** step records.
+- **Setup actions** read `.node-version` (setup-node) or an exact `x.y.z`, and never set `check-latest`.
+- **Node** is an exact release in `.node-version`, on a line `.github/supply-chain.toml`'s `node_end_of_life` table lists and that has not reached its date, at or above every locked package's `engines.node`, and inside `package.json` `engines`. Each `package.json` CI installs from has an exact `packageManager`.
+
+Least privilege:
+
+- Every job declares `permissions:`, on the job or at the top of the workflow, and none holds `write-all`. A write grant at the top that no job inherits fails too: it would reach the next job added.
+- Every write permission a job holds, and every `actions/checkout` that keeps its credentials, is an `[[audited_write]]` entry in `.github/supply-chain.toml`: the workflow, the job, the permission (`issues: write`, or `persist-credentials` for a checkout), the steps that use it, and why. Anything not listed fails, and an entry that matches no grant or step fails. Every checkout sets `persist-credentials: false` today.
+- A token (`github.token` or `secrets.*`) goes in the `env:` of the steps that call the API, never in a workflow or job `env:`, which would hand it to `npm ci`'s install scripts too.
+
+How a refresh arrives: Dependabot's weekly `github-actions` update moves a SHA and its tag comment together, with the upstream release notes, and its pull request runs the same CI. A Node line's end-of-life date comes from the [Node.js release schedule](https://github.com/nodejs/Release); add the next line to the table before moving to it.
+
+How to add or renew an exception: add an `[[exception]]` to `.github/supply-chain.toml` with `file` and `reference` (both exactly as the failing check reports them), `scope` (the rule id), `owner = "maintainers"`, `reason`, and `expires`, a date at most 30 days out. Renewing is a new `expires`, at most 30 days from that day, and a new reason. An exception past its date, more than 30 days out, matching nothing, or missing a field fails the check, so an exception cannot outlive its reason unnoticed.
+
 The pre-push hook is a local mirror of those three jobs and is mandatory for this
 repository. It starts from `npm ci`, so tests always use the committed lockfile. Do
 not use `--no-verify` to bypass it. If a gate is red or cannot run, stop and fix the
@@ -253,7 +275,7 @@ inspecting the rendered result on the platform that produced it.
 
 ```text
 .
-├── .github/             CI workflow and dependency update policy
+├── .github/             CI workflows, dependency updates and the supply-chain policy
 ├── public/brand/        Public brand mark and social preview
 ├── scripts/             Artifact and Lighthouse quality gates
 ├── sources/             Committed source manifest and JSON Schema
@@ -266,7 +288,7 @@ inspecting the rendered result on the platform that produced it.
 ├── src/styles/          Global styles and design tokens
 ├── tests/browser/       User, accessibility, privacy, and visual coverage
 ├── tests/fixtures/      Registry inputs the render check rebuilds against
-├── tests/support/       Shared public route contract
+├── tests/support/       Shared public route contract, workflow reader and CI checks
 ├── DESIGN.md            Visual and interaction specification
 └── PRODUCT.md           Audience, positioning, and product brief
 ```

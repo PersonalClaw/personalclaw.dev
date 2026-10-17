@@ -10,12 +10,16 @@ const SKIP = "SKIP";
 // source. It runs FIRST and unconditionally, because everything downstream depends on it —
 // the aggregate report's own contract, and the docs publication floor that decides which
 // documents are allowed to become routes at all. A floor observed only at the end of a
-// full build is a floor that gets weakened rather than fixed.
-const unitTests = {
+// full build is a floor that gets weakened rather than fixed. The file list must be
+// package.json's `test:unit` list, in the same order: tests/run-ci-gates.test.mjs fails
+// when the two differ, so a test added to one is never left out of the other.
+export const unitTests = {
   name: "unit-tests",
   command: process.execPath,
   args: [
     "--test",
+    "tests/ci-contract.test.mjs",
+    "tests/supply-chain.test.mjs",
     "tests/run-ci-gates.test.mjs",
     "tests/docs-publication.test.mjs",
     "tests/sync-registry.test.mjs",

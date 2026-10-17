@@ -84,3 +84,12 @@ test("test:ci marks build-dependent gates skipped when build fails", () => {
   }
   assert.match(report, /OVERALL\s+FAIL/);
 });
+
+test("the unit tier runs exactly the files package.json's test:unit runs, in order", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const { unitTests } = await import("../scripts/run-ci-gates.mjs");
+  const packageJson = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
+  const script = packageJson.scripts["test:unit"].trim().split(/\s+/);
+  assert.deepEqual(script.slice(0, 2), ["node", "--test"]);
+  assert.deepEqual(unitTests.args, script.slice(1));
+});

@@ -19,8 +19,6 @@ jobs:
     name: Regenerate linux baselines
     runs-on: ubuntu-24.04
     timeout-minutes: 15
-    env:
-      GITHUB_TOKEN: ${{ github.token }}
     steps:
       - name: Record runner identity
         run: |
@@ -32,6 +30,8 @@ jobs:
 
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Set up Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
@@ -46,6 +46,8 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Regenerate visual baselines
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: npm run test:visual:update
 
       - name: Upload regenerated baselines
