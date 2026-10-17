@@ -10,13 +10,19 @@ on:
 permissions:
   contents: read
 
-# The token is set on the steps that call the GitHub API (the syncs and the parity
-# check inside each npm run below), not on the workflow: a workflow-wide env would hand
-# it to npm ci's install scripts too. .github/supply-chain.toml's check holds that.
+# The token is set on the steps that call the GitHub API (the source sync in `build`, and
+# the parity checks), not on the workflow: a workflow-wide env would hand it to npm ci's
+# install scripts too. .github/supply-chain.toml's check holds that.
 concurrency:
   group: website-ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# The site is built once, in `build`, and the three required checks test that one build
+# (see "Required checks" in README.md). Each of them runs with `if: always()` and fails
+# first when `build` did not succeed: a job skipped behind a failed dependency reports
+# success, so a required check would otherwise pass a broken build. Each then refuses a
+# build that is missing, from another run, from another tree or changed since it was
+# recorded (scripts/build-record.mjs). tests/support/ci-contract.mjs holds this shape.
 jobs:
   release-parity:
     # The website is the public projection of a RELEASED core version, so its own
@@ -55,10 +61,14 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: npm run validate:release-parity:strict
 
-  static-contract:
-    name: Static build and publication contract
+  build:
+    # Not a required check: the three required jobs below fail on its behalf, each with
+    # its own message, so a broken build turns all three red rather than skipping them.
+    name: Build the site once for every check
     runs-on: ubuntu-24.04
     timeout-minutes: 10
+    outputs:
+      artifact-digest: ${{ steps.upload.outputs.artifact-digest }}
     steps:
       - name: Record runner identity
         run: |
@@ -82,13 +92,122 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
 
+      - name: Build the production site
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: npm run build
+
+      # From the same sync as the production build: re-syncing would rewrite
+      # .generated/ (its generatedAt is the time of the sync), and validate:build
+      # compares that data with the pages in dist/.
+      - name: Build the preview site from the same sync
+        run: npm run build:preview:site
+
+      # The record names the tree the build came from. A build that rewrote a tracked
+      # file was not built from that tree, so it stops here.
+      - name: Require a clean tree
+        run: |
+          changes=$(git status --porcelain)
+          if [ -n "$changes" ]; then
+            echo "::error::The build changed files git tracks, so it was not built from this commit's tree:" >&2
+            echo "$changes" >&2
+            exit 1
+          fi
+
+      - name: Write the build record
+        run: npm run build:record
+
+      - name: Upload the shared build
+        id: upload
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: site-build
+          # .generated/ and .preview-dist/ are hidden directories, which the upload
+          # leaves out unless told otherwise.
+          include-hidden-files: true
+          path: |
+            dist/
+            .preview-dist/
+            .generated/
+            src/content/docs/
+            public/llms.txt
+            public/llms-full.txt
+          if-no-files-found: error
+          retention-days: 1
+
+  static-contract:
+    name: Static build and publication contract
+    needs: build
+    if: ${{ always() }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Record runner identity
+        run: |
+          echo "image=${ImageOS:-} version=${ImageVersion:-} arch=${RUNNER_ARCH:-}"
+          if [ -z "${ImageOS:-}" ] || [ -z "${ImageVersion:-}" ] || [ -z "${RUNNER_ARCH:-}" ]; then
+            echo "::error::Runner image identity is incomplete: ImageOS, ImageVersion and RUNNER_ARCH must all be set." >&2
+            exit 1
+          fi
+
+      - name: Require the shared build
+        env:
+          BUILD_RESULT: ${{ needs.build.result }}
+        run: |
+          # Red either way: a check that ends green or skipped here would pass a run
+          # that tested nothing. Only the message differs, so it says what happened.
+          if [ "$BUILD_RESULT" = "cancelled" ]; then
+            echo "::error::the build was cancelled, nothing checked" >&2
+            exit 1
+          fi
+          if [ "$BUILD_RESULT" != "success" ]; then
+            echo "::error::build failed, nothing checked (the build job ended: $BUILD_RESULT)" >&2
+            exit 1
+          fi
+
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Download the shared build
+        id: download
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: site-build
+          digest-mismatch: error
+
+      - name: Report a missing shared build
+        if: ${{ failure() && steps.download.outcome == 'failure' }}
+        run: |
+          echo "::error::the shared build artifact is missing, nothing checked" >&2
+          exit 1
+
+      - name: Check the shared build
+        env:
+          BUILD_ARTIFACT_DIGEST: ${{ needs.build.outputs.artifact-digest }}
+        run: |
+          echo "artifact digest: ${BUILD_ARTIFACT_DIGEST:-none}"
+          node scripts/build-record.mjs verify
+
       - name: Validate production and preview artifacts
         env:
           GITHUB_TOKEN: ${{ github.token }}
-        run: npm run test:static
+        run: npm run test:static -- --prebuilt
 
   browser:
     name: Browser, accessibility, privacy, and visual regression
+    needs: build
+    if: ${{ always() }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -97,6 +216,21 @@ jobs:
           echo "image=${ImageOS:-} version=${ImageVersion:-} arch=${RUNNER_ARCH:-}"
           if [ -z "${ImageOS:-}" ] || [ -z "${ImageVersion:-}" ] || [ -z "${RUNNER_ARCH:-}" ]; then
             echo "::error::Runner image identity is incomplete: ImageOS, ImageVersion and RUNNER_ARCH must all be set." >&2
+            exit 1
+          fi
+
+      - name: Require the shared build
+        env:
+          BUILD_RESULT: ${{ needs.build.result }}
+        run: |
+          # Red either way: a check that ends green or skipped here would pass a run
+          # that tested nothing. Only the message differs, so it says what happened.
+          if [ "$BUILD_RESULT" = "cancelled" ]; then
+            echo "::error::the build was cancelled, nothing checked" >&2
+            exit 1
+          fi
+          if [ "$BUILD_RESULT" != "success" ]; then
+            echo "::error::build failed, nothing checked (the build job ended: $BUILD_RESULT)" >&2
             exit 1
           fi
 
@@ -117,10 +251,28 @@ jobs:
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
 
-      - name: Run browser quality suite
+      - name: Download the shared build
+        id: download
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: site-build
+          digest-mismatch: error
+
+      - name: Report a missing shared build
+        if: ${{ failure() && steps.download.outcome == 'failure' }}
+        run: |
+          echo "::error::the shared build artifact is missing, nothing checked" >&2
+          exit 1
+
+      - name: Check the shared build
         env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: npm run test:browser
+          BUILD_ARTIFACT_DIGEST: ${{ needs.build.outputs.artifact-digest }}
+        run: |
+          echo "artifact digest: ${BUILD_ARTIFACT_DIGEST:-none}"
+          node scripts/build-record.mjs verify
+
+      - name: Run browser quality suite
+        run: npm run test:browser:prebuilt
 
       - name: Upload browser diagnostics
         if: ${{ !cancelled() }}
@@ -135,6 +287,8 @@ jobs:
 
   performance:
     name: Lighthouse performance budgets
+    needs: build
+    if: ${{ always() }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -143,6 +297,21 @@ jobs:
           echo "image=${ImageOS:-} version=${ImageVersion:-} arch=${RUNNER_ARCH:-}"
           if [ -z "${ImageOS:-}" ] || [ -z "${ImageVersion:-}" ] || [ -z "${RUNNER_ARCH:-}" ]; then
             echo "::error::Runner image identity is incomplete: ImageOS, ImageVersion and RUNNER_ARCH must all be set." >&2
+            exit 1
+          fi
+
+      - name: Require the shared build
+        env:
+          BUILD_RESULT: ${{ needs.build.result }}
+        run: |
+          # Red either way: a check that ends green or skipped here would pass a run
+          # that tested nothing. Only the message differs, so it says what happened.
+          if [ "$BUILD_RESULT" = "cancelled" ]; then
+            echo "::error::the build was cancelled, nothing checked" >&2
+            exit 1
+          fi
+          if [ "$BUILD_RESULT" != "success" ]; then
+            echo "::error::build failed, nothing checked (the build job ended: $BUILD_RESULT)" >&2
             exit 1
           fi
 
@@ -163,10 +332,28 @@ jobs:
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
 
-      - name: Run Lighthouse budgets
+      - name: Download the shared build
+        id: download
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: site-build
+          digest-mismatch: error
+
+      - name: Report a missing shared build
+        if: ${{ failure() && steps.download.outcome == 'failure' }}
+        run: |
+          echo "::error::the shared build artifact is missing, nothing checked" >&2
+          exit 1
+
+      - name: Check the shared build
         env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: npm run test:lighthouse
+          BUILD_ARTIFACT_DIGEST: ${{ needs.build.outputs.artifact-digest }}
+        run: |
+          echo "artifact digest: ${BUILD_ARTIFACT_DIGEST:-none}"
+          node scripts/build-record.mjs verify
+
+      - name: Run Lighthouse budgets
+        run: npm run test:lighthouse:prebuilt
 
       - name: Upload Lighthouse reports
         if: ${{ !cancelled() }}

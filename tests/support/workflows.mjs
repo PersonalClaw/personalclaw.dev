@@ -113,9 +113,16 @@ export function parseWorkflow(name, text) {
       continue;
     }
     const runsOn = plain(doc, node.get("runs-on", true));
+    const needs = plain(doc, node.get("needs", true));
+    const condition = plain(doc, node.get("if", true));
+    const timeout = plain(doc, node.get("timeout-minutes", true));
     const job = {
       id,
+      name: plain(doc, node.get("name", true)) ?? null,
       runsOn: runsOn === undefined ? null : typeof runsOn === "string" ? runsOn : JSON.stringify(runsOn),
+      needs: needs === undefined ? [] : (Array.isArray(needs) ? needs : [needs]).map(String),
+      if: condition === undefined ? null : String(condition),
+      timeoutMinutes: timeout === undefined ? null : timeout,
       permissions: readPermissions(doc, node.get("permissions", true), `${where} permissions`, problems),
       env: mapping(doc, node.get("env", true)),
       uses: reference(text, doc, node.get("uses", true)),
@@ -136,9 +143,12 @@ export function parseWorkflow(name, text) {
         continue;
       }
       const run = plain(doc, stepNode.get("run", true));
+      const stepCondition = plain(doc, stepNode.get("if", true));
       job.steps.push({
         index,
+        id: plain(doc, stepNode.get("id", true)) ?? null,
         name: plain(doc, stepNode.get("name", true)) ?? null,
+        if: stepCondition === undefined ? null : String(stepCondition),
         uses: reference(text, doc, stepNode.get("uses", true)),
         with: mapping(doc, stepNode.get("with", true)),
         env: mapping(doc, stepNode.get("env", true)),
