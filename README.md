@@ -131,8 +131,8 @@ When implementation and those documents disagree, treat the disagreement as a de
 
 ### Prerequisites
 
-- Node.js `22.12.0` (the exact CI runtime in `.node-version`)
-- npm
+- Node.js `22.23.3` (the exact CI runtime in `.node-version`; the locked dependencies need 22.19 or newer)
+- npm `10.9.9` (the `packageManager` in `package.json`, bundled with that Node release)
 - [mise](https://mise.jdx.dev/) recommended for automatic runtime selection
 
 ### Local Development
