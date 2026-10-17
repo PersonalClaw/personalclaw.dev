@@ -6,6 +6,14 @@
 # visible, not tribal knowledge. The same check holds the registry pin to the
 # registry's current commit, so a delisting produces the same obligation. The
 # issue title stays as it is: both steps below find the open issue by it.
+#
+# It also checks the installer where it is published: the bytes served at
+# /install must be public/install on main and the newest core release's
+# installer, and agree with that release's checksums. A run that cannot look is
+# unproven, not a pass; it is stale, and reported, once the last proven run is
+# older than the freshness window in scripts/served-installer.mjs. A proven run
+# uploads a small proof artifact, and the next run reads when the newest one was
+# made: that is the "last success" the window is measured from.
 name: Release follow
 
 on:
@@ -28,6 +36,13 @@ jobs:
     name: Check the website against the newest core release
     runs-on: ubuntu-24.04
     timeout-minutes: 5
+    # A job-level block replaces the workflow's, so it restates contents and issues.
+    # actions: read is for this job alone: the served-installer step lists this
+    # repository's artifacts to find when the check last passed.
+    permissions:
+      contents: read
+      issues: write
+      actions: read
     env:
       TITLE: "Website is behind the published core release"
     steps:
@@ -69,13 +84,52 @@ jobs:
           echo "status=$status" >> "$GITHUB_OUTPUT"
           exit 0
 
+      # Verdicts: pass, unproven (could not look; last proven run inside the
+      # window), fail (drift, another release's installer, a checksum mismatch, a
+      # signature that cannot be verified) and stale (could not look, and the last
+      # proven run is older than the window). Fail and stale go to the issue.
+      - name: Check the served installer
+        id: served
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          RESULT: ${{ runner.temp }}/served-installer/result.json
+        run: |
+          set +e
+          output=$(npm run --silent check:served-installer -- --result "$RESULT" 2>&1)
+          set -e
+          echo "$output"
+          verdict=$(node -p 'require(process.env.RESULT).verdict' 2>/dev/null || echo stale)
+          {
+            echo "report<<SERVED_EOF"
+            echo "$output"
+            echo "SERVED_EOF"
+          } >> "$GITHUB_OUTPUT"
+          echo "verdict=$verdict" >> "$GITHUB_OUTPUT"
+          {
+            echo "### Served installer: $verdict"
+            echo '```'
+            echo "$output"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit 0
+
+      - name: Keep the proof of a passing served-installer check
+        if: steps.served.outputs.verdict == 'pass'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: served-installer-proof
+          path: ${{ runner.temp }}/served-installer/result.json
+          retention-days: 7
+          if-no-files-found: error
+
       - name: Open or update the tracking issue
-        if: steps.parity.outputs.status != '0'
+        if: steps.parity.outputs.status != '0' || steps.served.outputs.verdict == 'fail' || steps.served.outputs.verdict == 'stale'
         env:
           GH_TOKEN: ${{ github.token }}
           REPORT: ${{ steps.parity.outputs.report }}
+          SERVED: ${{ steps.served.outputs.report }}
         run: |
-          body=$(printf 'The scheduled release-parity check failed — the website is not publishing the current core release or the current registry.\n\n```\n%s\n```\n\nTo resolve: for a core release, re-pin `sources/personalclaw.sources.json` to the new tag + commit, bump `package.json` to the matching version, and refresh release-sensitive content; for the registry, re-pin `data.registry` to its current commit. Then run `npm run test:prepush`. See `docs/release-runbook.md`.\n\n_Updated by the release-follow workflow._\n' "$REPORT")
+          body=$(printf 'The scheduled release-follow check failed — the website is not publishing the current core release, the current registry, or the current release'"'"'s installer at /install.\n\nRelease parity:\n\n```\n%s\n```\n\nServed installer:\n\n```\n%s\n```\n\nTo resolve: for a core release, re-pin `sources/personalclaw.sources.json` to the new tag + commit, bump `package.json` to the matching version, run `npm run sync:sources` (it writes `public/install` and records its digest), and refresh release-sensitive content; for the registry, re-pin `data.registry` to its current commit. A served installer that differs from `public/install` on main means the deployment is not the committed file. Then run `npm run test:prepush`. See `docs/release-runbook.md`.\n\n_Updated by the release-follow workflow._\n' "$REPORT" "$SERVED")
           existing=$(gh issue list --state open --search "$TITLE in:title" --json number --jq '.[0].number // empty')
           if [ -n "$existing" ]; then
             gh issue comment "$existing" --body "$body"
@@ -83,20 +137,23 @@ jobs:
             gh issue create --title "$TITLE" --body "$body"
           fi
 
+      # Only a proven served installer closes it: an unproven run cannot show that
+      # the drift it was opened for is gone.
       - name: Close the tracking issue when parity is restored
-        if: steps.parity.outputs.status == '0'
+        if: steps.parity.outputs.status == '0' && steps.served.outputs.verdict == 'pass'
         env:
           GH_TOKEN: ${{ github.token }}
           REPORT: ${{ steps.parity.outputs.report }}
+          SERVED: ${{ steps.served.outputs.report }}
         run: |
           existing=$(gh issue list --state open --search "$TITLE in:title" --json number --jq '.[0].number // empty')
           if [ -n "$existing" ]; then
-            body=$(printf 'The scheduled release-parity check is green again — the website is publishing the current core release and the current registry.\n\n```\n%s\n```\n\n_Closed by the release-follow workflow._\n' "$REPORT")
+            body=$(printf 'The scheduled release-follow check is green again — the website is publishing the current core release, the current registry and the current release'"'"'s installer.\n\nRelease parity:\n\n```\n%s\n```\n\nServed installer:\n\n```\n%s\n```\n\n_Closed by the release-follow workflow._\n' "$REPORT" "$SERVED")
             gh issue close "$existing" --comment "$body"
           fi
 
       - name: Fail the run when the website is stale
-        if: steps.parity.outputs.status != '0'
+        if: steps.parity.outputs.status != '0' || steps.served.outputs.verdict == 'fail' || steps.served.outputs.verdict == 'stale'
         run: |
-          echo "Release parity check failed — see the tracking issue." >&2
+          echo "Release follow check failed — see the tracking issue." >&2
           exit 1

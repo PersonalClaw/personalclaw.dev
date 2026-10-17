@@ -162,7 +162,8 @@ The build runs Astro diagnostics before producing the static site in `dist/`.
 
 | Command | What it does |
 |---|---|
-| `npm run sync:sources` | Validates source pins and generates ignored release facts from exact revisions |
+| `npm run sync:sources` | Validates source pins, generates ignored release facts from exact revisions, and writes `public/install` from the pinned core installer with its digest |
+| `npm run check:served-installer` | Checks the installer served at `/install` against `public/install`, the newest core release's installer and its checksums (run daily by **Release follow**) |
 | `npm run sync:registry` | Reads the community app registry, and one README per listing, from the registry repository at its pinned commit, once the pinned core release lists it in its Store |
 | `npm run dev` | Starts the local Astro development server |
 | `npm run check` | Runs Astro and TypeScript diagnostics |
@@ -279,7 +280,8 @@ PersonalClaw spans three repositories, with deliberately separate ownership:
 | Product capabilities, version, docs, security posture, and changelog | [PersonalClaw](https://github.com/PersonalClaw/PersonalClaw) |
 | First-party app manifests, permissions, requirements, and compatibility | [PersonalClawApps](https://github.com/PersonalClaw/PersonalClawApps) |
 | Community app listings, their declared permissions, and their scan verdicts | [registry](https://github.com/PersonalClaw/registry) `app-registry.json`, pinned by commit as `data.registry` |
-| Presentation, public routing, synchronized docs build, and `/install` endpoint | This repository |
+| The installer served at `/install` | [PersonalClaw](https://github.com/PersonalClaw/PersonalClaw) `deploy/website/install.sh`; `public/install` is generated from the pinned core commit by `npm run sync:sources` and held to it by `validate:release-parity` |
+| Presentation, public routing, synchronized docs build, and serving `/install` | This repository |
 
 Every build pins full source SHAs. The manifest supports two fail-closed channels:
 

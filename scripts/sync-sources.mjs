@@ -1,10 +1,17 @@
 import { execFile } from "node:child_process";
-import { access, mkdir, readFile, readdir, rename, rm, writeFile } from "node:fs/promises";
+import { access, chmod, mkdir, readFile, readdir, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { promisify } from "node:util";
 import Ajv2020 from "ajv/dist/2020.js";
 import { parse as parseToml } from "smol-toml";
+import {
+  INSTALLER_PATH,
+  PUBLISHED_INSTALLER,
+  PUBLISHED_INSTALLER_MODE,
+  pinnedFileUrl,
+  recordInstaller
+} from "./served-installer.mjs";
 
 const execFileAsync = promisify(execFile);
 const root = process.cwd();
@@ -12,6 +19,7 @@ const manifestPath = path.join(root, "sources", "personalclaw.sources.json");
 const schemaPath = path.join(root, "sources", "personalclaw.sources.schema.json");
 const cacheRoot = path.join(root, ".source-cache");
 const generatedPath = path.join(root, ".generated", "release-facts.json");
+const installerPath = path.join(root, PUBLISHED_INSTALLER);
 const githubHeaders = {
   Accept: "application/vnd.github+json",
   "User-Agent": "personalclaw.dev-source-sync",
@@ -79,11 +87,20 @@ function formatAjvErrors(errors = []) {
     .join("; ");
 }
 
-async function loadManifest() {
+// The fields this sync records rather than reads. Every other reader of the manifest
+// requires them; the sync alone may start without them, because it is what writes them,
+// and "run the sync" must stay the way back from a manifest that lost them.
+const RECORDED_CORE_FIELDS = ["installSha256", "installCommit"];
+
+async function loadManifest({ recordedFieldsOptional = false } = {}) {
   const [manifest, schema] = await Promise.all([
     readJson(manifestPath),
     readJson(schemaPath)
   ]);
+  if (recordedFieldsOptional) {
+    const core = schema.$defs.coreSource;
+    core.required = core.required.filter((field) => !RECORDED_CORE_FIELDS.includes(field));
+  }
   const ajv = new Ajv2020({ allErrors: true, strict: true });
   const validate = ajv.compile(schema);
   if (!validate(manifest)) {
@@ -176,6 +193,16 @@ async function resolveLocalSource(key, source) {
     },
     readText(relativePath) {
       return readFile(path.join(candidate, relativePath), "utf8");
+    },
+    // The bytes of a file AT THE PINNED COMMIT, read from the object store rather than the
+    // working tree, so an uncommitted edit in the checkout can never reach the site.
+    async readBytes(relativePath) {
+      const { stdout } = await execFileAsync(
+        "git",
+        ["-C", candidate, "show", `${source.commit}:${relativePath}`],
+        { encoding: "buffer", maxBuffer: 16 * 1024 * 1024 }
+      );
+      return stdout;
     }
   };
 }
@@ -191,6 +218,18 @@ async function fetchJson(url) {
     throw new Error(`GitHub request failed (${response.status}) for ${url}`);
   }
   return response.json();
+}
+
+async function fetchBytes(url) {
+  const response = await fetch(url, {
+    headers: { "User-Agent": githubHeaders["User-Agent"] }
+  });
+  if (!response.ok) {
+    const error = new Error(`Pinned source request failed (${response.status}) for ${url}`);
+    /** @type {Error & { status?: number }} */ (error).status = response.status;
+    throw error;
+  }
+  return Buffer.from(await response.arrayBuffer());
 }
 
 async function fetchText(url) {
@@ -311,6 +350,18 @@ async function resolveRemoteSource(key, source) {
 
       const content = await fetchText(
         `https://raw.githubusercontent.com/${source.repository}/${source.commit}/${relativePath}`
+      );
+      await writeAtomically(cachedPath, content);
+      return content;
+    },
+    // Raw bytes from raw.githubusercontent.com at the pinned commit (not the rate-limited
+    // API), cached beside the text reads. A cache keyed by the commit cannot go stale.
+    async readBytes(relativePath) {
+      const cachedPath = path.join(directory, relativePath);
+      if (await fileExists(cachedPath)) return readFile(cachedPath);
+
+      const content = await fetchBytes(
+        pinnedFileUrl(source.repository, source.commit, relativePath)
       );
       await writeAtomically(cachedPath, content);
       return content;
@@ -629,7 +680,7 @@ function sourceFacts(source) {
 }
 
 async function main() {
-  const manifest = await loadManifest();
+  const manifest = await loadManifest({ recordedFieldsOptional: true });
   const [coreSource, appsSource] = await Promise.all([
     resolveSource("core", manifest.sources.core),
     resolveSource("apps", manifest.sources.apps)
@@ -637,9 +688,10 @@ async function main() {
   const resolvedSources = { core: coreSource, apps: appsSource };
   await validateReleaseTags(manifest, resolvedSources);
 
-  const [projectText, changelogText, apps] = await Promise.all([
+  const [projectText, changelogText, installerBytes, apps] = await Promise.all([
     coreSource.readText("pyproject.toml"),
     coreSource.readText("CHANGELOG.md"),
+    coreSource.readBytes(INSTALLER_PATH),
     buildAppFacts(appsSource)
   ]);
 
@@ -700,8 +752,33 @@ async function main() {
   };
 
   await writeAtomically(generatedPath, `${JSON.stringify(facts, null, 2)}\n`);
+  await writeInstaller(manifest, installerBytes);
   console.log(
     `Generated ${path.relative(root, generatedPath)}: ${facts.status.label}, ${facts.core.versionLabel}, ${facts.apps.total} apps, ${facts.apps.capabilityCount} capabilities.`
+  );
+}
+
+/**
+ * Publish core's installer as /install, and record which commit it came from and its
+ * digest, so validate-release-parity can hold the committed file to the pin offline.
+ * `public/install` is GENERATED: a hand edit fails the check, and so does a pin bump
+ * that skips this step.
+ */
+async function writeInstaller(manifest, installerBytes) {
+  if (installerBytes.length === 0) {
+    throw new Error(`Pinned core ${INSTALLER_PATH} is empty`);
+  }
+  await writeAtomically(installerPath, installerBytes);
+  // rename() keeps the temporary file's mode, which is the umask's, not the installer's.
+  await chmod(installerPath, PUBLISHED_INSTALLER_MODE);
+
+  const recorded = recordInstaller(manifest, installerBytes);
+  const text = `${JSON.stringify(recorded, null, 2)}\n`;
+  if (text !== (await readFile(manifestPath, "utf8"))) {
+    await writeAtomically(manifestPath, text);
+  }
+  console.log(
+    `Wrote ${PUBLISHED_INSTALLER} from core ${manifest.sources.core.commit.slice(0, 12)}:${INSTALLER_PATH} (sha256 ${recorded.sources.core.installSha256}).`
   );
 }
 
@@ -716,6 +793,8 @@ export { loadManifest, resolveSource, validateReleaseTags, writeAtomically };
 if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
   main().catch(async (error) => {
     await rm(`${generatedPath}.${process.pid}.tmp`, { force: true });
+    await rm(`${installerPath}.${process.pid}.tmp`, { force: true });
+    await rm(`${manifestPath}.${process.pid}.tmp`, { force: true });
     console.error(error instanceof Error ? error.message : error);
     process.exitCode = 1;
   });

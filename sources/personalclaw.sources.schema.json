@@ -167,19 +167,40 @@
       }
     },
     "coreSource": {
-      "allOf": [
-        {
-          "$ref": "#/$defs/source"
+      "description": "Core is also the source of the installer this site serves at /install. `npm run sync:sources` writes public/install from the pinned commit's deploy/website/install.sh and records the commit it read and the file's sha256, so a hand edit or a pin moved without a sync fails offline.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository",
+        "commit",
+        "tag",
+        "installSha256",
+        "installCommit"
+      ],
+      "properties": {
+        "repository": {
+          "const": "PersonalClaw/PersonalClaw"
         },
-        {
-          "type": "object",
-          "properties": {
-            "repository": {
-              "const": "PersonalClaw/PersonalClaw"
+        "commit": {
+          "$ref": "#/$defs/commit"
+        },
+        "tag": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/tag"
+            },
+            {
+              "type": "null"
             }
-          }
+          ]
+        },
+        "installSha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "installCommit": {
+          "$ref": "#/$defs/commit"
         }
-      ]
+      }
     },
     "appsSource": {
       "allOf": [
@@ -211,6 +232,10 @@
           "$ref": "#/$defs/commit"
         }
       }
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
     }
   }
 }

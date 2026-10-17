@@ -19,6 +19,7 @@ const unitTests = {
     "tests/run-ci-gates.test.mjs",
     "tests/docs-publication.test.mjs",
     "tests/sync-registry.test.mjs",
+    "tests/served-installer.test.mjs",
   ],
 };
 

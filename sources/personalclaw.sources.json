@@ -6,7 +6,9 @@
     "core": {
       "repository": "PersonalClaw/PersonalClaw",
       "commit": "be97147cb38147e9c769f502f812f3b3e6347b17",
-      "tag": "v0.2.1"
+      "tag": "v0.2.1",
+      "installSha256": "f1a27c277b984cabb861eff7e30d4462d83a016f809d30a9303d09ed30bcb532",
+      "installCommit": "be97147cb38147e9c769f502f812f3b3e6347b17"
     },
     "apps": {
       "repository": "PersonalClaw/PersonalClawApps",
