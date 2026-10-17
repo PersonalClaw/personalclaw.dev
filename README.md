@@ -174,9 +174,13 @@ The build runs Astro diagnostics before producing the static site in `dist/`.
 | `npm run validate:blog` | Asserts `/blog` renders one listing item per readable post, and that each post is published, contracted, and not an empty body |
 | `npm run validate:compare` | Refuses a `/compare` matrix that renders no rows, drifts from its data, sources a row to a branch instead of the pinned release, or stops carrying the rows that do not hold |
 | `npm run validate:source-pins` | Refuses any hand-authored link into core, apps or the registry at a moving ref (`main`, `master`, `HEAD`, `latest`) — the same release-not-branch rule `validate:compare` applies to matrix rows, applied to page copy |
-| `npm run test:static` | Validates production and preview publication artifacts |
+| `npm run test:static` | Validates production and preview publication artifacts; with `-- --prebuilt`, tests a shared build instead of making one (see [One build per CI run](#one-build-per-ci-run)) |
+| `npm run build:preview:site` | Makes the noindex preview build into `.preview-dist/` from the current sync, without syncing again |
+| `npm run build:record` / `npm run verify:build-record` | Writes, or verifies, `.generated/build-record.json` for the shared CI build |
 | `npm run test:browser` | Builds and runs the complete Playwright suite |
+| `npm run test:browser:prebuilt` | Verifies the shared build's record, then runs the Playwright suite against it (CI) |
 | `npm run test:lighthouse` | Builds and enforces Lighthouse budgets on every route |
+| `npm run test:lighthouse:prebuilt` | Verifies the shared build's record, then enforces the Lighthouse budgets against it (CI) |
 | `npm run test:ci` | Runs the same aggregate quality floor used by CI |
 | `npm run test:prepush` | Installs the lockfile and runs the aggregate gate under the exact CI Node runtime |
 | `npm run test:visual:update` | Deliberately refreshes committed visual baselines |
@@ -221,7 +225,7 @@ baseline. Everything else applies, and `npm run validate:blog` replaces the scre
 the assertion a screenshot would have made: a collection with readable posts must not
 render an empty listing.
 
-The required checks are:
+The required checks are below. On CI all three test one shared build, made once per run by the `build` job (see [One build per CI run](#one-build-per-ci-run)); a failed build turns all three red.
 
 - **Static publication contract:** Astro and TypeScript diagnostics, exact route inventory, internal links and fragments, local runtime assets, and the *universal head contract* below, plus sitemap completeness, robots policy, the `llms.txt` pair, tracker signatures, preview `noindex`, and Vercel output/trailing-slash/security-header configuration.
 
@@ -241,6 +245,20 @@ npm run test:prepush
 Playwright HTML reports, traces, videos, screenshots from failed tests, and Lighthouse reports are generated locally but ignored. The reviewed visual baselines under `tests/browser/__screenshots__/` are source-controlled.
 
 GitHub Actions exposes three stable jobs that can be required by branch protection: `static-contract`, `browser`, and `performance`. Dependabot checks npm and action updates weekly.
+
+### One build per CI run
+
+CI builds the site once. The `build` job ("Build the site once for every check") runs `npm run build`, then the preview build from the same source sync (`npm run build:preview:site`, so `.generated/` still describes `dist/`), requires a clean tree, and writes `.generated/build-record.json` (`npm run build:record`). It uploads one `site-build` artifact: `dist/`, `.preview-dist/`, `.generated/`, the synced `src/content/docs/` and the `llms.txt` pair. `build` is not a required check, and `release-parity` does not wait for it.
+
+The record names the commit and tree the build came from, the run that made it, the exact Node and npm, the lock's digest, the source pins, the digest and `generatedAt` of each generated data file, and every artifact file with its size and sha256, under one digest. The upload's own digest is logged by each check, and the download fails on a mismatch.
+
+The three required jobs test that one build:
+
+- Each declares `needs: build` and runs with `if: always()`. Its first step after the runner identity fails with "build failed, nothing checked" when `build` did not succeed, or with "the build was cancelled, nothing checked" when a newer run cancelled it. A job skipped because a dependency failed reports success, so without this a required check would pass a broken build; a cancelled build is red for the same reason, and only its message differs.
+- After downloading the artifact, `node scripts/build-record.mjs verify` refuses a build that is missing, from another run, from another tree or a changed checkout, made with another Node or npm or other pins, or changed since it was recorded (a file changed, missing or added, or generated data re-synced), and names which.
+- `static-contract` runs `npm run test:static -- --prebuilt`, which verifies the record in place of the `build` and `build:preview` gates and runs every other gate as before. `browser` and `performance` run `npm run test:browser:prebuilt` and `npm run test:lighthouse:prebuilt`. None of them builds or syncs. The registry render check still makes its two fixture builds, on purpose.
+
+`tests/support/ci-contract.mjs` holds that shape (rule `shared-build`): the three job names, `needs: build`, `if: always()`, the gate step, the download, the verify, no rebuild in a required job, and a `build` job with a timeout, a record and an upload that keeps hidden files. Locally, `test:browser`, `test:lighthouse`, `test:ci` and the pre-push gate still build for themselves.
 
 ### Supply chain
 

@@ -2,6 +2,8 @@ import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
+import { verifyRecord } from "./build-record.mjs";
+
 const PASS = "PASS";
 const FAIL = "FAIL";
 const SKIP = "SKIP";
@@ -21,6 +23,7 @@ export const unitTests = {
     "tests/ci-contract.test.mjs",
     "tests/supply-chain.test.mjs",
     "tests/run-ci-gates.test.mjs",
+    "tests/build-record.test.mjs",
     "tests/docs-publication.test.mjs",
     "tests/sync-registry.test.mjs",
     "tests/served-installer.test.mjs",
@@ -78,6 +81,19 @@ const buildGate = {
   command: "npm",
   args: ["run", "build"],
 };
+
+// With --prebuilt, the static run tests a build it is handed (CI's `build` job, see
+// scripts/build-record.mjs) instead of making one. Its gate is the record's verify: a
+// missing, stale, other-tree or changed build reads FAIL with the reason, never SKIP,
+// and what reads the build is skipped behind it. The handed build already holds the
+// preview build, made from the same sync, so build:preview does not run either: a
+// re-sync here would move .generated/ past the dist/ the consumers compare it with.
+function prebuiltGate(options) {
+  return {
+    name: "prebuilt",
+    check: () => verifyRecord(options === true ? {} : options),
+  };
+}
 
 const buildConsumers = [
   {
@@ -143,7 +159,19 @@ function runPreparation(command, args) {
   }
 }
 
-function defaultExecutor(gate) {
+export function defaultExecutor(gate) {
+  if (gate.check) {
+    let problems;
+    try {
+      problems = gate.check();
+    } catch (error) {
+      problems = [error instanceof Error ? error.message : String(error)];
+    }
+    for (const problem of problems) process.stderr.write(`  - ${problem}\n`);
+    return problems.length === 0
+      ? { status: PASS, detail: "" }
+      : { status: FAIL, detail: problems.length === 1 ? problems[0] : `${problems[0]} (+${problems.length - 1} more)` };
+  }
   try {
     gate.prepare?.();
   } catch (error) {
@@ -230,18 +258,20 @@ export function renderReport(rows) {
 
 export function runCiGates({
   staticOnly = false,
+  prebuilt = false,
   execute = defaultExecutor,
   write = (text) => process.stdout.write(text),
 } = {}) {
   const rows = [];
   const run = (gate) => runGate(gate, rows, execute, write);
+  const build = prebuilt ? prebuiltGate(prebuilt) : buildGate;
 
   run(unitTests);
   for (const gate of independentGates) {
     run(gate);
   }
 
-  run(buildGate);
+  run(build);
   const buildPassed = rows.at(-1).status === PASS;
   run(registryGate);
 
@@ -250,12 +280,16 @@ export function runCiGates({
       run(gate);
     }
 
-    run(previewBuildGate);
-    const previewBuildPassed = rows.at(-1).status === PASS;
-    if (previewBuildPassed) {
+    if (prebuilt) {
       run(previewConsumer);
     } else {
-      skipGate(previewConsumer, previewBuildGate.name, rows);
+      run(previewBuildGate);
+      const previewBuildPassed = rows.at(-1).status === PASS;
+      if (previewBuildPassed) {
+        run(previewConsumer);
+      } else {
+        skipGate(previewConsumer, previewBuildGate.name, rows);
+      }
     }
 
     if (!staticOnly) {
@@ -265,14 +299,18 @@ export function runCiGates({
     }
   } else {
     for (const gate of buildConsumers) {
-      skipGate(gate, buildGate.name, rows);
+      skipGate(gate, build.name, rows);
     }
-    skipGate(previewBuildGate, buildGate.name, rows);
-    skipGate(previewConsumer, previewBuildGate.name, rows);
+    if (prebuilt) {
+      skipGate(previewConsumer, build.name, rows);
+    } else {
+      skipGate(previewBuildGate, buildGate.name, rows);
+      skipGate(previewConsumer, previewBuildGate.name, rows);
+    }
 
     if (!staticOnly) {
       for (const gate of browserConsumers) {
-        skipGate(gate, buildGate.name, rows);
+        skipGate(gate, build.name, rows);
       }
     }
   }
@@ -291,13 +329,14 @@ const isMain =
   fileURLToPath(import.meta.url) === fileURLToPath(new URL(process.argv[1], "file:"));
 
 if (isMain) {
-  const unknownArguments = process.argv.slice(2).filter((arg) => arg !== "--static");
+  const unknownArguments = process.argv.slice(2).filter((arg) => arg !== "--static" && arg !== "--prebuilt");
   if (unknownArguments.length > 0) {
     console.error(`Unknown argument(s): ${unknownArguments.join(", ")}`);
     process.exitCode = 2;
   } else {
     const result = runCiGates({
       staticOnly: process.argv.includes("--static"),
+      prebuilt: process.argv.includes("--prebuilt"),
     });
     process.exitCode = result.exitCode;
   }

@@ -91,3 +91,140 @@ for (const plant of plants) {
     assert.deepEqual(rules(checkContract(repository(plant.text))), [plant.rule]);
   });
 }
+
+// ── shared-build: the one-build shape of Website CI ─────────────────────────────
+// Each plant is one edit to the committed ci.yml, so the rule is proved against the
+// file it guards rather than against a sketch of it.
+
+const committed = loadRepository(root).workflows;
+const CI = committed["ci.yml"];
+
+function plantCi(edit) {
+  const text = edit(CI);
+  assert.notEqual(text, CI, "the plant must change ci.yml");
+  return { workflows: { ...committed, "ci.yml": text } };
+}
+
+// Replaces the nth (0-based) occurrence of `from`.
+function nth(text, from, to, index = 0) {
+  let at = -1;
+  for (let count = 0; count <= index; count += 1) {
+    at = text.indexOf(from, at + 1);
+    assert.notEqual(at, -1, `ci.yml has no occurrence ${index} of ${JSON.stringify(from)}`);
+  }
+  return text.slice(0, at) + to + text.slice(at + from.length);
+}
+
+// The browser job's text, so a plant can name one required job.
+const inBrowser = (text, from, to) => {
+  const start = text.indexOf("\n  browser:\n");
+  const end = text.indexOf("\n  performance:\n");
+  const job = text.slice(start, end);
+  assert.ok(job.includes(from), `the browser job has no ${JSON.stringify(from)}`);
+  return text.slice(0, start) + job.replace(from, to) + text.slice(end);
+};
+
+const sharedBuildPlants = [
+  {
+    why: "a required job without needs: build",
+    match: /required job "browser" must declare needs: build/,
+    edit: (text) => inBrowser(text, "    needs: build\n", ""),
+  },
+  {
+    why: "a required job without if: always() (a failed build would skip it, and skipped passes)",
+    match: /required job "browser" must run with if: \$\{\{ always\(\) \}\}/,
+    edit: (text) => inBrowser(text, "    if: ${{ always() }}\n", ""),
+  },
+  {
+    why: "a required job with if: success() instead of always()",
+    match: /required job "performance" must run with if: \$\{\{ always\(\) \}\}/,
+    edit: (text) => nth(text, "    if: ${{ always() }}\n", "    if: ${{ success() }}\n", 2),
+  },
+  {
+    why: "a required job without the build gate step",
+    match: /^the step after "Record runner identity" must be "Require the shared build"$/,
+    edit: (text) => nth(text, "      - name: Require the shared build\n", "      - name: Note the build\n", 0),
+  },
+  {
+    why: "a build gate that does not read needs.build.result",
+    match: /"Require the shared build" must read needs\.build\.result/,
+    edit: (text) => inBrowser(text, "BUILD_RESULT: ${{ needs.build.result }}", 'BUILD_RESULT: "success"'),
+  },
+  {
+    why: "a build gate that does not say build failed, nothing checked",
+    match: /must read needs\.build\.result and fail with "build failed, nothing checked"/,
+    edit: (text) => inBrowser(text, "build failed, nothing checked", "the build did not finish"),
+  },
+  {
+    why: "a build gate that drops the cancelled branch (a cancelled build would read as failed)",
+    match: /^"Require the shared build" must fail a cancelled build with "the build was cancelled, nothing checked"$/,
+    edit: (text) =>
+      inBrowser(
+        text,
+        [
+          '          if [ "$BUILD_RESULT" = "cancelled" ]; then',
+          '            echo "::error::the build was cancelled, nothing checked" >&2',
+          "            exit 1",
+          "          fi\n",
+        ].join("\n"),
+        "",
+      ),
+  },
+  {
+    why: "a required job that rebuilds the site",
+    match: /required job "browser" must test the shared build, not make its own: npm run test:browser$/,
+    edit: (text) => inBrowser(text, "run: npm run test:browser:prebuilt", "run: npm run test:browser"),
+  },
+  {
+    why: "a required job that runs npm run build",
+    match: /required job "performance" must test the shared build, not make its own: npm run build && node scripts\/lighthouse-audit\.mjs/,
+    edit: (text) => text.replace("run: npm run test:lighthouse:prebuilt", "run: npm run build && node scripts/lighthouse-audit.mjs"),
+  },
+  {
+    why: "a required job that does not download the shared build",
+    match: /required job "browser" must download the "site-build" artifact/,
+    edit: (text) => inBrowser(text, "          name: site-build\n          digest-mismatch: error", "          name: other-build\n          digest-mismatch: error"),
+  },
+  {
+    why: "a required job that does not verify the build record",
+    match: /required job "browser" must verify the build record/,
+    edit: (text) => inBrowser(text, "          node scripts/build-record.mjs verify\n", "          ls dist\n"),
+  },
+  {
+    why: "a renamed required job (branch protection would wait on a check that never reports)",
+    match: /required job "browser" must be named "Browser, accessibility, privacy, and visual regression"/,
+    edit: (text) => text.replace("name: Browser, accessibility, privacy, and visual regression", "name: Browser checks"),
+  },
+  {
+    why: "a build job with no timeout-minutes",
+    match: /the build job must set timeout-minutes/,
+    edit: (text) => nth(text, "    timeout-minutes: 10\n", "", 0),
+  },
+  {
+    why: "a build upload that drops hidden files (.generated/, .preview-dist/)",
+    match: /the build upload must set include-hidden-files: true/,
+    edit: (text) => text.replace("          include-hidden-files: true\n", ""),
+  },
+  {
+    why: "a build job that writes no build record",
+    match: /the build job must write the build record/,
+    edit: (text) => text.replace("        run: npm run build:record\n", "        run: echo no record\n"),
+  },
+  {
+    why: "no build job",
+    match: /ci\.yml must have a "build" job/,
+    edit: (text) => text.replace("\n  build:\n", "\n  site:\n"),
+  },
+];
+
+for (const { why, match, edit } of sharedBuildPlants) {
+  test(`the shared-build rule fails on ${why}`, () => {
+    const violations = checkContract(plantCi(edit));
+    assert.deepEqual(rules(violations), ["shared-build"], violations.map((v) => `${v.rule} ${v.where}: ${v.message}`).join("\n"));
+    assert.ok(violations.some((violation) => match.test(violation.message)), violations.map((v) => v.message).join("\n"));
+  });
+}
+
+test("the shared-build rule judges ci.yml only", () => {
+  assert.deepEqual(checkContract(repository()), []);
+});
