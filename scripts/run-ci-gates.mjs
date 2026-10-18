@@ -127,11 +127,19 @@ const previewConsumer = {
   args: ["run", "validate:preview"],
 };
 
+// The visual specs are not in this run: playwright.config.ts leaves them out unless
+// scripts/run-visual.mjs starts them inside the pinned Playwright image, which runs only on
+// a linux/amd64 host with a container runtime. The row says so, so a green local gate is
+// never read as a pixel comparison. Website CI's browser job compares them.
+export const VISUAL_NOTE =
+  "visual specs not run here: they compare only inside the pinned image, in CI's browser job (npm run test:visual)";
+
 const browserConsumers = [
   {
     name: "playwright",
     command: "playwright",
     args: ["test", "--workers=2"],
+    note: VISUAL_NOTE,
   },
   {
     name: "lighthouse",
@@ -212,10 +220,11 @@ export function defaultExecutor(gate) {
 function runGate(gate, rows, execute, write) {
   write(`\n>>> ${gate.name}\n`);
   const result = execute(gate);
+  const detail = [result.detail, gate.note].filter(Boolean).join("; ");
   rows.push({
     name: gate.name,
     status: result.status === PASS ? PASS : FAIL,
-    detail: result.detail ?? "",
+    detail,
   });
 }
 

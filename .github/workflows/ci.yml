@@ -306,14 +306,26 @@ jobs:
           exit 1
 
       - name: Check the shared build
+        id: verify
         env:
           BUILD_ARTIFACT_DIGEST: ${{ needs.build.outputs.artifact-digest }}
         run: |
           echo "artifact digest: ${BUILD_ARTIFACT_DIGEST:-none}"
           node scripts/build-record.mjs verify
 
+      # Every spec but the visual one, on the runner's own Chromium.
       - name: Run browser quality suite
         run: npm run test:browser:prebuilt
+
+      # Pixels are compared only inside the pinned Playwright image
+      # (tests/browser/visual-image.json, linux/amd64): the runner's own Chromium,
+      # renderer and fonts are not the ones the one linux baseline set was made with.
+      # scripts/run-visual.mjs refuses an environment that differs from the baselines'
+      # manifest before it compares anything, and never writes a missing baseline. It
+      # runs after a red browser suite too, so one red run shows both.
+      - name: Compare visual baselines in the pinned image
+        if: ${{ !cancelled() && steps.verify.outcome == 'success' }}
+        run: npm run test:visual
 
       - name: Upload browser diagnostics
         if: ${{ !cancelled() }}

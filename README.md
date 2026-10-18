@@ -183,8 +183,8 @@ The build runs Astro diagnostics before producing the static site in `dist/`.
 | `npm run test:lighthouse:prebuilt` | Verifies the shared build's record, then enforces the Lighthouse budgets against it (CI) |
 | `npm run test:ci` | Runs the same aggregate quality floor used by CI |
 | `npm run test:prepush` | Installs the lockfile and runs the aggregate gate under the exact CI Node runtime |
-| `npm run test:visual:update` | Deliberately refreshes committed visual baselines |
-| `npm run test:visual:image` / `npm run test:visual:image-update` | Compares, or (after a build) rewrites, the visual baselines inside the pinned Playwright image (`tests/browser/visual-image.json`, linux/amd64), checking the browser, renderer and fonts against `tests/browser/__screenshots__/visual-environment.json` first. Runs only on a linux/amd64 host with docker; the **Refresh visual baselines** workflow runs the update. Not yet the gate: CI's browser job still compares on the runner's Chromium |
+| `npm run test:visual` | Compares the visual baselines inside the pinned Playwright image (a linux/amd64 host with a container runtime only; CI's browser job runs it) |
+| `npm run test:visual:update` | Builds, then deliberately refreshes every visual baseline and its environment manifest inside the pinned image (run by the **Refresh visual baselines** workflow) |
 | `npm run hooks:install` | Enables the repository-owned pre-push hook |
 
 All scripts set `ASTRO_TELEMETRY_DISABLED=1`.
@@ -232,10 +232,10 @@ The required checks are below. On CI all three test one shared build, made once 
 
 The head contract is **derived from the build output, not from a list of routes**, which is what makes it the anti-regression mechanism rather than a second inventory. Every generated page — a marketing route, a synced `/docs` topic, a per-listing registry page, one a branch adds tomorrow — must carry a title naming the site, a description, a correct absolute `rel=canonical`, exactly one `robots` tag with the right policy, a complete Open Graph and Twitter card (image, real dimensions, alt text), and exactly one parseable JSON-LD graph whose `WebPage` matches the page's own title, description and canonical. Breadcrumb `item` URLs are resolved against the build, so a crumb pointing at a route that does not exist fails. The social card's declared dimensions are measured against the PNG rather than compared with a second copy of the numbers, and the sweep carries a coverage floor so it cannot pass by measuring nothing. What each tier contracts *on top* of this stays in its own block: exact title and description strings for pages written here, a rendered-body floor for the pages core owns.
 - **Browser contract:** every route under desktop, mobile, and reduced-motion projects; Axe WCAG A/AA scans; keyboard-only critical journeys; app query/category URL state; tab behavior; command copy; focus-safe mobile navigation; image loading; horizontal overflow; 44px targets; console/page/request failures; no words glued together on any built page, desktop or mobile (`compressHTML` drops a newline before an inline element or `{...}` expression, so a source line that reads correctly can ship as `inv0.1.3`; end such a line with `{" "}`); and a same-origin-only network assertion through meaningful interaction states.
-- **Visual contract:** committed full-page desktop and mobile baselines for every route plus loop, app-filter, and mobile-menu states.
+- **Visual contract:** committed full-page desktop and mobile baselines for every route plus loop, app-filter, and mobile-menu states, compared inside one pinned Playwright image (see [Visual baselines](#visual-baselines)).
 - **Performance contract:** Lighthouse scores of at least 90 performance and 95 accessibility/best-practices/SEO, with LCP at most 2.5s, CLS at most 0.1, TBT at most 200ms, and explicit page, script, font, and image transfer budgets.
 
-Install the repository's Chromium build once, then run all gates:
+Install the repository's Chromium build once, then run all gates (every gate but the visual comparison, which runs in CI):
 
 ```bash
 npx playwright install chromium
@@ -298,20 +298,18 @@ Fix a finding with an in-range update of the lock first (`npm update <package> -
 The pre-push hook is a local mirror of those three jobs and is mandatory for this
 repository. It starts from `npm ci`, so tests always use the committed lockfile. Do
 not use `--no-verify` to bypass it. If a gate is red or cannot run, stop and fix the
-gate or its environment before publishing commits. Visual baselines are
-platform-qualified for macOS development and Linux CI; update them only after
-inspecting the rendered result on the platform that produced it.
+gate or its environment before publishing commits. The pre-push gate does not
+compare visual baselines: its `playwright` row says so, and CI's browser job
+compares them (see [Visual baselines](#visual-baselines)).
 
-The move to one baseline set made in one pinned Playwright image is under way.
-`tests/browser/visual-image.json` pins the image by digest for `linux/amd64`, with the
-tag and index digest it was read from and the Playwright version it ships, which must
-be the lock's; `tests/visual-environment.test.mjs` fails on an image named by tag in a
-workflow, script or config, on another architecture, and on a version that differs from
-the lock. The **Refresh visual baselines** workflow now makes the linux baselines in that
-image and records the environment they were made in. Until those baselines and their
-manifest are committed, the browser job's comparison and both baseline sets stay as
-described above; the change that commits them moves the comparison into the image and
-removes the darwin set.
+### Visual baselines
+
+There is one baseline set, `-linux`, made and compared inside one Playwright image: `tests/browser/visual-image.json` pins it by digest for `linux/amd64`, the CI runners' platform, with the tag and index digest it was read from and the Playwright version it ships, which must be the lock's. A Playwright bump updates the lock and that file in one change. `tests/visual-environment.test.mjs` fails on an image named by tag anywhere in a workflow, script or config, on another architecture, and on a version that differs from the lock. The tolerance is unchanged (`maxDiffPixelRatio: 0.005`).
+
+- **Where they are compared:** the **Browser, accessibility, privacy, and visual regression** job runs `npm run test:visual` after the rest of the browser suite. `playwright.config.ts` leaves `visual.spec.ts` out of every other run, and `scripts/run-visual.mjs` sets `PLAYWRIGHT_VISUAL=1` to run only it, inside the image, with the runner's exact Node and installed `node_modules` mounted, so the preview server serves the shared build. A compare run never writes a missing baseline.
+- **The environment manifest:** `tests/browser/__screenshots__/visual-environment.json` records the image, platform, Playwright version, browser build, renderer and fonts the baselines were made with. Before comparing pixels, `run-visual.mjs` probes the image (`scripts/visual-environment.mjs`) and fails, naming the field, when this run's environment differs or the manifest is missing, so a moved environment is never first seen as a pixel diff.
+- **Refreshing them:** dispatch **Refresh visual baselines** (`.github/workflows/visual-baselines.yml`) on the branch, download its `visual-baselines` artifact, inspect the diffs, and commit the intended changes with the manifest. It runs `npm run test:visual:update`, which rewrites every baseline (`--update-snapshots=all`) inside the image. No bot commits.
+- **Locally:** `npm run test:visual` runs only on a linux/amd64 host with docker. Anywhere else, including macOS, it refuses and says where the comparison happens, and the pre-push gate's `playwright` row says the visual specs were not run there. `npm run validate:visual-baselines` fails on a baseline for any other platform, a missing one, or a refresh script that does not rewrite every baseline inside the image.
 
 ## Repository Structure
 
@@ -431,7 +429,7 @@ Keep changes narrow and evidence-led:
 4. Import product images through Astro so responsive formats and dimensions remain stable.
 5. Validate keyboard behavior, reduced motion, narrow screens, and long text.
 6. Run `npm run test:prepush`.
-7. Refresh visual baselines only after inspecting and accepting an intentional visual change.
+7. Refresh visual baselines only after inspecting and accepting an intentional visual change, through the **Refresh visual baselines** workflow (see [Visual baselines](#visual-baselines)).
 
 Generated output, dependency directories, and diagnostic reports are intentionally ignored. Reviewed visual baselines are committed.
 
