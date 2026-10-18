@@ -12,9 +12,9 @@ export const productViews = [
   {
     id: "home",
     label: "Home",
-    title: "See the whole system",
+    title: "See what waits on you",
     description:
-      "Current work, recent conversations, scheduled runs, and system state stay visible from one home."
+      "Approvals, ready tasks, current work, and recent conversations stay visible from one home."
   },
   {
     id: "chat",

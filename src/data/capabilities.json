@@ -1,11 +1,11 @@
 {
   "note": "What PersonalClaw does and does not do, at the RELEASED version this website publishes. Every row cites a file at that tag, never core's default branch. A row whose obvious reading is wider than the truth is marked 'partial' and states the narrower truth; a row that does not hold is marked 'no' and says so. This file deliberately contains no claims about any other project - see README 'Claims about our own capabilities'.",
-  "checked_on": "2026-10-15",
+  "checked_on": "2026-10-18",
   "release": {
-    "version": "v0.2.1",
-    "commit": "be97147cb38147e9c769f502f812f3b3e6347b17",
+    "version": "v0.2.2",
+    "commit": "31959e11de3781986f006161841e86aeda797a4c",
     "repo": "https://github.com/PersonalClaw/PersonalClaw",
-    "blob_base": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.1/"
+    "blob_base": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.2/"
   },
   "verdicts": {
     "yes": {
@@ -56,8 +56,8 @@
       "verdict": "yes",
       "statement": "MIT, with no additional field-of-use or branding conditions.",
       "source_label": "LICENSE",
-      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.1/LICENSE",
-      "retrieved": "2026-10-15"
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.2/LICENSE",
+      "retrieved": "2026-10-18"
     },
     {
       "id": "multi_user",
@@ -66,8 +66,8 @@
       "verdict": "no",
       "statement": "One owner per install. The gateway authenticates a single local token; there is no user-account model, no per-user separation of memory or knowledge, and nothing that would keep two people's work apart. Run one install per person.",
       "source_label": "auth/modes.py",
-      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.1/src/personalclaw/auth/modes.py",
-      "retrieved": "2026-10-15"
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.2/src/personalclaw/auth/modes.py",
+      "retrieved": "2026-10-18"
     },
     {
       "id": "data_stability",
@@ -76,18 +76,18 @@
       "verdict": "no",
       "statement": "This is a 0.x release under a clean-break doctrine: when a design is replaced the old path is removed in the same change. The release's own README says the next few 0.x releases may introduce breaking changes with no automatic migration, that sessions, memory, knowledge, config and app state may need to be recreated after an update, and that you should not make this your only system of record yet. Run `personalclaw snapshot` before every update.",
       "source_label": "README.md, pre-1.0 heads-up",
-      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.1/README.md#-pre-10-heads-up",
-      "retrieved": "2026-10-15"
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.2/README.md#-pre-10-heads-up",
+      "retrieved": "2026-10-18"
     },
     {
       "id": "telemetry",
       "group": "network",
       "claim": "Zero telemetry.",
       "verdict": "partial",
-      "statement": "No analytics, no crash reporting and no usage reporting of any kind - nothing about how you use it is sent anywhere. But the claim as stated is wider than the truth: by default PersonalClaw asks GitHub whether a newer release exists when it starts and then every twelve hours, identifying itself with a `personalclaw-update-check` user agent. You did not ask it to. Since this release a setting turns that automatic check off (the row below), but it is on out of the box. If you grep the tree you will also find a `telemetry_salt` and a hashed owner id; at this release both stay on this machine - the salt is kept out of packs, exports and sync, the hash is shown only by the gateway's own status endpoint - and nothing transmits either.",
+      "statement": "No analytics, no crash reporting and no usage reporting of any kind - nothing about how you use it is sent anywhere. But the claim as stated is wider than the truth: by default PersonalClaw asks GitHub whether a newer release exists when it starts and then every twelve hours, identifying itself with a `personalclaw-update-check` user agent. You did not ask it to. Since v0.2.0 a setting turns that automatic check off (the row below), but it is on out of the box. If you grep the tree you will also find a `telemetry_salt` and a hashed owner id; at this release both stay on this machine - the salt is kept out of packs, exports and sync, the hash is shown only by the gateway's own status endpoint - and nothing transmits either.",
       "source_label": "self_update.py",
-      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.1/src/personalclaw/self_update.py#L809",
-      "retrieved": "2026-10-15"
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.2/src/personalclaw/self_update.py#L828",
+      "retrieved": "2026-10-18"
     },
     {
       "id": "disable_update_check",
@@ -96,8 +96,8 @@
       "verdict": "yes",
       "statement": "`updates.check_enabled` (Automatic Update Checks, in Settings under Updates) turns it off. Every check PersonalClaw makes on its own - at start, on the interval, when a page showing update status finds one due, and before a staged install - asks that setting first, read fresh each time, so switching it off stops the next check without a restart. With it off, PersonalClaw reaches GitHub for updates only when you ask: Check now, an Update you press, or `personalclaw update`. It is on by default.",
       "source_label": "config/loader.py",
-      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.1/src/personalclaw/config/loader.py#L3361",
-      "retrieved": "2026-10-15"
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.2/src/personalclaw/config/loader.py#L3361",
+      "retrieved": "2026-10-18"
     },
     {
       "id": "egress_default_deny",
@@ -106,8 +106,8 @@
       "verdict": "partial",
       "statement": "True about address ranges, not about destinations. The guard denies private, loopback and link-local ranges by default and pins the resolved address to defeat rebinding - so it will not reach your router, your NAS or a metadata endpoint. It is not a destination allow-list: the default profile reaches any public host. Read it as protecting your LAN, not as restricting where an agent may go on the internet.",
       "source_label": "net/policy.py",
-      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.1/src/personalclaw/net/policy.py#L67",
-      "retrieved": "2026-10-15"
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.2/src/personalclaw/net/policy.py#L67",
+      "retrieved": "2026-10-18"
     },
     {
       "id": "single_chokepoint",
@@ -116,8 +116,8 @@
       "verdict": "partial",
       "statement": "It is a real chokepoint, and it covers more than core's own fetches at this release: an app's requests through the SDK, the HTTP clients core hands model providers, remote MCP servers and the browser's top-level navigations are all judged by it, with the range checks and, where the client allows it, address pinning. It is not the whole machine. An app backend runs as a separate process with its own network stack and does not pass through it; a program an app's code starts is checked only for the hosts its command line names; and a page the browser has opened fetches its own subresources unchecked. If the egress settings cannot be read, it drops your allow-list and keeps the last deny list it saw, if it has seen one, rather than failing closed.",
       "source_label": "net/guard.py",
-      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.1/src/personalclaw/net/guard.py#L352",
-      "retrieved": "2026-10-15"
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.2/src/personalclaw/net/guard.py#L352",
+      "retrieved": "2026-10-18"
     },
     {
       "id": "egress_allowlist_exclusive",
@@ -126,8 +126,8 @@
       "verdict": "partial",
       "statement": "For agent work, through one hand-edited file. The governance ceiling (`governance/ceiling.json` in the home, read once at start, with no setting in the app that writes it) can hold every run to an egress tier: `listed` reaches only your Allowed hosts, and nothing at all while that list is empty; `registry` reaches only the common package registries; `off` reaches nothing. A few surfaces are exclusive on their own: an automation's net-fetch step and a sync transport reach only hosts you named. What a tier does not narrow: the agent's own model, your own actions in the app and background jobs, and an app backend's own process. Without a ceiling, an Allowed hosts entry adds to what the default profile reaches rather than limiting it. `on_violation`, the warn-instead-of-block field on the egress policy, still has no consumer - do not read it as a mode.",
       "source_label": "net/policy.py",
-      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.1/src/personalclaw/net/policy.py#L134",
-      "retrieved": "2026-10-15"
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.2/src/personalclaw/net/policy.py#L134",
+      "retrieved": "2026-10-18"
     },
     {
       "id": "auth_default",
@@ -136,8 +136,8 @@
       "verdict": "yes",
       "statement": "A local token is the default mode. The one mode that removes the token, `none`, forces the bind to loopback, so switching auth off cannot silently expose the gateway to your network.",
       "source_label": "auth/modes.py",
-      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.1/src/personalclaw/auth/modes.py",
-      "retrieved": "2026-10-15"
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.2/src/personalclaw/auth/modes.py",
+      "retrieved": "2026-10-18"
     },
     {
       "id": "credentials_failclosed",
@@ -146,28 +146,28 @@
       "verdict": "yes",
       "statement": "The credential store's stated failure posture is fail-closed: when it cannot decide, it refuses rather than proceeding without the credential.",
       "source_label": "auth/credentials.py",
-      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.1/src/personalclaw/auth/credentials.py",
-      "retrieved": "2026-10-15"
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.2/src/personalclaw/auth/credentials.py",
+      "retrieved": "2026-10-18"
     },
     {
       "id": "audit_log",
       "group": "autonomy",
       "claim": "Autonomous actions leave an audit trail that would show tampering.",
       "verdict": "partial",
-      "statement": "An EDITED entry is caught; a DELETED one is not. Each entry carries an HMAC over its own payload, so altering a record in place makes its digest stop matching and the verifier names the entry. But the verifier deliberately ignores the chain itself: it 'tolerate[s] `prev_hash` mismatches (chain breaks) silently', because the gateway, channel and MCP processes all append to one log without IPC, so their writes interleave and a strict chain would false-alarm constantly. The consequence is that removing an entry leaves the surrounding entries individually valid and its gap unreported - the clean gap this row used to say was impossible. On Linux a row can also be missing with nothing removed: once the gateway rotates the log, the tool server an agent CLI runs can no longer append to it, and since this release it writes that row, masked, to its own stderr instead of failing the call. Read it as per-record tamper-evidence, not as proof the log is complete. Default retention is 365 days, and by default only the most recent 5000 entries are checked.",
+      "statement": "An EDITED entry is caught; a DELETED one is not. Each entry carries an HMAC over its own payload, so altering a record in place makes its digest stop matching and the verifier names the entry. But the verifier deliberately ignores the chain itself: it 'tolerate[s] `prev_hash` mismatches (chain breaks) silently', because the gateway, channel and MCP processes all append to one log without IPC, so their writes interleave and a strict chain would false-alarm constantly. The consequence is that removing an entry leaves the surrounding entries individually valid and its gap unreported - the clean gap this row used to say was impossible. On Linux a row can also be missing with nothing removed: once the gateway rotates the log, the tool server an agent CLI runs can no longer append to it, and since v0.2.1 it writes that row, masked, to its own stderr instead of failing the call. Read it as per-record tamper-evidence, not as proof the log is complete. Default retention is 365 days, and by default only the most recent 5000 entries are checked.",
       "source_label": "sel.py, verify_integrity",
-      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.1/src/personalclaw/sel.py#L787",
-      "retrieved": "2026-10-15"
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.2/src/personalclaw/sel.py#L787",
+      "retrieved": "2026-10-18"
     },
     {
       "id": "tool_approval",
       "group": "autonomy",
       "claim": "Per-tool grants restrict which tools an agent may call.",
       "verdict": "partial",
-      "statement": "Enforced at this release, below the agent you talk to. A subagent, a workflow or batch leaf, a room member, a sandboxed run, and a turn nobody is watching - a webhook's, or a result announced to an unwatched chat - each run under a grant tier (read-only, read-write, or a named list of tools) and are refused a call outside it. The previous release declared these fields with no consumer; this one checks them at those seams. Two limits: the agent you chat with directly is not held to a per-tool list - its own calls are bounded by the approval mode, the command denylist and the egress check - and the only way to name the tools yourself is the governance ceiling file, written by hand and read once at start, which narrows those same seams.",
+      "statement": "Enforced at this release, below the agent you talk to. A subagent, a workflow or batch leaf, a room member, a sandboxed run, and a turn nobody is watching - a webhook's, or a result announced to an unwatched chat - each run under a grant tier (read-only, read-write, or a named list of tools) and are refused a call outside it. Before v0.2.0 these fields were declared with no consumer; since v0.2.0 they are checked at those seams. Two limits: the agent you chat with directly is not held to a per-tool list - its own calls are bounded by the approval mode, the command denylist and the egress check - and the only way to name the tools yourself is the governance ceiling file, written by hand and read once at start, which narrows those same seams.",
       "source_label": "guardrails/policy.py",
-      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.1/src/personalclaw/guardrails/policy.py#L365",
-      "retrieved": "2026-10-15"
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.2/src/personalclaw/guardrails/policy.py#L365",
+      "retrieved": "2026-10-18"
     },
     {
       "id": "app_platform",
@@ -176,8 +176,8 @@
       "verdict": "yes",
       "statement": "Twenty-one provider types at this release - model, agent, task, channel, inbox, skills, knowledge, memory, notification, tool, workflow, search, action, prompt, duty_gate, sync, sandbox, trigger_source, ocr, trigger and vector_store - each one an installable bundle can provide, declaring its type and permissions in a manifest. Counted from PROVIDER_TYPES at the tag, which is why this row counts the release rather than describing a branch.",
       "source_label": "apps/manifest.py",
-      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.1/src/personalclaw/apps/manifest.py#L1500",
-      "retrieved": "2026-10-15"
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.2/src/personalclaw/apps/manifest.py#L1500",
+      "retrieved": "2026-10-18"
     },
     {
       "id": "provider_agnostic",
@@ -186,8 +186,8 @@
       "verdict": "partial",
       "statement": "Vendor integrations live in app bundles, and two checks hold the line: apps may import core only through the published SDK, per file, and a sweep fails any vendor SDK import or credential literal in core that is not a listed exception. But the exceptions exist, and the release names them: wire-protocol clients for the Anthropic and OpenAI formats many providers reuse, secret-detection patterns for vendor tokens, and import and export code that reads and writes other agent tools' files - Claude Code's agents folder and MCP config among them. Read it as no vendor integration in core, not as no vendor name.",
       "source_label": "docs/architecture/provider-boundary.md",
-      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.1/docs/architecture/provider-boundary.md#L23",
-      "retrieved": "2026-10-15"
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.2/docs/architecture/provider-boundary.md#L23",
+      "retrieved": "2026-10-18"
     },
     {
       "id": "app_sandbox",
@@ -196,18 +196,18 @@
       "verdict": "partial",
       "statement": "An app can be confined at this release, but it is not by default. An app backend that names a sandbox tier in its manifest - a container, or a Lima virtual machine - launches inside it, and refuses to launch rather than fall back to the host when that tier is unavailable. In a container, a backend without the `network` permission gets no network at all, and one without `storage` is given no data folder to write; in a Lima machine the network is whatever that machine was created with. A backend that names no tier, the default, runs on the host as an ordinary process with its own network stack, and there `network` is a disclosure shown at install, not a boundary. A program an app's in-gateway code starts is refused a host its command line names unless the manifest declares it or it is on your Allowed hosts. Install a third-party app with the same care you would give any program you run.",
       "source_label": "apps/backend_runtime.py",
-      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.1/src/personalclaw/apps/backend_runtime.py#L369",
-      "retrieved": "2026-10-15"
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.2/src/personalclaw/apps/backend_runtime.py#L369",
+      "retrieved": "2026-10-18"
     },
     {
       "id": "dep_scan_gate",
       "group": "apps",
       "claim": "A vulnerable dependency cannot reach the default branch.",
       "verdict": "no",
-      "statement": "The dependency audit jobs are report-only by explicit design, and the workflow says so in a comment - they surface findings without blocking a merge. What is a real gate is the test suite, which includes the supply-chain scanner's own tests, with the scanner's adversarial corpus run as a job of its own. So the scanner is tested; the audit is advisory.",
-      "source_label": ".github/workflows/full.yml",
-      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.1/.github/workflows/full.yml#L239",
-      "retrieved": "2026-10-15"
+      "statement": "The audit can fail a run, but nothing requires it to pass. Since v0.2.2 the dependency audit is no longer report-only: on every pull request, and every night on the default branch, it audits the locks core ships and fails on a high or critical finding that no live waiver covers - the Python audit reports no severity, so every Python finding counts as high. But no status check is required to merge into the default branch, so a red audit is a finding to act on rather than a barrier. The job's own comment says a new advisory stops merging until it is fixed or waived; that holds only once a check is required, and the same file records that the default branch has none, while the CI guide at this tag leaves the rules that would require one to a later change. It also fails on less than every vulnerable dependency: a moderate or low finding in the JavaScript lock is only listed, a waiver lets a finding through for up to 30 days, an advisory published after a merge is caught by the next night's run rather than before it, and the images' OS packages are not audited.",
+      "source_label": ".github/workflows/ci.yml",
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.2/.github/workflows/ci.yml#L1068",
+      "retrieved": "2026-10-18"
     },
     {
       "id": "local_models",
@@ -216,8 +216,8 @@
       "verdict": "yes",
       "statement": "A local-model contract ships and is live: the model download and model-registry handlers list, fetch and remove models through it. A bundled chat app built on it lets a fresh install hold a conversation on this machine with no provider bound - a small model, downloaded once when you click for it, then run offline on the CPU. It is a floor, not a recommendation: bind a real model, local or hosted, for real work.",
       "source_label": "local_models/provider.py",
-      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.1/src/personalclaw/local_models/provider.py",
-      "retrieved": "2026-10-15"
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.2/src/personalclaw/local_models/provider.py",
+      "retrieved": "2026-10-18"
     },
     {
       "id": "mcp_client",
@@ -226,8 +226,8 @@
       "verdict": "yes",
       "statement": "A long-lived MCP client ships and is consumed by the MCP and tools handlers at this release: the agent calls tools on servers you configure, over stdio or at a URL (Streamable HTTP or SSE, with OAuth sign-in for a remote server), and a server at a URL is reached through the egress guard. Serving in the other direction - PersonalClaw acting as an MCP server for something else - is a separate module and is not what this row claims.",
       "source_label": "mcp_client.py",
-      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.1/src/personalclaw/mcp_client.py",
-      "retrieved": "2026-10-15"
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.2/src/personalclaw/mcp_client.py",
+      "retrieved": "2026-10-18"
     },
     {
       "id": "scheduled",
@@ -236,18 +236,18 @@
       "verdict": "yes",
       "statement": "One clock engine, started by the gateway, fires schedules, intervals and one-off times from the trigger store at this release. Read this row together with the autonomy rows above: an agent a trigger starts asks before it acts unless that automation was allowed to run on its own, and a run nobody watches is held to its grant tier.",
       "source_label": "triggers/loop.py",
-      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.1/src/personalclaw/triggers/loop.py",
-      "retrieved": "2026-10-15"
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.2/src/personalclaw/triggers/loop.py",
+      "retrieved": "2026-10-18"
     },
     {
       "id": "desktop_app",
       "group": "capabilities",
       "claim": "There is a desktop application you can install.",
       "verdict": "partial",
-      "statement": "Three desktop artifacts are attached to this release: PersonalClaw-0.2.1-arm64.dmg for Apple-silicon Macs, and PersonalClaw-0.2.1.AppImage and personalclaw-desktop_0.2.1_amd64.deb for x86-64 Linux. None carries a publisher's signature: the dmg is ad-hoc signed and not notarized, so macOS asks you to approve it once under Privacy & Security on first launch, and the Linux files are unsigned. There is no Intel Mac or Windows build, and no in-app update: a new version is a download you install over the old one. Otherwise you install the package and reach the gateway in a browser.",
+      "statement": "Three desktop artifacts are attached to this release: PersonalClaw-0.2.2-arm64.dmg for Apple-silicon Macs, and PersonalClaw-0.2.2.AppImage and personalclaw-desktop_0.2.2_amd64.deb for x86-64 Linux. None carries a publisher's signature: the dmg is ad-hoc signed and not notarized, so macOS asks you to approve it once under Privacy & Security on first launch, and the Linux files are unsigned. There is no Intel Mac or Windows build, and no in-app update: a new version is a download you install over the old one. Otherwise you install the package and reach the gateway in a browser.",
       "source_label": "docs/guides/desktop.md",
-      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.1/docs/guides/desktop.md#L364",
-      "retrieved": "2026-10-15"
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.2/docs/guides/desktop.md#L364",
+      "retrieved": "2026-10-18"
     },
     {
       "id": "retrieval",
@@ -256,8 +256,8 @@
       "verdict": "partial",
       "statement": "A hybrid retriever fuses SQLite FTS5 keyword search with a knowledge-graph layer and reciprocal rank fusion, and it is a live path at this release, not a module without callers. But vector search is not on by default: it only joins that fusion once an embedding provider is bound. With none bound, embeddings are off and retrieval runs keyword plus graph only, not semantic.",
       "source_label": "knowledge/retrieval.py",
-      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.1/src/personalclaw/knowledge/retrieval.py#L1",
-      "retrieved": "2026-10-15"
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.2/src/personalclaw/knowledge/retrieval.py#L1",
+      "retrieved": "2026-10-18"
     },
     {
       "id": "document_upload",
@@ -266,8 +266,8 @@
       "verdict": "yes",
       "statement": "A resumable, tus-like chunked-upload protocol (init/part/status/complete) streams to disk in bounded chunks rather than buffering a file in memory, is size-policed per file type before a byte lands, and the assembled file routes to a chat attachment, knowledge ingest, or the workspace - the same protocol behind all three.",
       "source_label": "uploads/store.py",
-      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.1/src/personalclaw/uploads/store.py#L1",
-      "retrieved": "2026-10-15"
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.2/src/personalclaw/uploads/store.py#L1",
+      "retrieved": "2026-10-18"
     },
     {
       "id": "backup_export",
@@ -276,8 +276,8 @@
       "verdict": "yes",
       "statement": "`personalclaw snapshot` and `restore` ship as CLI commands, and Settings > Backups runs them too: by default a nightly snapshot and a monthly restore drill that restores the newest one into a temporary directory to prove it reads. A snapshot holds every store whole, each database copied through SQLite's backup API, and carries no credential value. `backup export` is a different thing - a deterministic, SHA-256-manifested export of your records that sync carries, which nothing restores from.",
       "source_label": "docs/reference/cli.md",
-      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.1/docs/reference/cli.md#L514",
-      "retrieved": "2026-10-15"
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.2/docs/reference/cli.md#L528",
+      "retrieved": "2026-10-18"
     },
     {
       "id": "sso_auth",
@@ -286,8 +286,8 @@
       "verdict": "no",
       "statement": "Not shipped, by design: PersonalClaw is single-owner and self-hosted, so there is no directory to federate with. The auth modes at this release are `local_token`, the default, and `none`. `api_key` and `oauth2`, declared at earlier releases with nothing able to select them, are deleted; asking for either is named at startup, and the local token stays in force.",
       "source_label": "auth/modes.py",
-      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.1/src/personalclaw/auth/modes.py#L1",
-      "retrieved": "2026-10-15"
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.2/src/personalclaw/auth/modes.py#L1",
+      "retrieved": "2026-10-18"
     },
     {
       "id": "webhooks",
@@ -296,8 +296,8 @@
       "verdict": "partial",
       "statement": "Both directions ship, and the inbound one is narrower than it sounds: it answers only programs on this machine. A program can POST to a webhook automation's own address with a sender token made for it, or start an agent turn with the owner's webhook token (at least 32 characters), and a request from any other address is refused - a sender elsewhere reaches it through an SSH tunnel or a relay you run here. The turn a webhook starts runs unattended with read tools only. Outbound, the HTTP Webhook Hooks app makes a POST an action a hook or automation can run, held to the run's egress rules.",
       "source_label": "inbound/webhook.py",
-      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.1/src/personalclaw/inbound/webhook.py#L1",
-      "retrieved": "2026-10-15"
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.2/src/personalclaw/inbound/webhook.py#L1",
+      "retrieved": "2026-10-18"
     },
     {
       "id": "layered_memory",
@@ -306,8 +306,8 @@
       "verdict": "yes",
       "statement": "Semantic memory (key-value facts with confidence gating and conflict resolution), episodic memory (conversation fragments with embeddings and time-decay retrieval, falling back to FTS5 without them) and procedural memory (after-turn mining of tool-outcome priors) all ship and are live at this release.",
       "source_label": "vector_memory.py",
-      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.1/src/personalclaw/vector_memory.py#L1",
-      "retrieved": "2026-10-15"
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.2/src/personalclaw/vector_memory.py#L1",
+      "retrieved": "2026-10-18"
     },
     {
       "id": "web_search",
@@ -316,8 +316,8 @@
       "verdict": "partial",
       "statement": "The web_search/web_fetch tools and a provider registry ship, resolved through the same active-binding path the model providers use. But nothing is bound out of the box: no search provider ships bundled at this release, so it is a seam you fill by installing a search-provider app - a keyless one, such as DuckDuckGo or Wikipedia, needs no key - not a batteries-included web search feature.",
       "source_label": "search_providers/registry.py",
-      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.1/src/personalclaw/search_providers/registry.py#L1",
-      "retrieved": "2026-10-15"
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.2/src/personalclaw/search_providers/registry.py#L1",
+      "retrieved": "2026-10-18"
     }
   ]
 }
