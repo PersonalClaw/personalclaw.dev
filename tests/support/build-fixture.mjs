@@ -8,6 +8,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { gitEnvironment } from "../../scripts/build-record.mjs";
+
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 
 export const FIXTURE_NODE = "v22.23.3";
@@ -24,7 +26,7 @@ function git(directory, args) {
   return execFileSync("git", args, {
     cwd: directory,
     encoding: "utf8",
-    env: { ...process.env, ...IDENTITY },
+    env: gitEnvironment(IDENTITY),
     stdio: ["ignore", "pipe", "pipe"],
   }).trim();
 }

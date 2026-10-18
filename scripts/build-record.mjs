@@ -25,6 +25,27 @@ import { fileURLToPath } from "node:url";
 
 import { rangeFloor, satisfies } from "../tests/support/node-range.mjs";
 
+/** The variables that tell git which repository to work on. A git hook exports them to what it
+ *  runs, so a git started from the pre-push gate's tests would otherwise act on the repository
+ *  being pushed rather than the one in its own folder. */
+export const GIT_LOCATION = [
+  "GIT_DIR",
+  "GIT_WORK_TREE",
+  "GIT_INDEX_FILE",
+  "GIT_COMMON_DIR",
+  "GIT_OBJECT_DIRECTORY",
+  "GIT_ALTERNATE_OBJECT_DIRECTORIES",
+  "GIT_PREFIX",
+  "GIT_NAMESPACE",
+];
+
+/** The environment for a git that must work on the repository in its own folder. */
+export function gitEnvironment(extra = {}, env = process.env) {
+  const clean = { ...env };
+  for (const name of GIT_LOCATION) delete clean[name];
+  return { ...clean, ...extra };
+}
+
 export const RECORD_PATH = ".generated/build-record.json";
 export const RECORD_SCHEMA = 1;
 
@@ -52,7 +73,7 @@ const short = (sha) => String(sha ?? "none").slice(0, 12);
 const toPosix = (file) => file.split(path.sep).join("/");
 
 function git(root, args) {
-  return execFileSync("git", args, { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim();
+  return execFileSync("git", args, { cwd: root, encoding: "utf8", env: gitEnvironment(), stdio: ["ignore", "pipe", "pipe"] }).trim();
 }
 
 function attempt(read) {
