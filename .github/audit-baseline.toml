@@ -1,0 +1,27 @@
+# The dependency audit's waivers, read by `npm run audit:lock` (scripts/audit-lock.mjs):
+# CI's `audit` job on every pull request and main run, and the nightly
+# .github/workflows/audit.yml on main. See "Dependency audit" in README.md.
+#
+# A waiver covers exactly one advisory on one package in one lock, and expires at most
+# 30 days after the day it is written or renewed. Renewing is a new expiry with a new
+# reason. An expired waiver, one more than 30 days out, one missing a field, one with a
+# field the audit does not read, and one that matches no finding all fail the audit, so
+# the list cannot rot. `file`, `scope` and `reference` are the finding's own, as the
+# audit's summary prints them: `file` is `package-lock.json`, `scope` is `npm-audit`, and
+# `reference` is "<package> <advisory>".
+#
+# Only a high or critical finding fails the run when it is not waived. A moderate or low
+# one is listed in the job summary and gates nothing. Fix a finding with an in-range
+# update of the lock first (`npm update <package> --package-lock-only`, then the checks a
+# lock change needs); waive only what no in-range update fixes, and say in `reason` what
+# ends the waiver.
+#
+# None is in force today. The shape of one:
+#
+# [[waiver]]
+# file = "package-lock.json"
+# scope = "npm-audit"
+# reference = "example-package GHSA-xxxx-xxxx-xxxx"
+# owner = "maintainers"
+# reason = "Why no in-range update fixes it, and what ends the waiver."
+# expires = 2026-11-15

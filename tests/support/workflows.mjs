@@ -70,7 +70,7 @@ function readImage(text, doc, node, where, images) {
 export function parseWorkflow(name, text) {
   const problems = [];
   const images = [];
-  const workflow = { name, file: `.github/workflows/${name}`, problems, images, permissions: null, env: {}, jobs: [] };
+  const workflow = { name, file: `.github/workflows/${name}`, problems, images, permissions: null, env: {}, events: [], crons: [], jobs: [] };
   const doc = parseDocument(text, { uniqueKeys: true, merge: false, prettyErrors: false });
   for (const error of doc.errors) problems.push({ where: name, message: `YAML: ${error.message.split("\n")[0]}` });
   if (doc.errors.length > 0) return workflow;
@@ -98,6 +98,12 @@ export function parseWorkflow(name, text) {
   }
   workflow.permissions = readPermissions(doc, top.get("permissions", true), `${name} permissions`, problems);
   workflow.env = mapping(doc, top.get("env", true));
+  // The events the workflow runs on, by name, and its schedule's cron lines. `on:` may be
+  // one event, a list of them or a map of event to its settings.
+  const on = plain(doc, top.get("on", true));
+  workflow.events = typeof on === "string" ? [on] : Array.isArray(on) ? on.map(String) : on && typeof on === "object" ? Object.keys(on) : [];
+  const schedule = on && typeof on === "object" && !Array.isArray(on) ? on.schedule : undefined;
+  workflow.crons = Array.isArray(schedule) ? schedule.map((entry) => entry?.cron).filter((cron) => typeof cron === "string") : [];
 
   const jobs = top.get("jobs", true);
   if (!isMap(jobs) || jobs.items.length === 0) {
@@ -123,6 +129,7 @@ export function parseWorkflow(name, text) {
       needs: needs === undefined ? [] : (Array.isArray(needs) ? needs : [needs]).map(String),
       if: condition === undefined ? null : String(condition),
       timeoutMinutes: timeout === undefined ? null : timeout,
+      continueOnError: plain(doc, node.get("continue-on-error", true)) ?? null,
       permissions: readPermissions(doc, node.get("permissions", true), `${where} permissions`, problems),
       env: mapping(doc, node.get("env", true)),
       uses: reference(text, doc, node.get("uses", true)),
@@ -149,6 +156,7 @@ export function parseWorkflow(name, text) {
         id: plain(doc, stepNode.get("id", true)) ?? null,
         name: plain(doc, stepNode.get("name", true)) ?? null,
         if: stepCondition === undefined ? null : String(stepCondition),
+        continueOnError: plain(doc, stepNode.get("continue-on-error", true)) ?? null,
         uses: reference(text, doc, stepNode.get("uses", true)),
         with: mapping(doc, stepNode.get("with", true)),
         env: mapping(doc, stepNode.get("env", true)),

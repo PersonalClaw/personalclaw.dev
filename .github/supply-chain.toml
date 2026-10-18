@@ -26,6 +26,16 @@ steps = [
 ]
 reason = "Files, updates and closes the one tracking issue that says the website is behind the published core release or is serving another installer."
 
+[[audited_write]]
+workflow = "audit.yml"
+job = "report"
+permission = "issues: write"
+steps = [
+  "Open or update the audit issue",
+  "Close the audit issue when the audit passes again",
+]
+reason = "Opens, comments on and closes the one issue titled \"Dependency audit is red\", which says the nightly audit of the lock the website ships is red."
+
 # Exceptions. One waives one rule (scope) for one reference in one file, and expires at
 # most 30 days after the day it is written or renewed. Renewing is a new expiry with a
 # new reason. An expired entry, one more than 30 days out, one that matches nothing,

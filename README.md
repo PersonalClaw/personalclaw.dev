@@ -282,6 +282,18 @@ How a refresh arrives: Dependabot's weekly `github-actions` update moves a SHA a
 
 How to add or renew an exception: add an `[[exception]]` to `.github/supply-chain.toml` with `file` and `reference` (both exactly as the failing check reports them), `scope` (the rule id), `owner = "maintainers"`, `reason`, and `expires`, a date at most 30 days out. Renewing is a new `expires`, at most 30 days from that day, and a new reason. An exception past its date, more than 30 days out, matching nothing, or missing a field fails the check, so an exception cannot outlive its reason unnoticed.
 
+### Dependency audit
+
+`npm run audit:lock` (`scripts/audit-lock.mjs`) audits the lock the website ships: `npm audit --package-lock-only` over the committed `package-lock.json`, build tools included, since they run in CI and make every page the site serves. It reads the lock, never `node_modules` or a fresh resolution.
+
+- **Red, exit 2, when the audit did not run:** npm could not start, was killed, or exited with anything but 0 or 1; it printed no report, a report that is not JSON, or an error instead of an audit; or it audited a different number of packages than the lock installs. A missing audit is never a clean one.
+- **Red, exit 1,** on a high or critical finding that no live waiver covers, and on a waiver that is expired, more than 30 days out, missing a field, of another scope, or matching no finding.
+- Moderate and low findings are listed in the job summary and gate nothing.
+
+It runs in Website CI's `audit` job ("Audit the lock the website ships") on every pull request and main run. That job needs no other job and is not a required check, so a red one stops a merge only because every check on a pull request must pass. The nightly **Dependency audit** workflow (`.github/workflows/audit.yml`) runs the same command on `main`, because a new advisory arrives without a commit. Its `report` job, the only job there that can write and only to issues, opens or comments on one issue titled "Dependency audit is red", and closes it when the audit is green again. Both audit jobs install with `npm ci --ignore-scripts`: the audit reads its waiver file with the locked TOML parser, and no package in the graph being audited runs an install script first. The audit needs the network, so no `test:static` gate runs it; `tests/audit-lock.test.mjs` plants each rule through the script with a fake npm, and holds both workflows to their shape.
+
+Fix a finding with an in-range update of the lock first (`npm update <package> --package-lock-only`, then the checks a lock change needs). Waive only what no in-range update fixes: add a `[[waiver]]` to `.github/audit-baseline.toml` with `file = "package-lock.json"`, `scope = "npm-audit"`, `reference` ("<package> <advisory>", as the summary prints it), `owner = "maintainers"`, `reason` (including what ends it), and `expires`, a date at most 30 days out. Renewing means a new `expires` and a new reason.
+
 The pre-push hook is a local mirror of those three jobs and is mandatory for this
 repository. It starts from `npm ci`, so tests always use the committed lockfile. Do
 not use `--no-verify` to bypass it. If a gate is red or cannot run, stop and fix the
