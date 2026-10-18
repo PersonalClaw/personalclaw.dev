@@ -2,8 +2,17 @@ import { defineConfig } from "@playwright/test";
 
 const baseURL = "http://127.0.0.1:4321";
 
+// scripts/run-visual.mjs sets PLAYWRIGHT_VISUAL=1 when it runs inside the pinned
+// Playwright image (tests/browser/visual-image.json), and then only the visual specs run.
+// Every other run is unchanged and still includes them: until the pinned image's linux
+// baselines and their environment manifest are committed, today's comparison stays the
+// gate.
+const visual = process.env.PLAYWRIGHT_VISUAL === "1";
+const VISUAL_SPEC = /(^|\/)visual\.spec\.ts$/;
+
 export default defineConfig({
   testDir: "./tests/browser",
+  ...(visual ? { testMatch: VISUAL_SPEC } : {}),
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
   retries: 0,

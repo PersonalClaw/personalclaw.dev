@@ -184,6 +184,7 @@ The build runs Astro diagnostics before producing the static site in `dist/`.
 | `npm run test:ci` | Runs the same aggregate quality floor used by CI |
 | `npm run test:prepush` | Installs the lockfile and runs the aggregate gate under the exact CI Node runtime |
 | `npm run test:visual:update` | Deliberately refreshes committed visual baselines |
+| `npm run test:visual:image` / `npm run test:visual:image-update` | Compares, or (after a build) rewrites, the visual baselines inside the pinned Playwright image (`tests/browser/visual-image.json`, linux/amd64), checking the browser, renderer and fonts against `tests/browser/__screenshots__/visual-environment.json` first. Runs only on a linux/amd64 host with docker; the **Refresh visual baselines** workflow runs the update. Not yet the gate: CI's browser job still compares on the runner's Chromium |
 | `npm run hooks:install` | Enables the repository-owned pre-push hook |
 
 All scripts set `ASTRO_TELEMETRY_DISABLED=1`.
@@ -300,6 +301,17 @@ not use `--no-verify` to bypass it. If a gate is red or cannot run, stop and fix
 gate or its environment before publishing commits. Visual baselines are
 platform-qualified for macOS development and Linux CI; update them only after
 inspecting the rendered result on the platform that produced it.
+
+The move to one baseline set made in one pinned Playwright image is under way.
+`tests/browser/visual-image.json` pins the image by digest for `linux/amd64`, with the
+tag and index digest it was read from and the Playwright version it ships, which must
+be the lock's; `tests/visual-environment.test.mjs` fails on an image named by tag in a
+workflow, script or config, on another architecture, and on a version that differs from
+the lock. The **Refresh visual baselines** workflow now makes the linux baselines in that
+image and records the environment they were made in. Until those baselines and their
+manifest are committed, the browser job's comparison and both baseline sets stay as
+described above; the change that commits them moves the comparison into the image and
+removes the darwin set.
 
 ## Repository Structure
 

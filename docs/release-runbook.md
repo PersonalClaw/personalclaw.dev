@@ -88,7 +88,9 @@ created), because every step below verifies against the published tag.
    ```
 
    Baselines are platform-qualified (Darwin for local development, Linux for CI);
-   `validate:visual-baselines` enforces that both exist.
+   `validate:visual-baselines` enforces that both exist. The move to one linux
+   set made in a pinned Playwright image is under way (README, pre-push
+   section); until it lands, this step is unchanged.
 
 7. **Open the PR, land it, verify production.** Vercel's Git integration deploys
    `main`. Afterwards, `/release` should state the new version and link the exact
