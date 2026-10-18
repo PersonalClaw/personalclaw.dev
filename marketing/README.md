@@ -109,6 +109,11 @@ or CI fails. **Never** weaken the gate (no threshold bump, no platform-set delet
    artifact → commit the regenerated 15 `*-linux.png` files.
 3. `npm run validate:visual-baselines` must report exactly 30 baselines, no missing/orphaned.
 
+While the move to the pinned Playwright image is under way (see the README's pre-push
+section), the workflow makes its linux baselines inside that image while CI still
+compares on the runner's Chromium. Until the change that moves the comparison into the
+image lands, do not commit its linux output on its own.
+
 ### 8. Full gate + PR
 
 Run the complete local gate under the pinned Node (mirrors CI):

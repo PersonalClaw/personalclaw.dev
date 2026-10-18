@@ -23,6 +23,7 @@ export const unitTests = {
     "tests/ci-contract.test.mjs",
     "tests/supply-chain.test.mjs",
     "tests/audit-lock.test.mjs",
+    "tests/visual-environment.test.mjs",
     "tests/run-ci-gates.test.mjs",
     "tests/build-record.test.mjs",
     "tests/docs-publication.test.mjs",
