@@ -1,7 +1,7 @@
 {
   "$schema": "./screenshots.schema.json",
   "schemaVersion": 1,
-  "targetRelease": "0.2.1",
+  "targetRelease": "0.2.2",
   "capture": {
     "instance": "Clone the working dev home to an isolated screenshot home and run a SECOND gateway on a free port (e.g. cp -R .dev-home .screenshot-home; PERSONALCLAW_HOME=$PWD/.screenshot-home <gateway> --port 10001). Cloning inherits the already-configured providers (ollama chat, faster-whisper stt, bindings) rather than re-wiring them, and keeps marketing data out of the :10000 validation instance. Seed the per-shot scenarios (below) via the real UI/API before capturing.",
     "theme": "dark",
@@ -15,13 +15,13 @@
       "appView": "Dashboard home (the landing view)",
       "minWidth": 1200,
       "minHeight": 750,
-      "scenario": "A lived-in home: the Jump back in row with recent chats, To triage, Active work with a loop running, Tasks, Suggestions and Agent world, and the bottom System Health rail green. Nothing empty: this is the 'whole system at a glance' shot.",
-      "value": "One home surfaces current work, recent conversations, scheduled runs, and system state.",
+      "scenario": "A lived-in home: the header counting what waits on you (approvals, tasks ready, inbox), the Jump back in row with recent chats, To triage, Active work with a loop running, Tasks, Suggestions and Agent world. Nothing empty: this is the 'what waits on me' shot. Home carries no system rail since 0.2.2; the machine's health is in Settings > System.",
+      "value": "One home surfaces what waits on you, beside current work and recent conversations.",
       "placements": [
         {
           "file": "src/data/site.ts",
           "kind": "hero-system-window",
-          "caption": "See the whole system — Current work, recent conversations, scheduled runs, and system state stay visible from one home.",
+          "caption": "See what waits on you — Approvals, ready tasks, current work, and recent conversations stay visible from one home.",
           "alt": "Home view in the PersonalClaw dashboard"
         }
       ],

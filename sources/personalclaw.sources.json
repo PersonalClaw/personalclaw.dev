@@ -5,15 +5,15 @@
   "sources": {
     "core": {
       "repository": "PersonalClaw/PersonalClaw",
-      "commit": "be97147cb38147e9c769f502f812f3b3e6347b17",
-      "tag": "v0.2.1",
-      "installSha256": "f1a27c277b984cabb861eff7e30d4462d83a016f809d30a9303d09ed30bcb532",
-      "installCommit": "be97147cb38147e9c769f502f812f3b3e6347b17"
+      "commit": "31959e11de3781986f006161841e86aeda797a4c",
+      "tag": "v0.2.2",
+      "installSha256": "b8c0790cdc3def033aed3755f56dbfc948283b14d71ffd1344db3b0c9b16a29d",
+      "installCommit": "31959e11de3781986f006161841e86aeda797a4c"
     },
     "apps": {
       "repository": "PersonalClaw/PersonalClawApps",
-      "commit": "4721d5b20e677ca825709f3087565a8ad3f69d59",
-      "tag": "v0.2.1"
+      "commit": "467cda1ae36d00a45e49418a493401fd7e3905d4",
+      "tag": "v0.2.2"
     }
   },
   "data": {

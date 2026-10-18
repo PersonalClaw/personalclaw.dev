@@ -42,7 +42,7 @@ test("app directory preserves deep-linked filters and can recover from no result
     "true"
   );
   // Exact on purpose: a directory entry disappearing should fail, not be tolerated.
-  // Tracks the first-party app count of the pinned release (69 at v0.2.1).
+  // Tracks the first-party app count of the pinned release (69 at v0.2.2).
   await expect(page.locator(".app-card")).toHaveCount(69);
   await expect(page).toHaveURL("/apps");
   runtime.assertClean();
