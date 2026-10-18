@@ -226,6 +226,7 @@ const passes = [
   ["an exception exactly 30 days out", withException({ ...LIVE_EXCEPTION, expires: "2026-11-16" })],
   ["an image pinned by digest for one platform", { text: workflow({ jobKeys: `    container:\n      image: node@${DIGEST} # linux/amd64` }), ...docker(`ARG BASE=node@${DIGEST}\nFROM --platform=linux/amd64 \${BASE} AS build\nFROM build\n`) }],
   ["installs from the lock: npm ci and the locked Playwright's browser", { text: workflow() }],
+  ["installs from the lock without its scripts: npm ci --ignore-scripts (the audit jobs)", { text: workflow({ steps: "      - name: Install locked dependencies without their scripts\n        run: npm ci --ignore-scripts" }) }],
   ["an install that names an exact version", { text: workflow({ steps: "      - name: Install the CLI\n        run: |\n          pip install pyinstaller==6.11.1\n          npx --yes serve@14.2.4 --version" }) }],
 ];
 

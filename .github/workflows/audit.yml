@@ -1,0 +1,114 @@
+# Nightly dependency audit. Website CI's `audit` job audits the lock the website ships on
+# every pull request and every main run (scripts/audit-lock.mjs); this workflow runs the
+# same command every night on main, because a new advisory lands without a commit. It
+# reads only the committed package-lock.json. It is red on an audit that did not run, on
+# a high or critical finding no live waiver in .github/audit-baseline.toml covers, and on
+# a waiver that is expired, more than 30 days out, missing a field or stale.
+#
+# A red opens one tracking issue, or comments on the open one; a green closes it. The
+# issue is found by its exact title (TITLE below), so the title stays as it is. Only the
+# `report` job can write, and only issues; .github/supply-chain.toml lists that write.
+#
+# It runs on a schedule and on dispatch only, never on a pull request or a push, so its
+# result is never a pull request's verdict; Website CI's own `audit` job is.
+name: Dependency audit
+
+on:
+  schedule:
+    # Nightly, 05:41 UTC: off the hour, and clear of Release follow (07:17).
+    - cron: "41 5 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dependency-audit
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    name: Audit the lock the website ships
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Record runner identity
+        run: |
+          echo "image=${ImageOS:-} version=${ImageVersion:-} arch=${RUNNER_ARCH:-}"
+          if [ -z "${ImageOS:-}" ] || [ -z "${ImageVersion:-}" ] || [ -z "${RUNNER_ARCH:-}" ]; then
+            echo "::error::Runner image identity is incomplete: ImageOS, ImageVersion and RUNNER_ARCH must all be set." >&2
+            exit 1
+          fi
+
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+          cache: npm
+
+      # The audit reads the waiver file with the locked TOML parser, so it needs the
+      # lock installed; with --ignore-scripts, no package in the graph it audits runs an
+      # install script first.
+      - name: Install locked dependencies without their scripts
+        run: npm ci --ignore-scripts
+
+      - name: Audit the lock the website ships
+        run: npm run audit:lock
+
+  report:
+    name: Open, update or close the audit issue
+    needs: audit
+    # A failed audit still reports; a cancelled run says nothing either way.
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    env:
+      TITLE: "Dependency audit is red"
+      GH_REPO: ${{ github.repository }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      COMMIT: ${{ github.sha }}
+    steps:
+      - name: Record runner identity
+        run: |
+          echo "image=${ImageOS:-} version=${ImageVersion:-} arch=${RUNNER_ARCH:-}"
+          if [ -z "${ImageOS:-}" ] || [ -z "${ImageVersion:-}" ] || [ -z "${RUNNER_ARCH:-}" ]; then
+            echo "::error::Runner image identity is incomplete: ImageOS, ImageVersion and RUNNER_ARCH must all be set." >&2
+            exit 1
+          fi
+
+      - name: Open or update the audit issue
+        if: ${{ needs.audit.result != 'success' }}
+        # The token goes only to the steps that call the API, never to the whole job.
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          body=$(printf 'The nightly dependency audit is red on `%s`: the audit did not run, a high or critical finding has no live waiver, or a waiver is expired, too long or stale.\n\nRun: %s (its job summary lists every finding and every waiver problem).\n\nFix it with an in-range update of `package-lock.json`, or add a dated waiver to `.github/audit-baseline.toml` with its reason (README.md, "Dependency audit").\n\n_Updated by the nightly dependency audit._\n' \
+            "$COMMIT" "$RUN_URL")
+          existing=$(gh issue list --state open --search "\"$TITLE\" in:title" --limit 100 --json number,title --jq '[.[] | select(.title == env.TITLE)][0].number // empty')
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body "$body"
+          else
+            gh issue create --title "$TITLE" --body "$body"
+          fi
+
+      - name: Close the audit issue when the audit passes again
+        if: ${{ needs.audit.result == 'success' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          existing=$(gh issue list --state open --search "\"$TITLE\" in:title" --limit 100 --json number,title --jq '[.[] | select(.title == env.TITLE)][0].number // empty')
+          if [ -n "$existing" ]; then
+            body=$(printf 'The nightly dependency audit is green again on `%s`.\n\nRun: %s\n\n_Closed by the nightly dependency audit._\n' "$COMMIT" "$RUN_URL")
+            gh issue close "$existing" --comment "$body"
+          else
+            echo "green, and no open audit issue to close"
+          fi

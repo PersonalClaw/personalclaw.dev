@@ -115,14 +115,20 @@ function nth(text, from, to, index = 0) {
   return text.slice(0, at) + to + text.slice(at + from.length);
 }
 
-// The browser job's text, so a plant can name one required job.
-const inBrowser = (text, from, to) => {
-  const start = text.indexOf("\n  browser:\n");
-  const end = text.indexOf("\n  performance:\n");
+// One job's text, from its key to the next job's, so a plant names the job it edits
+// and does not move when a job is added before it.
+const inJob = (text, id, from, to) => {
+  const start = text.indexOf(`\n  ${id}:\n`);
+  assert.notEqual(start, -1, `ci.yml has no ${id} job`);
+  const next = text.slice(start + 1).search(/\n  [a-z][a-z0-9-]*:\n/);
+  const end = next === -1 ? text.length : start + 1 + next;
   const job = text.slice(start, end);
-  assert.ok(job.includes(from), `the browser job has no ${JSON.stringify(from)}`);
+  assert.ok(job.includes(from), `the ${id} job has no ${JSON.stringify(from)}`);
   return text.slice(0, start) + job.replace(from, to) + text.slice(end);
 };
+
+// The browser job's text, so a plant can name one required job.
+const inBrowser = (text, from, to) => inJob(text, "browser", from, to);
 
 const sharedBuildPlants = [
   {
@@ -198,7 +204,7 @@ const sharedBuildPlants = [
   {
     why: "a build job with no timeout-minutes",
     match: /the build job must set timeout-minutes/,
-    edit: (text) => nth(text, "    timeout-minutes: 10\n", "", 0),
+    edit: (text) => inJob(text, "build", "    timeout-minutes: 10\n", ""),
   },
   {
     why: "a build upload that drops hidden files (.generated/, .preview-dist/)",

@@ -111,6 +111,7 @@ so every run reports the signature leg as unproven — never as a pass — and t
 alone files no issue. Once a release attaches `SHA256SUMS`, its `install.sh`
 line is a hard check; once it attaches a signature, the leg fails closed until
 the release key and its verifier are configured here.
+| `audit:lock` (dependency audit) | Website CI's `audit` job on every pull request and main run, and the nightly **Dependency audit** workflow on `main` | a high or critical advisory in `package-lock.json` that no live waiver in `.github/audit-baseline.toml` covers; an audit that did not run; a waiver that is expired, more than 30 days out, missing a field or stale. A red nightly opens or comments on the issue "Dependency audit is red", and a green one closes it. A re-pin that changes the lock is audited by its pull request's run |
 | `validate:marketing-manifest` | `test:static` | a screenshot committed without a manifest entry, a manifest entry whose asset is missing, a shipping shot with no placement |
 | `validate:build` / `validate:preview` | `test:static` | publication contract of the built output (production and noindex preview) |
 
