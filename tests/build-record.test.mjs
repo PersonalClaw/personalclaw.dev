@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
+import fs from "node:fs";
+import path from "node:path";
 import test from "node:test";
 
-import { RECORD_PATH, createRecord, verifyRecord, writeRecord } from "../scripts/build-record.mjs";
+import { GIT_LOCATION, RECORD_PATH, createRecord, verifyRecord, writeRecord } from "../scripts/build-record.mjs";
 import { rangeFloor, satisfies } from "./support/node-range.mjs";
 import { FIXTURE_NODE, FIXTURE_NPM, createBuildFixture } from "./support/build-fixture.mjs";
 
@@ -144,3 +147,49 @@ for (const { why, match, plant } of plants) {
     assert.ok(problems.some((problem) => match.test(problem)), `expected ${match}, found:\n${problems.join("\n")}`);
   });
 }
+
+// A git hook exports the repository it runs for (GIT_DIR, and GIT_INDEX_FILE in some hooks) to
+// everything it starts, so the pre-push gate's tests inherit them. A fixture's git, or the record's,
+// that kept them would work on the repository being pushed instead of its own throwaway one:
+// `git init` there sets core.bare, and the fixture's commit moves the branch being pushed.
+test("a build fixture made under a git hook's environment stays in its own repository", () => {
+  const scratch = path.join(process.cwd(), ".generated");
+  fs.mkdirSync(scratch, { recursive: true });
+  const decoy = fs.mkdtempSync(path.join(scratch, "hook-decoy-"));
+  const clean = { ...process.env };
+  for (const name of GIT_LOCATION) delete clean[name];
+  const decoyGit = (...args) =>
+    execFileSync("git", ["-C", decoy, ...args], { encoding: "utf8", env: clean, stdio: ["ignore", "pipe", "pipe"] }).trim();
+  decoyGit("init", "-q");
+  fs.writeFileSync(path.join(decoy, "kept.txt"), "the repository a hook runs for\n");
+  decoyGit("add", "kept.txt");
+  decoyGit("-c", "user.name=Example", "-c", "user.email=ci@example.com", "commit", "-q", "--no-gpg-sign", "-m", "decoy");
+  const before = { head: decoyGit("rev-parse", "HEAD"), bare: decoyGit("config", "--get", "core.bare"), tree: decoyGit("ls-files") };
+
+  const saved = { GIT_DIR: process.env.GIT_DIR, GIT_INDEX_FILE: process.env.GIT_INDEX_FILE };
+  process.env.GIT_DIR = path.join(decoy, ".git");
+  process.env.GIT_INDEX_FILE = path.join(decoy, ".git", "index");
+  let fixture;
+  try {
+    fixture = createBuildFixture();
+    const record = createRecord({ root: fixture.root, env: BUILD_RUN, node: FIXTURE_NODE, npm: FIXTURE_NPM });
+    assert.ok(fs.statSync(path.join(fixture.root, ".git")).isDirectory(), "the fixture has a repository of its own");
+    assert.notEqual(record.commit, before.head, "the record reads the fixture's commit, not the hook's repository");
+  } finally {
+    for (const [name, value] of Object.entries(saved)) {
+      if (value === undefined) delete process.env[name];
+      else process.env[name] = value;
+    }
+    fixture?.dispose();
+  }
+  const after = { head: decoyGit("rev-parse", "HEAD"), bare: decoyGit("config", "--get", "core.bare"), tree: decoyGit("ls-files") };
+  fs.rmSync(decoy, { recursive: true, force: true });
+  assert.deepEqual(after, before, "the hook's repository keeps its branch, its core.bare and its index");
+});
+
+test("the pre-push hook drops the repository git exported to it before it runs the gate", () => {
+  const hook = fs.readFileSync(path.join(process.cwd(), ".githooks", "pre-push"), "utf8");
+  const unset = hook.indexOf("unset ");
+  assert.ok(unset >= 0 && unset < hook.indexOf("exec "), "the hook unsets before it hands over to the gate");
+  for (const name of GIT_LOCATION) assert.match(hook.slice(unset), new RegExp(`\\b${name}\\b`), `the hook unsets ${name}`);
+});

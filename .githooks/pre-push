@@ -2,4 +2,11 @@
 set -eu
 
 repository_root=$(git rev-parse --show-toplevel)
+# git exports the repository it runs this hook for. The gate's tests start git in throwaway
+# repositories of their own, and an inherited GIT_DIR or GIT_INDEX_FILE would point those at
+# this one instead: a fixture's `git init` would set core.bare here and its commit would move
+# the branch being pushed. From the top of the work tree, git finds this repository without them.
+cd "$repository_root"
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_COMMON_DIR GIT_OBJECT_DIRECTORY \
+  GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_PREFIX GIT_NAMESPACE
 exec "$repository_root/scripts/run-prepush.sh"
