@@ -92,6 +92,17 @@ test("test:ci marks build-dependent gates skipped when build fails", () => {
   assert.match(report, /OVERALL\s+FAIL/);
 });
 
+test("the full gate's playwright row says the visual specs did not run there, pass or fail", async () => {
+  const { VISUAL_NOTE } = await import("../scripts/run-ci-gates.mjs");
+  for (const failures of [[], ["playwright"]]) {
+    const result = runWithFailures(...failures);
+    const row = result.rows.find((each) => each.name === "playwright");
+    assert.ok(row.detail.endsWith(VISUAL_NOTE), row.detail);
+    assert.match(result.output, /^playwright\s+(?:PASS|FAIL)\s+.*visual specs not run here/m);
+  }
+  assert.equal(runWith({ staticOnly: true }).rows.some((row) => row.detail.includes("visual specs")), false);
+});
+
 test("the unit tier runs exactly the files package.json's test:unit runs, in order", async () => {
   const { readFile } = await import("node:fs/promises");
   const { unitTests } = await import("../scripts/run-ci-gates.mjs");

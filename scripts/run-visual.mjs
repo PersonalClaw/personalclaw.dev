@@ -1,19 +1,15 @@
 // Runs the visual specs inside the pinned Playwright image (tests/browser/visual-image.json),
-// the one environment the linux baselines are to be made and compared in.
+// the one environment the committed baselines are made and compared in.
 //
-//     node scripts/run-visual.mjs                        (npm run test:visual:image)
-//     node scripts/run-visual.mjs --update-snapshots=all (npm run test:visual:image-update, after a build)
+//     node scripts/run-visual.mjs                        (npm run test:visual)
+//     node scripts/run-visual.mjs --update-snapshots=all (npm run test:visual:update, after a build)
 //
 // It runs only on a linux/amd64 host with a container runtime: the image is linux/amd64,
 // and the host's exact Node (the one .node-version pins) and its installed node_modules
 // are mounted into the container, so the preview server and Playwright run on the same
-// Node and packages as the rest of CI. On any other host it refuses and names the Refresh
-// visual baselines workflow, which makes the baselines in the image. It never installs
-// anything.
-//
-// Until the image's baselines and their manifest are committed, Website CI's browser job
-// still compares the committed baselines on the runner's own Chromium; this script is the
-// refresh workflow's only caller.
+// Node and packages as the rest of CI. On any other host it refuses and says where the
+// baselines are compared instead: Website CI's browser job, and the Refresh visual
+// baselines workflow, which regenerates them. It never installs anything.
 //
 // Before the specs run it probes the container (scripts/visual-environment.mjs) for the
 // browser build, renderer and fonts. A compare run fails when that environment differs
@@ -34,8 +30,8 @@ export const COMPARED = ["image", "platform", "playwright", "browser", "renderer
 const CONTAINER_NODE = "/opt/node/bin/node";
 const CONTAINER_PATH = "/opt/node/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin";
 const ELSEWHERE =
-  "Make them on CI instead: the Refresh visual baselines workflow " +
-  "(.github/workflows/visual-baselines.yml) makes them in the pinned image.";
+  "Compare and refresh them on CI instead: Website CI's browser job compares them, and the " +
+  "Refresh visual baselines workflow (.github/workflows/visual-baselines.yml) regenerates them.";
 
 class Refusal extends Error {
   constructor(message, status = 2) {

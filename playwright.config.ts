@@ -2,17 +2,16 @@ import { defineConfig } from "@playwright/test";
 
 const baseURL = "http://127.0.0.1:4321";
 
-// scripts/run-visual.mjs sets PLAYWRIGHT_VISUAL=1 when it runs inside the pinned
-// Playwright image (tests/browser/visual-image.json), and then only the visual specs run.
-// Every other run is unchanged and still includes them: until the pinned image's linux
-// baselines and their environment manifest are committed, today's comparison stays the
-// gate.
+// The visual specs compare pixels, so they run only inside the pinned Playwright image
+// (tests/browser/visual-image.json), started by scripts/run-visual.mjs, which sets
+// PLAYWRIGHT_VISUAL=1. Every other run leaves them out: a host's browser, renderer and
+// fonts are not the ones the one linux baseline set was made with.
 const visual = process.env.PLAYWRIGHT_VISUAL === "1";
 const VISUAL_SPEC = /(^|\/)visual\.spec\.ts$/;
 
 export default defineConfig({
   testDir: "./tests/browser",
-  ...(visual ? { testMatch: VISUAL_SPEC } : {}),
+  ...(visual ? { testMatch: VISUAL_SPEC } : { testIgnore: VISUAL_SPEC }),
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
   retries: 0,
@@ -31,6 +30,8 @@ export default defineConfig({
     ["list"],
     ["html", { open: "never" }]
   ],
+  // `{platform}` is always linux inside the image. It stays in the path so a visual run
+  // anywhere else finds no baseline and fails, rather than comparing other pixels.
   snapshotPathTemplate:
     "{testDir}/__screenshots__/{testFilePath}/{arg}-{projectName}-{platform}{ext}",
   use: {

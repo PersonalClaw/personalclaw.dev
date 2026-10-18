@@ -1,18 +1,14 @@
-# Makes the Playwright visual baselines inside the pinned Playwright image
-# (tests/browser/visual-image.json, linux/amd64). `npm run test:visual:image-update`
-# builds the site, then scripts/run-visual.mjs probes the image's browser build, renderer
-# and fonts, writes them to tests/browser/__screenshots__/visual-environment.json, and
-# rewrites every linux baseline in the image.
+# Regenerates the committed Playwright visual baselines inside the pinned Playwright
+# image (tests/browser/visual-image.json, linux/amd64): the one environment Website CI's
+# browser job compares them in. `npm run test:visual:update` builds the site, then
+# scripts/run-visual.mjs probes the image's browser build, renderer and fonts, writes them
+# to tests/browser/__screenshots__/visual-environment.json, and rewrites every baseline.
+# There is one baseline set, linux; no machine outside the image makes or compares one.
 #
-# Bootstrap: Website CI's browser job still compares the committed baselines on the
-# runner's own Chromium, so this workflow's output is not yet what CI compares against.
-# Its first run on main makes the image's linux set and manifest, and the change that
-# commits them also moves the comparison into the image and deletes the darwin set. Until
-# that change lands, do not commit this workflow's output on its own.
-#
-# Flow: dispatch → download the `visual-baselines` artifact → inspect the diffs → commit
-# only the intentional updates, with the manifest (README rule: refresh baselines only
-# after inspecting and accepting an intentional visual change). No bot commits.
+# Flow: dispatch on the branch that changes visuals → download the artifact →
+# inspect the diffs → commit only the intentional updates, with the manifest (README
+# rule: refresh baselines only after inspecting and accepting an intentional visual
+# change). No bot commits.
 name: Refresh visual baselines
 
 on:
@@ -49,12 +45,11 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
 
-      # The build runs on the runner; the baselines are made inside the pinned image,
-      # which ships its own Chromium, so the runner installs none.
+      # The build runs on the runner; the baselines are made inside the pinned image.
       - name: Regenerate visual baselines in the pinned image
         env:
           GITHUB_TOKEN: ${{ github.token }}
-        run: npm run test:visual:image-update
+        run: npm run test:visual:update
 
       - name: Upload regenerated baselines
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

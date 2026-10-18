@@ -81,16 +81,15 @@ created), because every step below verifies against the published tag.
    `npm run hooks:install`.
 
 6. **Update visual baselines if the UI moved.** New screenshots change the
-   snapshots. Regenerate and review them deliberately:
-
-   ```bash
-   npm run test:visual:update
-   ```
-
-   Baselines are platform-qualified (Darwin for local development, Linux for CI);
-   `validate:visual-baselines` enforces that both exist. The move to one linux
-   set made in a pinned Playwright image is under way (README, pre-push
-   section); until it lands, this step is unchanged.
+   snapshots. There is one `-linux` baseline set, made and compared inside the
+   pinned Playwright image (`tests/browser/visual-image.json`). Regenerate it on
+   the release branch by dispatching **Refresh visual baselines**
+   (`.github/workflows/visual-baselines.yml`), which runs
+   `npm run test:visual:update` in the image; download its `visual-baselines`
+   artifact, review the diffs, and commit the intended changes together with
+   `tests/browser/__screenshots__/visual-environment.json`.
+   `validate:visual-baselines` fails on a missing baseline or one for any other
+   platform. The pre-push gate does not compare them; CI's browser job does.
 
 7. **Open the PR, land it, verify production.** Vercel's Git integration deploys
    `main`. Afterwards, `/release` should state the new version and link the exact

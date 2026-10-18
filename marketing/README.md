@@ -96,33 +96,30 @@ Edit `../sources/personalclaw.sources.json`: set `core` and `apps` to the new
 re-derives the version label / app counts / release state from the tagged source and
 **fails closed** if a tag doesn't resolve to its pinned commit.
 
-### 7. Re-baseline the site visual regression (BOTH platforms)
+### 7. Re-baseline the site visual regression (in the pinned image)
 
 Swapping app imagery changes the site's own full-page snapshots — an **intentional**
-baseline update. The baselines are platform-qualified (macOS dev + Linux CI); update both
-or CI fails. **Never** weaken the gate (no threshold bump, no platform-set deletion).
+baseline update. There is one baseline set, `-linux`, made and compared inside the pinned
+Playwright image (`tests/browser/visual-image.json`); no machine outside it makes or
+compares one. **Never** weaken the gate (no threshold bump).
 
-1. On macOS (Node 22.12.0 + Chromium installed): `npm run test:visual:update` — regenerates
-   the 15 `*-darwin.png` baselines. Inspect the diffs; accept only intended changes.
-2. Push the branch, dispatch the **"Refresh visual baselines"** workflow
+1. Push the branch, dispatch the **"Refresh visual baselines"** workflow
    (`.github/workflows/visual-baselines.yml`) on it → download the `visual-baselines`
-   artifact → commit the regenerated 15 `*-linux.png` files.
-3. `npm run validate:visual-baselines` must report exactly 30 baselines, no missing/orphaned.
-
-While the move to the pinned Playwright image is under way (see the README's pre-push
-section), the workflow makes its linux baselines inside that image while CI still
-compares on the runner's Chromium. Until the change that moves the comparison into the
-image lands, do not commit its linux output on its own.
+   artifact → inspect the diffs, and commit the intended `*-linux.png` changes together
+   with `visual-environment.json`.
+2. `npm run validate:visual-baselines` must report exactly 15 linux baselines, no
+   missing/orphaned.
 
 ### 8. Full gate + PR
 
 Run the complete local gate under the pinned Node (mirrors CI):
 ```sh
-mise exec node@22.12.0 -- sh -c 'npm ci && npm run test:ci'
+npm run test:prepush
 ```
 `test:ci` = `test:static` (validates the marketing manifest + visual baselines, builds,
-validates build/preview) + the full Playwright browser suite (visual regression + a11y) +
-Lighthouse. All green → open the PR. Do not push/PR unless told.
+validates build/preview) + the Playwright browser suite (a11y, behavior; not the pixel
+comparison, which CI's browser job runs in the pinned image) + Lighthouse. All green →
+open the PR. Do not push/PR unless told.
 
 ## Why this shape
 

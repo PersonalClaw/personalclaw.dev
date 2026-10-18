@@ -1,7 +1,7 @@
-// The visual environment: one Playwright image, pinned by digest and architecture
-// (tests/browser/visual-image.json), that the Refresh visual baselines workflow makes the
-// baselines in, recording the environment they were made in. Each rule below plants its
-// violation; the last tests read the committed tree.
+// The visual environment: baselines are compared only inside one Playwright image, pinned
+// by digest and architecture (tests/browser/visual-image.json), and each baseline set
+// records the environment it was made in. Each rule below plants its violation; the last
+// tests read the committed tree.
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
@@ -9,6 +9,7 @@ import test from "node:test";
 import { fileURLToPath } from "node:url";
 
 import { COMPARED, MANIFEST, compareEnvironment, dockerArgs, main } from "../scripts/run-visual.mjs";
+import { checkBaselines, expectedBaselines } from "../scripts/validate-visual-baselines.mjs";
 import { PIN_FILE, checkPin, readPin, tagReferences, scannedFiles } from "./support/visual-image.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -35,6 +36,32 @@ const ENVIRONMENT = {
   renderer: "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero)))",
   fonts: { count: 42, sha256: "d".repeat(64) },
 };
+
+// ── the baselines: one linux set, nothing else ───────────────────────────────────
+
+const REFRESH = "npm run build && node scripts/run-visual.mjs --update-snapshots=all";
+const FULL = [...expectedBaselines()].sort();
+
+test("the baseline set is linux only: 15 files, one per route and viewport plus the states", () => {
+  assert.equal(FULL.length, 15);
+  assert.ok(FULL.every((name) => name.endsWith("-linux.png")));
+  assert.deepEqual(checkBaselines(FULL, REFRESH), []);
+});
+
+const baselinePlants = [
+  ["a stray -darwin baseline", [...FULL, "home-page-desktop-darwin.png"], REFRESH, /Unexpected visual baselines:\n- home-page-desktop-darwin\.png/],
+  ["a missing linux baseline", FULL.filter((name) => name !== "home-page-mobile-linux.png"), REFRESH, /Missing visual baselines:\n- home-page-mobile-linux\.png/],
+  ["a refresh that only rewrites failed snapshots", FULL, "npm run build && node scripts/run-visual.mjs --update-snapshots", /must pass --update-snapshots=all/],
+  ["a refresh that does not run in the image", FULL, "npm run build && playwright test --update-snapshots=all", /must run through scripts\/run-visual\.mjs/],
+];
+
+for (const [why, names, refresh, message] of baselinePlants) {
+  test(`the baseline check fails on ${why}`, () => {
+    const problems = checkBaselines(names, refresh);
+    assert.equal(problems.length, 1, problems.join("\n"));
+    assert.match(problems[0], message);
+  });
+}
 
 // ── the pin: digest, architecture, and the lock's Playwright ─────────────────────
 
@@ -219,16 +246,19 @@ test("no workflow, script or config names the image by tag", () => {
   assert.deepEqual(tagReferences(files), []);
 });
 
-test("the refresh workflow makes the baselines in the pinned image, rewriting every one", () => {
-  const scripts = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8")).scripts;
-  assert.equal(scripts["test:visual:image-update"], "npm run build && node scripts/run-visual.mjs --update-snapshots=all");
-  const workflow = fs.readFileSync(path.join(root, ".github/workflows/visual-baselines.yml"), "utf8");
-  assert.match(workflow, /^\s+run: npm run test:visual:image-update$/m);
-  assert.doesNotMatch(workflow, /playwright install/);
+// The baselines are compared only against the environment they were made in, so the
+// manifest must be committed with them, made in the image the pin names. Without it the
+// browser job refuses at its last step; this fails it in the unit tier first.
+test("the committed environment manifest records every field, made in the pinned image", () => {
+  const file = path.join(root, MANIFEST);
+  assert.ok(fs.existsSync(file), `${MANIFEST} is missing: commit the Refresh visual baselines workflow's artifact`);
+  const manifest = JSON.parse(fs.readFileSync(file, "utf8"));
+  const pin = readPin(root);
+  assert.deepEqual(compareEnvironment(manifest, { ...manifest, image: pin.image, platform: pin.platform, playwright: pin.playwright }, pin), []);
 });
 
-test("today's comparison is still the gate: a normal run keeps the visual specs", async () => {
-  const config = fs.readFileSync(path.join(root, "playwright.config.ts"), "utf8");
-  assert.doesNotMatch(config, /testIgnore/);
-  assert.match(config, /\.\.\.\(visual \? \{ testMatch: VISUAL_SPEC \} : \{\}\)/);
+test("the committed baselines are the linux set, and test:visual:update refreshes it in the image", () => {
+  const names = fs.readdirSync(path.join(root, "tests/browser/__screenshots__/visual.spec.ts")).filter((name) => name.endsWith(".png"));
+  const refresh = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8")).scripts["test:visual:update"];
+  assert.deepEqual(checkBaselines(names, refresh), []);
 });
