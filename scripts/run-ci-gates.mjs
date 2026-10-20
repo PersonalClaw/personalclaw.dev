@@ -27,6 +27,7 @@ export const unitTests = {
     "tests/run-ci-gates.test.mjs",
     "tests/build-record.test.mjs",
     "tests/docs-publication.test.mjs",
+    "tests/llms-lead.test.mjs",
     "tests/sync-registry.test.mjs",
     "tests/served-installer.test.mjs",
   ],

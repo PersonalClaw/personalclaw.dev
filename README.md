@@ -399,6 +399,12 @@ which is generated from the pin. A link that genuinely cannot be pinned is recor
 reason in the script; none is listed today, and the gate also fails if a listed exception
 stops being needed.
 
+The rows also bound the `llms.txt` lead, the one hand-written part of that file and the
+first thing an assistant reads. `scripts/llms-lead.mjs` refuses a lead that states the
+claim of a `partial` or `no` row, or one of the short forms it lists for that row, and
+`npm run sync:docs` will not write the file until the lead passes. A short form whose row
+comes to hold fails as stale. `tests/llms-lead.test.mjs` runs the same check without a sync.
+
 ### <a name="release-parity"></a>Release parity
 
 Because the site publishes a released version, its own release identity must match core's: **`package.json` version == the pinned core tag == core's `pyproject.toml` version.** `npm run validate:release-parity` enforces that, plus what a schema can't:

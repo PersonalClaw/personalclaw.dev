@@ -22,6 +22,7 @@ import {
   withoutDeadFragment
 } from "./docs-publication.mjs";
 import { installerPython } from "../src/data/installer.mjs";
+import { assertLeadHolds, llmsLead } from "./llms-lead.mjs";
 import {
   loadManifest,
   resolveSource,
@@ -574,17 +575,12 @@ async function main() {
   const version = manifest.sources.core.tag ?? manifest.sources.core.commit.slice(0, 12);
   const site = "https://personalclaw.dev";
 
+  // The lead is the one hand-written part of llms.txt, so it is held to the /compare rows
+  // before the file is written (scripts/llms-lead.mjs).
+  const lead = llmsLead(version);
+  assertLeadHolds(lead.join("\n"));
   const llms = [
-    "# PersonalClaw",
-    "",
-    "> A self-hosted personal AI agent — an agentic operating system for one person.",
-    "> Chat, autonomous goal loops, long-term memory, a knowledge base, skills, scheduled",
-    "> automation and channel integrations, behind one gateway process and one web",
-    "> dashboard you own. Local-first, provider-agnostic, zero telemetry, MIT.",
-    "",
-    `Documentation below describes PersonalClaw ${version} exactly — it is generated from`,
-    "the tagged source, not written separately. PersonalClaw sends no telemetry: there is",
-    "no adoption instrumentation in the product or on this site.",
+    ...lead,
     "",
     "## Install",
     "",
