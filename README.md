@@ -177,7 +177,7 @@ The build runs Astro diagnostics before producing the static site in `dist/`.
 | `npm run validate:release-parity` | Checks the website version against the pinned + newest published core release (see [Release parity](#release-parity)) |
 | `npm run validate:registry` | Rebuilds `/registry` against fixture registries that carry listings and asserts what it renders |
 | `npm run validate:blog` | Asserts `/blog` renders one listing item per readable post, and that each post is published, contracted, and not an empty body |
-| `npm run validate:compare` | Refuses a `/compare` matrix that renders no rows, drifts from its data, sources a row to a branch instead of the pinned release, or stops carrying the rows that do not hold |
+| `npm run validate:compare` | Refuses a `/compare` matrix that renders no rows, drifts from its data, sources a row to a branch instead of the pinned release, stops carrying the rows that do not hold, or gives a row an id other than its capability key (`/compare#telemetry`) or one another element shares |
 | `npm run validate:source-pins` | Refuses any hand-authored link into core, apps or the registry at a moving ref (`main`, `master`, `HEAD`, `latest`) — the same release-not-branch rule `validate:compare` applies to matrix rows, applied to page copy |
 | `npm run test:static` | Validates production and preview publication artifacts; with `-- --prebuilt`, tests a shared build instead of making one (see [One build per CI run](#one-build-per-ci-run)) |
 | `npm run build:preview:site` | Makes the noindex preview build into `.preview-dist/` from the current sync, without syncing again |

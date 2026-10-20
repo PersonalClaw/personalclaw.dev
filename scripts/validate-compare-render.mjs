@@ -24,6 +24,11 @@
 // source link here must point INTO the pinned release. A row silently re-sourced to a
 // branch is the exact defect, and it is mechanically detectable: the tag is in the URL.
 //
+// THE FOURTH FAILURE. Rows are linked by their capability key, /compare#telemetry, so each
+// row's id must be that key, on that row alone. A row with no id, an id taken from its
+// position, or an id two elements share still renders and still resolves, and the link lands
+// on the wrong row or none. scripts/compare-row-ids.mjs holds the rules.
+//
 //   npm run validate:compare      # after a build; reads DIST_DIR (default: dist)
 //
 // It reads src/data/capabilities.json DIRECTLY rather than through
@@ -41,6 +46,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { load } from "cheerio";
+import { declaredRowIdProblems, renderedRowIdProblems } from "./compare-row-ids.mjs";
 
 const repositoryRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const dataPath = join(repositoryRoot, "src", "data", "capabilities.json");
@@ -111,6 +117,9 @@ if (declaredCounts.partial === 0) {
   );
 }
 
+// Every row can be linked by its capability key, and no two rows share one.
+for (const problem of declaredRowIdProblems(rows)) fail(problem);
+
 // ---------------------------------------------------------------------------
 // The page renders every row, from its own data, sourced to the pin.
 // ---------------------------------------------------------------------------
@@ -118,8 +127,12 @@ const pagePath = join(distDirectory, "compare", "index.html");
 if (!existsSync(pagePath)) {
   fail("/compare was not published — the route is missing from the build");
 } else {
-  const page = load(readFileSync(pagePath, "utf8"));
+  const html = readFileSync(pagePath, "utf8");
+  const page = load(html);
   const rendered = page("[data-capability-row]").toArray();
+
+  // Each row's id is its key, on that row alone, so /compare#<key> reaches it.
+  for (const problem of renderedRowIdProblems(html, rows)) fail(problem);
 
   // THE ANTI-VACUITY FLOOR. Everything below only means something if this holds.
   if (rendered.length === 0) {
@@ -223,8 +236,9 @@ if (failures.length > 0) {
 } else {
   console.log(
     `Validated the capability matrix: ${rows.length} rows across ${groups.length} groups ` +
-      `rendered at /compare, every row sourced into ${version} and byte-equal to its ` +
-      `declared claim and statement — ${declaredCounts.yes} holding, ` +
+      `rendered at /compare, every row sourced into ${version}, byte-equal to its ` +
+      `declared claim and statement, and linked by its key alone — ` +
+      `${declaredCounts.yes} holding, ` +
       `${declaredCounts.partial} narrower than stated, ${declaredCounts.no} not in this ` +
       `release. The page still publishes its own failures.`
   );

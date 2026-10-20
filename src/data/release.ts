@@ -25,6 +25,9 @@ export type ChangelogEntry = {
   sections: ChangelogSection[];
 };
 
+/** One of the newest releases in the pinned changelog, newest first (latestReleases()). */
+export type ChangelogRelease = Pick<ChangelogEntry, "heading" | "date" | "summary">;
+
 export type ReleaseFacts = {
   schemaVersion: number;
   generatedAt: string;
@@ -40,6 +43,7 @@ export type ReleaseFacts = {
     changelog: {
       currentVersion: ChangelogEntry;
       unreleased: ChangelogEntry;
+      latest: ChangelogRelease[];
     };
   };
   apps: {
