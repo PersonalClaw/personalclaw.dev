@@ -1,7 +1,7 @@
 {
   "$schema": "./screenshots.schema.json",
   "schemaVersion": 1,
-  "targetRelease": "0.2.2",
+  "targetRelease": "0.2.3",
   "capture": {
     "instance": "Clone the working dev home to an isolated screenshot home and run a SECOND gateway on a free port (e.g. cp -R .dev-home .screenshot-home; PERSONALCLAW_HOME=$PWD/.screenshot-home <gateway> --port 10001). Cloning inherits the already-configured providers (ollama chat, faster-whisper stt, bindings) rather than re-wiring them, and keeps marketing data out of the :10000 validation instance. Seed the per-shot scenarios (below) via the real UI/API before capturing.",
     "theme": "dark",
@@ -33,7 +33,7 @@
       "appView": "Agentic chat session (with tool use + approval visible)",
       "minWidth": 1600,
       "minHeight": 1000,
-      "scenario": "A real multi-turn conversation where the agent moved from discussion into a tool call (e.g. reading a file or running a search), with the approval boundary / tool result visible in-thread. Believable developer topic. This is the product-page HERO (largest shot) — must look substantive.",
+      "scenario": "A real multi-turn conversation where the agent moved from discussion into a tool call (e.g. reading a file or running a search), with the approval boundary / tool result visible in-thread. Believable developer topic. Since 0.2.3 a turn waiting on an approval shows the agent orb and its 'Needs your OK' line above the request. This is the product-page HERO (largest shot) — must look substantive.",
       "value": "Move from conversation to tools and durable work without surrendering the approval boundary.",
       "placements": [
         {
@@ -236,7 +236,7 @@
       "appView": "Settings → Notifications (the per-kind delivery matrix)",
       "minWidth": 1200,
       "minHeight": 750,
-      "scenario": "The rules matrix with a REALISTIC spread of choices rather than all-defaults, so the four modes are legible: something noisy set to digest (heartbeats), something important on notify (loop needs input), something on badge, and one set to never. If a keyword/name-mention condition is configured, show it — that is the part that now works for loop requests and proposals, not just channel messages.",
+      "scenario": "The rules matrix with a REALISTIC spread of choices rather than all-defaults, so the four modes are legible: something noisy set to digest (heartbeats), something important on notify (loop needs input), something on badge, and one set to never. If a keyword/name-mention condition is configured, show it — that is the part that now works for loop requests and proposals, not just channel messages. Since 0.2.3 only approvals, questions and errors notify by default and everything else is a badge, so the reset marks sit on the rows set away from that.",
       "value": "A row per kind of notification with four choices — notify, badge, digest, never — so quietening one noisy kind no longer means raising the bar for everything.",
       "placements": [
         {
