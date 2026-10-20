@@ -127,6 +127,11 @@ The complete rationale, token system, interaction rules, responsive behavior, an
 
 When implementation and those documents disagree, treat the disagreement as a design decision to resolve, not permission for silent drift.
 
+The v0.3.0 redesign ([#84](https://github.com/PersonalClaw/personalclaw.dev/issues/84)) works from two more files, and PRODUCT.md and DESIGN.md win over both:
+
+- [SITE-REDESIGN.md](./SITE-REDESIGN.md), the redesign brief: which design skill applies when, the hard rules, the contracts every route keeps, and what done means for a redesign PR.
+- [.agents/skills/README.md](./.agents/skills/README.md), the design skills it names, each pinned to a commit with its licence and what it reaches over the network. None is vendored: each is installed per machine at its pin.
+
 ## Getting Started
 
 ### Prerequisites
@@ -315,6 +320,7 @@ There is one baseline set, `-linux`, made and compared inside one Playwright ima
 
 ```text
 .
+├── .agents/skills/      The design skills' pins (nothing vendored)
 ├── .github/             CI workflows, dependency updates and the supply-chain policy
 ├── public/brand/        Public brand mark and social preview
 ├── scripts/             Artifact and Lighthouse quality gates
@@ -330,7 +336,8 @@ There is one baseline set, `-linux`, made and compared inside one Playwright ima
 ├── tests/fixtures/      Registry inputs the render check rebuilds against
 ├── tests/support/       Shared public route contract, workflow reader and CI checks
 ├── DESIGN.md            Visual and interaction specification
-└── PRODUCT.md           Audience, positioning, and product brief
+├── PRODUCT.md           Audience, positioning, and product brief
+└── SITE-REDESIGN.md     The v0.3.0 redesign brief
 ```
 
 ## Content And Release Truth
