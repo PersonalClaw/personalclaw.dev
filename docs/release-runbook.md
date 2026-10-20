@@ -64,7 +64,12 @@ created), because every step below verifies against the published tag.
    - screenshots and marketing copy per `marketing/README.md` (every *shipping*
      shot is re-captured each release — a small UI shift changes the shot);
    - security content synchronized from core's threat model and limitations;
-   - any page section describing capabilities the release added.
+   - any page section describing capabilities the release added;
+   - the builders band's `app.json` on `/apps` (`BUILDERS_SNIPPET` in
+     `src/data/apps-snippet.mjs`), only when `sync:sources` says it drifted: it
+     is `web-tools/app.json` as the pinned apps commit has it, checked against
+     the pinned core's manifest rules, and the sync names the file or the rule
+     that moved.
 
    Content that is *generated* from the pins (`/release` facts, app directory
    names/categories/counts, the `/install` installer in `public/install` and its
@@ -101,7 +106,7 @@ created), because every step below verifies against the published tag.
 |---|---|---|
 | `validate:release-parity` | `test:static` → `test:ci` → pre-push, and the **Release version parity** CI job (strict) | website version ≠ published core tag; a `released` channel with no tag or no commit pin; a tag that doesn't resolve to the pinned commit; **core having published a newer release than the site pins**; **the registry having moved past its pin** |
 | `validate:release-parity` (installer) | the same places | offline: `public/install` hand-edited (its sha256 ≠ `core.installSha256`), or the pin moved without a sync (`core.installCommit` ≠ `core.commit`); strict: `public/install` ≠ the pinned commit's `deploy/website/install.sh` |
-| `sync:sources` | every `build` | manifest schema, pinned-tree verification against GitHub, core tag ≠ `pyproject` version, changelog/app-manifest sanity; writes `public/install` and records its digest |
+| `sync:sources` | every `build` | manifest schema, pinned-tree verification against GitHub, core tag ≠ `pyproject` version, changelog/app-manifest sanity; the `/apps` builders-band `app.json` ≠ the pinned file, or core's manifest rules moved past the check's; writes `public/install` and records its digest |
 | **Release follow** workflow | daily schedule + manual | a core release, or a registry change, published *after* the last website commit — opens/updates a tracking issue so a stale site can't sit unnoticed between pushes |
 | **Release follow**: served installer | the same run | the bytes served at `/install` differ from `public/install` on `main`, are not the newest core release's installer (an older release's installer fails even though it matches its own checksum), or disagree with that release's `install.sh.sha256` or `SHA256SUMS`; a signature in the release fails until a release key and verifier are configured here. A run that cannot fetch reports **unproven**; once the last proven run is older than 36 hours it reports **stale** and files the issue |
 

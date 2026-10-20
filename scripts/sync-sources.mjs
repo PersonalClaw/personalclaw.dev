@@ -6,6 +6,12 @@ import { promisify } from "node:util";
 import Ajv2020 from "ajv/dist/2020.js";
 import { parse as parseToml } from "smol-toml";
 import {
+  BUILDERS_SNIPPET,
+  CORE_MANIFEST_PATH,
+  manifestRulesDrift,
+  snippetDrift
+} from "../src/data/apps-snippet.mjs";
+import {
   INSTALLER_PATH,
   PUBLISHED_INSTALLER,
   PUBLISHED_INSTALLER_MODE,
@@ -657,6 +663,51 @@ async function buildAppFacts(source) {
   };
 }
 
+/** A missing path, as both source kinds report one: HTTP 404 (remote) or ENOENT (local). */
+function isMissingPath(error) {
+  return error?.status === 404 || error?.code === "ENOENT";
+}
+
+/** *relativePath* from *source*, or null when the pinned tree does not have it. */
+async function readIfPresent(source, relativePath) {
+  try {
+    return await source.readText(relativePath);
+  } catch (error) {
+    if (isMissingPath(error)) return null;
+    throw error;
+  }
+}
+
+/**
+ * Hold the builders band's app.json on /apps to the pins: the text is the file at the pinned
+ * apps commit, and the rules it is checked against are core's at the pinned core commit. See
+ * src/data/apps-snippet.mjs for why the text is committed and what the rules are. Throws on
+ * drift, naming what to update; a read that fails for another reason fails as itself.
+ */
+export async function checkBuildersSnippet(coreSource, appsSource) {
+  const [rules, snippet] = await Promise.all([
+    readIfPresent(coreSource, CORE_MANIFEST_PATH),
+    readIfPresent(appsSource, BUILDERS_SNIPPET.path)
+  ]);
+  const problems = [
+    ...(rules == null
+      ? [
+          `The pinned core commit has no ${CORE_MANIFEST_PATH}, where the builders band's ` +
+            "manifest rules are read. Update CORE_MANIFEST_PATH in src/data/apps-snippet.mjs."
+        ]
+      : manifestRulesDrift(rules)),
+    ...(snippet == null
+      ? [
+          `The pinned apps commit has no ${BUILDERS_SNIPPET.path}, the manifest the builders ` +
+            "band on /apps shows. Pick another first-party app in src/data/apps-snippet.mjs."
+        ]
+      : snippetDrift(snippet))
+  ];
+  if (problems.length > 0) {
+    throw new Error(`The builders band's app.json drifted from the pins:\n${problems.join("\n")}`);
+  }
+}
+
 function buildTimestamp() {
   const epoch = process.env.SOURCE_DATE_EPOCH;
   if (epoch == null) return new Date().toISOString();
@@ -692,7 +743,8 @@ async function main() {
     coreSource.readText("pyproject.toml"),
     coreSource.readText("CHANGELOG.md"),
     coreSource.readBytes(INSTALLER_PATH),
-    buildAppFacts(appsSource)
+    buildAppFacts(appsSource),
+    checkBuildersSnippet(coreSource, appsSource)
   ]);
 
   const project = parseToml(projectText);
