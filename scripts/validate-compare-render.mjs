@@ -29,6 +29,12 @@
 // position, or an id two elements share still renders and still resolves, and the link lands
 // on the wrong row or none. scripts/compare-row-ids.mjs holds the rules.
 //
+// THE FIFTH FAILURE, on another page. /product makes the same kind of claim in prose, and two
+// of its sentences said more than their rows: "no product telemetry" and "react to webhooks"
+// (docs/site-audit.md, P1 and P2). So a /product section that talks about a row's subject
+// must cite that row, /compare#<row>, no sentence may state a claim a row says does not
+// hold, and every citation must name a row. scripts/product-claims.mjs holds the rules.
+//
 //   npm run validate:compare      # after a build; reads DIST_DIR (default: dist)
 //
 // It reads src/data/capabilities.json DIRECTLY rather than through
@@ -47,6 +53,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { load } from "cheerio";
 import { declaredRowIdProblems, renderedRowIdProblems } from "./compare-row-ids.mjs";
+import { compareCitations, productClaimProblems } from "./product-claims.mjs";
 
 const repositoryRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const dataPath = join(repositoryRoot, "src", "data", "capabilities.json");
@@ -226,6 +233,19 @@ if (!existsSync(pagePath)) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// /product's claims cite the rows they touch, and state none a row says does not hold.
+// ---------------------------------------------------------------------------
+const productPath = join(distDirectory, "product", "index.html");
+let productCitations = [];
+if (!existsSync(productPath)) {
+  fail("/product was not published — the route is missing from the build");
+} else {
+  const html = readFileSync(productPath, "utf8");
+  for (const problem of productClaimProblems(html, rows)) fail(problem);
+  productCitations = compareCitations(html);
+}
+
 if (!/^\d{4}-\d{2}-\d{2}$/.test(data.checked_on ?? "")) {
   fail("src/data/capabilities.json has no ISO checked_on date");
 }
@@ -240,6 +260,8 @@ if (failures.length > 0) {
       `declared claim and statement, and linked by its key alone — ` +
       `${declaredCounts.yes} holding, ` +
       `${declaredCounts.partial} narrower than stated, ${declaredCounts.no} not in this ` +
-      `release. The page still publishes its own failures.`
+      `release. The page still publishes its own failures. /product cites ` +
+      `${productCitations.length} ${productCitations.length === 1 ? "row" : "rows"} ` +
+      `(${productCitations.join(", ")}) for the claims it makes about them.`
   );
 }

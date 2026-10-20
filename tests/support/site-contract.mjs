@@ -29,7 +29,7 @@ export const routes = [
     path: "/security",
     title: "Security \u00b7 PersonalClaw",
     description:
-      "How PersonalClaw constrains agent autonomy with host approvals, command policy, guarded egress, scoped app tokens, scanning, and tamper-evident logs."
+      "How PersonalClaw constrains agent autonomy with host approvals, command policy, guarded egress, scoped app tokens, scanning, and tamper-evident log entries."
   },
   {
     name: "release",
@@ -189,7 +189,7 @@ export const blogRoutes = [
     path: "/blog/launch",
     title: "A personal agent you can audit · PersonalClaw",
     description:
-      "Every claim in this post names the file that proves it, checked against the tagged release this site publishes — including the claims that did not survive the check."
+      "Every claim in this post names the file that proves it, checked against v0.1.3, the tagged release this site published when it went up — including the claims that did not survive the check."
   }
 ];
 

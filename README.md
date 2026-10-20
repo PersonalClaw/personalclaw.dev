@@ -177,7 +177,7 @@ The build runs Astro diagnostics before producing the static site in `dist/`.
 | `npm run validate:release-parity` | Checks the website version against the pinned + newest published core release (see [Release parity](#release-parity)) |
 | `npm run validate:registry` | Rebuilds `/registry` against fixture registries that carry listings and asserts what it renders |
 | `npm run validate:blog` | Asserts `/blog` renders one listing item per readable post, and that each post is published, contracted, and not an empty body |
-| `npm run validate:compare` | Refuses a `/compare` matrix that renders no rows, drifts from its data, sources a row to a branch instead of the pinned release, stops carrying the rows that do not hold, or gives a row an id other than its capability key (`/compare#telemetry`) or one another element shares |
+| `npm run validate:compare` | Refuses a `/compare` matrix that renders no rows, drifts from its data, sources a row to a branch instead of the pinned release, stops carrying the rows that do not hold, or gives a row an id other than its capability key (`/compare#telemetry`) or one another element shares; and refuses a `/product` section that talks about a row's subject without linking the row, a sentence that states a claim a row says does not hold, or a link to a row that does not exist |
 | `npm run validate:source-pins` | Refuses any hand-authored link into core, apps or the registry at a moving ref (`main`, `master`, `HEAD`, `latest`) — the same release-not-branch rule `validate:compare` applies to matrix rows, applied to page copy |
 | `npm run test:static` | Validates production and preview publication artifacts; with `-- --prebuilt`, tests a shared build instead of making one (see [One build per CI run](#one-build-per-ci-run)) |
 | `npm run build:preview:site` | Makes the noindex preview build into `.preview-dist/` from the current sync, without syncing again |
@@ -411,6 +411,15 @@ first thing an assistant reads. `scripts/llms-lead.mjs` refuses a lead that stat
 claim of a `partial` or `no` row, or one of the short forms it lists for that row, and
 `npm run sync:docs` will not write the file until the lead passes. A short form whose row
 comes to hold fails as stale. `tests/llms-lead.test.mjs` runs the same check without a sync.
+
+They bound `/product` too, the page that makes the same kind of claim in prose.
+`scripts/product-claims.mjs` holds three rules over the built page, and `npm run
+validate:compare` runs them: a section (or card) that talks about a row's subject links that
+row, `/compare#<row>`; no sentence states a `partial` or `no` row's claim or one of the lead's
+short forms, cited or not; and every such link names a row. A row's subject is the words
+`CLAIM_TOPICS` lists for it, and every row marked `partial` or `no` must have some, so a row
+added to the data is covered or the check fails. `tests/product-claims.test.mjs` plants each
+failure, starting with the two sentences the site audit found wider than their rows.
 
 ### <a name="release-parity"></a>Release parity
 

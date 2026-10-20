@@ -14,6 +14,7 @@
 //   - LEAD_SHORT_FORMS, the shorter ways a summary states one of those claims ("no
 //     telemetry" for "Zero telemetry."). Each entry must name a row that is `partial` or
 //     `no`: when a row comes to hold, its entry fails as stale and has to be removed.
+//     scripts/product-claims.mjs holds /product to the same list.
 //
 // WHAT IT CANNOT CLOSE. It matches words, not meaning. A lead can still overclaim in words
 // neither list holds; when a review finds one, add the phrase to its row's entry here.
@@ -39,6 +40,7 @@ export function compareRows() {
 export const LEAD_SHORT_FORMS = Object.freeze({
   telemetry: [
     "no telemetry",
+    "no product telemetry",
     "telemetry-free",
     "without telemetry",
     "never phones home",

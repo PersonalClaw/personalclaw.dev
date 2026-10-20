@@ -73,9 +73,21 @@ import { GITHUB_URL } from "../data/site";
  * and five JSONL logs. Chat history is JSONL and config is JSON; SQLite holds memory,
  * knowledge, the lexicon and loops.
  *
- * TRIGGERS. There is no webhook trigger KIND at this release — the trigger id parser
- * accepts schedule, lifecycle and event only. What exists is a Bearer-authenticated inbound
- * endpoint that runs an agent turn, wired with curl rather than picked from a list.
+ * WEBHOOKS. "React to webhooks" and "an inbound webhook endpoint" read as reachable from
+ * anywhere. At the pinned release both doors (`inbound/webhook.py`: a webhook automation's
+ * own address with a sender token made for it, and the agent-turn hook with the owner's
+ * webhook token) answer only programs on this machine and refuse any other address; a
+ * sender elsewhere comes in through a tunnel or relay the owner runs here. So the copy says
+ * "programs on this machine" and the section cites /compare#webhooks, which carries the
+ * same finding with its source.
+ *
+ * TELEMETRY. "No product telemetry" was wider than /compare's `telemetry` row: by default
+ * PersonalClaw asks GitHub whether a newer release exists, at start and on an interval, and
+ * a setting turns that off (the `disable_update_check` row). The closing section says both
+ * halves and cites the row. No interval is typed: the row carries it.
+ *
+ * Every section here that talks about a row's subject cites that row, and
+ * `npm run validate:compare` fails the build when one does not (scripts/product-claims.mjs).
  *
  * ARTIFACTS. Previews really render for widgets, HTML, React, documents, SVG and images,
  * but office and video types are routed down the image path and show a broken glyph — so
@@ -326,19 +338,21 @@ import { GITHUB_URL } from "../data/site";
         <p class="kicker">Automation</p>
         <h2 class="section-title">Let the system notice first.</h2>
         <p>
-          Schedule recurring work, react to webhooks, monitor connected
-          channels, and dispatch background subagents without building a second
-          automation stack. Anything that needs you lands in one inbox you can
-          answer in place &mdash; a loop waiting on a decision, a proposed
-          skill, an approval you walked away from.
+          Schedule recurring work, start work from a webhook a program on this
+          machine sends, monitor connected channels, and dispatch background
+          subagents without building a second automation stack. Anything that
+          needs you lands in one inbox you can answer in place &mdash; a loop
+          waiting on a decision, a proposed skill, an approval you walked away
+          from.
         </p>
         <ul class="feature-list">
-          <li>Cron and interval triggers, plus an inbound webhook endpoint</li>
+          <li>Cron and interval triggers, plus webhooks from programs on this machine</li>
           <li>One inbox for decisions, approvals, and messages</li>
           <li>Delivery per kind: notify, badge, digest, or never</li>
           <li>Background subagents</li>
           <li>Automatically matched workflow SOPs</li>
         </ul>
+        <a class="text-link" href="/compare#webhooks">What webhooks can and cannot do</a>
       </div>
     </div>
   </section>
@@ -541,8 +555,13 @@ import { GITHUB_URL } from "../data/site";
       <p class="kicker">Open source · self-hosted</p>
       <h2 class="section-title">Run the system on your machine.</h2>
       <p>
-        Python 3.12 or 3.13, an aiohttp gateway, React dashboard, state on disk as SQLite
-        plus plain JSON and JSONL, and no product telemetry.
+        Python 3.12 or 3.13, an aiohttp gateway, React dashboard, and state on disk as
+        SQLite plus plain JSON and JSONL. No analytics, no crash reporting and no usage
+        reporting; by default it does ask GitHub for a newer release when it starts and on
+        an interval, and one setting turns that off.
+      </p>
+      <p class="cta-source">
+        <a class="text-link" href="/compare#telemetry">What it sends, and what it does not</a>
       </p>
       <div>
         <a
@@ -752,6 +771,10 @@ import { GITHUB_URL } from "../data/site";
     color: var(--ink-soft);
   }
 
+  .feature-list + .text-link {
+    margin-top: 1rem;
+  }
+
   .feature-media {
     margin-right: min(-5vw, -2rem);
   }
@@ -932,6 +955,11 @@ import { GITHUB_URL } from "../data/site";
     max-width: 39rem;
     margin: 0 auto 2rem;
     color: var(--ink-soft);
+  }
+
+  .product-cta .cta-source {
+    margin-top: -1.25rem;
+    margin-bottom: 1.25rem;
   }
 
   .product-cta > div > div {
