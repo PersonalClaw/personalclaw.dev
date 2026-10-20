@@ -15,6 +15,7 @@ import {
   INSTALLER_PATH,
   PUBLISHED_INSTALLER,
   PUBLISHED_INSTALLER_MODE,
+  compareReleaseTags,
   pinnedFileUrl,
   recordInstaller
 } from "./served-installer.mjs";
@@ -491,6 +492,28 @@ function parseChangelog(markdown) {
   });
 }
 
+// How many releases Home's maturity chapter lists.
+const LATEST_RELEASE_COUNT = 3;
+const RELEASE_HEADING = /^\d+\.\d+\.\d+$/;
+
+/**
+ * The newest *count* releases in core's CHANGELOG.md, newest first: heading, date and lead
+ * summary, the way /release shows the current one. A release is a heading that is a plain
+ * version, so Unreleased and a pre-release heading are never one, and releases order by
+ * version, not by where the file puts them: a patch to an older line added later does not
+ * displace a newer release. A changelog with fewer releases gives fewer.
+ */
+function latestReleases(markdown, count) {
+  if (!Number.isInteger(count) || count < 1) {
+    throw new Error(`The release count must be a positive whole number, not ${String(count)}`);
+  }
+  return parseChangelog(markdown)
+    .filter((entry) => RELEASE_HEADING.test(entry.heading))
+    .sort((left, right) => compareReleaseTags(`v${right.heading}`, `v${left.heading}`))
+    .slice(0, count)
+    .map(({ heading, date, summary }) => ({ heading, date, summary }));
+}
+
 function validateAppManifest(manifest, relativePath) {
   const folderName = relativePath.split("/")[0];
   if (!manifest || typeof manifest !== "object" || Array.isArray(manifest)) {
@@ -794,7 +817,8 @@ async function main() {
       source: sourceFacts(manifest.sources.core),
       changelog: {
         currentVersion,
-        unreleased
+        unreleased,
+        latest: latestReleases(changelogText, LATEST_RELEASE_COUNT)
       }
     },
     apps: {
@@ -837,8 +861,9 @@ async function writeInstaller(manifest, installerBytes) {
 // Reused by scripts/sync-docs.mjs. Exported rather than duplicated: source
 // resolution carries the local-checkout-vs-pinned-remote rules, the commit
 // verification, and the released-tag validation — a second copy of that is a
-// second place for the pin contract to drift.
-export { loadManifest, resolveSource, validateReleaseTags, writeAtomically };
+// second place for the pin contract to drift. latestReleases is exported for its
+// unit test, tests/sync-sources-releases.test.mjs.
+export { latestReleases, loadManifest, resolveSource, validateReleaseTags, writeAtomically };
 
 // Only run the generator when invoked directly (`node scripts/sync-sources.mjs`),
 // so importing this module for its resolvers does not regenerate release facts.

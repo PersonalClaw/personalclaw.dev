@@ -76,9 +76,12 @@ const order = ["yes", "partial", "no"] as const;
           <ul class="rows">
             {group.rows.map((row) => {
               const shown = verdictPresentation(row.verdict);
+              // The row's capability key, never its position, so /compare#telemetry keeps
+              // reaching its row (scripts/compare-row-ids.mjs).
               return (
                 <li
                   class="row"
+                  id={row.id}
                   data-capability-row={row.id}
                   data-capability-verdict={row.verdict}
                 >

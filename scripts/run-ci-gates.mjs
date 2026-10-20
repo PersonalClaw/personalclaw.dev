@@ -31,6 +31,8 @@ export const unitTests = {
     "tests/sync-registry.test.mjs",
     "tests/served-installer.test.mjs",
     "tests/apps-snippet.test.mjs",
+    "tests/sync-sources-releases.test.mjs",
+    "tests/compare-row-ids.test.mjs",
   ],
 };
 
