@@ -37,6 +37,15 @@ import { releaseFacts } from "../data/release";
  * to listed hosts only when its tier says so. The
  * `egress_default_deny`, `single_chokepoint` and `egress_allowlist_exclusive` rows on
  * /compare carry the same three findings with their sources.
+ *
+ * THE LOG CARD SAYS WHAT THE VERIFIER CATCHES, AND WHAT IT DOES NOT. It said "HMAC-linked
+ * security events make alteration visible", and the decision path ended "Security event is
+ * linked". At the pinned release each entry carries an HMAC over its own record, so an entry
+ * edited in place fails `verify_integrity` in `sel.py`. The same function
+ * tolerates breaks in the `prev_hash` chain on purpose, since the gateway, channel and MCP
+ * processes append to one log without coordinating, so an entry removed from the file goes
+ * unreported. The card says both, and the /compare `audit_log` row carries the finding with
+ * its source.
  */
 
 // The threat model and the limitations page are LINKED IN-SITE, not to GitHub. Both are
@@ -53,7 +62,7 @@ const securityPolicyUrl =
 
 <BaseLayout
   title="Security · PersonalClaw"
-  description="How PersonalClaw constrains agent autonomy with host approvals, command policy, guarded egress, scoped app tokens, scanning, and tamper-evident logs."
+  description="How PersonalClaw constrains agent autonomy with host approvals, command policy, guarded egress, scoped app tokens, scanning, and tamper-evident log entries."
 >
   <section class="security-hero">
     <div class="shell">
@@ -160,8 +169,13 @@ const securityPolicyUrl =
         <article>
           <span>06</span>
           <Activity size={25} aria-hidden="true" />
-          <h3>Tamper-evident log</h3>
-          <p>HMAC-linked security events make alteration visible during later review.</p>
+          <h3>Tamper-evident entries</h3>
+          <p>
+            Each security event carries an HMAC over its own record, so the
+            integrity check catches an entry edited in place. It does not catch a
+            deleted entry: the check allows gaps in the chain, because several
+            processes write to one log.
+          </p>
         </article>
         <article>
           <span>07</span>
@@ -215,7 +229,7 @@ const securityPolicyUrl =
         <li>
           <span>Record</span>
           <Activity size={22} aria-hidden="true" />
-          <strong>Security event is linked</strong>
+          <strong>Security event is recorded</strong>
         </li>
       </ol>
     </div>

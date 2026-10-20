@@ -33,6 +33,7 @@ export const unitTests = {
     "tests/apps-snippet.test.mjs",
     "tests/sync-sources-releases.test.mjs",
     "tests/compare-row-ids.test.mjs",
+    "tests/product-claims.test.mjs",
   ],
 };
 

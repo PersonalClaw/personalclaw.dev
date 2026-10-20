@@ -8,19 +8,7 @@
 // a planted page, so a repeated id is shown to fail the build's own step.
 
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
-import {
-  copyFileSync,
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  rmSync,
-  symlinkSync,
-  writeFileSync
-} from "node:fs";
-import path from "node:path";
 import test from "node:test";
-import { fileURLToPath } from "node:url";
 
 import { capabilityMatrix } from "../src/data/capabilities.mjs";
 import {
@@ -28,62 +16,7 @@ import {
   declaredRowIdProblems,
   renderedRowIdProblems
 } from "../scripts/compare-row-ids.mjs";
-
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const dataPath = path.join(root, "src", "data", "capabilities.json");
-const readData = () => JSON.parse(readFileSync(dataPath, "utf8"));
-
-const escapeHtml = (value) =>
-  String(value)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;");
-
-const TONE = { yes: "verdict-yes", partial: "verdict-partial", no: "verdict-no" };
-const VERDICTS = ["yes", "partial", "no"];
-
-/**
- * A /compare page with everything validate-compare-render reads, rendered from `data` in the
- * page's group order. `rowId(row, position)` is a row's id attribute, null for none; `extra`
- * is markup added after the groups.
- */
-function comparePage(data, { rowId = (row) => row.id, extra = "" } = {}) {
-  const counts = { yes: 0, partial: 0, no: 0 };
-  for (const row of data.rows) counts[row.verdict] += 1;
-  let position = 0;
-  const groups = data.groups.map((group) => {
-    const rows = data.rows
-      .filter((row) => row.group === group.id)
-      .map((row) => {
-        position += 1;
-        const id = rowId(row, position);
-        return [
-          `<li class="row"${id == null ? "" : ` id="${escapeHtml(id)}"`}`,
-          ` data-capability-row="${escapeHtml(row.id)}" data-capability-verdict="${row.verdict}">`,
-          `<p class="verdict ${TONE[row.verdict]}">${row.verdict}</p>`,
-          `<h3 data-capability-claim>${escapeHtml(row.claim)}</h3>`,
-          `<p class="statement" data-capability-statement>${escapeHtml(row.statement)}</p>`,
-          `<a class="source" data-capability-source href="${escapeHtml(row.source_url)}">`,
-          `${escapeHtml(row.source_label)}</a></li>`
-        ].join("");
-      });
-    return (
-      `<section data-capability-group="${group.id}">` +
-      `<h2 id="group-${group.id}">${escapeHtml(group.label)}</h2>` +
-      `<ul>${rows.join("")}</ul></section>`
-    );
-  });
-  return [
-    '<!doctype html><html lang="en"><body><main id="main-content">',
-    "<h1>What it does</h1>",
-    `<ul>${VERDICTS.map((verdict) => `<li data-capability-count="${verdict}"><span class="count-n">${counts[verdict]}</span></li>`).join("")}</ul>`,
-    `<section><h2 id="how-to-read">How to read a verdict</h2><dl>${VERDICTS.map((verdict) => `<div data-capability-legend-item="${verdict}"><dt>${verdict}</dt><dd></dd></div>`).join("")}</dl></section>`,
-    ...groups,
-    extra,
-    "</main></body></html>"
-  ].join("\n");
-}
+import { comparePage, compareRun, readData } from "./support/compare-fixtures.mjs";
 
 /** The data with a second copy of the row `id`, as a hand edit that duplicated a row would. */
 function withRepeatedRow(data, id) {
@@ -182,31 +115,6 @@ test("any other repeated id on the page is named too", () => {
 });
 
 // ── end to end, through validate-compare-render ──────────────────────────────────────────
-
-/** validate-compare-render run on a copy of itself, with `data` and `page` planted. */
-function compareRun({ data, page }) {
-  const scratch = path.join(root, ".generated");
-  mkdirSync(scratch, { recursive: true });
-  const copy = mkdtempSync(path.join(scratch, "compare-row-ids-test-"));
-  try {
-    for (const directory of ["scripts", "src/data", "dist/compare"]) {
-      mkdirSync(path.join(copy, directory), { recursive: true });
-    }
-    for (const file of ["scripts/validate-compare-render.mjs", "scripts/compare-row-ids.mjs"]) {
-      copyFileSync(path.join(root, file), path.join(copy, file));
-    }
-    symlinkSync(path.join(root, "node_modules"), path.join(copy, "node_modules"), "dir");
-    writeFileSync(path.join(copy, "src", "data", "capabilities.json"), `${JSON.stringify(data, null, 2)}\n`);
-    writeFileSync(path.join(copy, "dist", "compare", "index.html"), page);
-
-    return spawnSync(process.execPath, [path.join(copy, "scripts", "validate-compare-render.mjs")], {
-      encoding: "utf8",
-      env: { ...process.env, DIST_DIR: "dist" }
-    });
-  } finally {
-    rmSync(copy, { recursive: true, force: true });
-  }
-}
 
 test("validate-compare-render passes the data and a page whose rows carry their keys", () => {
   const data = readData();

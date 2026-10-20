@@ -1,6 +1,6 @@
 ---
 title: "A personal agent you can audit"
-description: "Every claim in this post names the file that proves it, checked against the tagged release this site publishes — including the claims that did not survive the check."
+description: "Every claim in this post names the file that proves it, checked against v0.1.3, the tagged release this site published when it went up — including the claims that did not survive the check."
 publishDate: 2026-08-26
 verifiedAgainst: "v0.1.3"
 ---
@@ -10,16 +10,20 @@ verifiedAgainst: "v0.1.3"
 PersonalClaw is a self-hosted personal agent. It runs on your machine, talks to whichever
 model provider you point it at, and keeps your sessions, memory, knowledge and config in a
 directory you own. There is no account, no hosted control plane, and nothing to sign up
-for. It is MIT-licensed, needs Python 3.12 or newer, and this release is 0.1.3.
+for. It is MIT-licensed, needs Python 3.12 or newer, and the release this post was checked
+against is 0.1.3.
 
 That paragraph is easy to write and most projects write it. The rest of this post is the
 part that is hard to fake: the mechanisms that make it true, and the places where it is
 not true yet.
 
 **How to read it.** Every claim below names the file that proves it, in the tagged release
-this website publishes — `v0.1.3`, pinned commit `04389c96`. Where a claim was true in
-development but not in this release, it was cut, and the cut list at the end says which
-ones and why. That list is the most informative part of the post.
+this website published when the post went up on 26 August 2026 — `v0.1.3`, tag commit
+`04389c96`. Where a claim was true in development but not in this release, it was cut, and
+the cut list at the end says which ones and why. That list is the most informative part of
+the post. The site has published newer releases since, and this post is not re-checked
+against them: [what holds at the release the site publishes now](/compare) is on /compare,
+one sourced row per claim.
 
 ### Receipts
 
