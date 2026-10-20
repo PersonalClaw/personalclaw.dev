@@ -30,6 +30,7 @@ export const unitTests = {
     "tests/llms-lead.test.mjs",
     "tests/sync-registry.test.mjs",
     "tests/served-installer.test.mjs",
+    "tests/apps-snippet.test.mjs",
   ],
 };
 

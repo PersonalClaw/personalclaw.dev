@@ -24,6 +24,7 @@ import {
   siteOrigin,
   socialImagePath
 } from "../tests/support/site-contract.mjs";
+import { BUILDERS_SNIPPET, appManifestProblems } from "../src/data/apps-snippet.mjs";
 import { registryArtifactExists, registryListing } from "../src/data/registry.mjs";
 
 const root = process.cwd();
@@ -827,6 +828,27 @@ for (const route of routes) {
   for (const slug of catalogSlugs) {
     if (!pinnedNames.has(slug)) {
       fail(`apps.ts lists "${slug}", which does not exist at the pinned apps commit`);
+    }
+  }
+}
+
+// ── The builders band's app.json is the tested manifest, byte for byte ──────────────
+// src/data/apps-snippet.mjs holds it, tests/apps-snippet.test.mjs checks it against the
+// pinned core's manifest rules, and sync:sources holds it to the file at the pinned apps
+// commit. This holds the page to it, so the text the test checks is the text that ships:
+// a page that rendered anything else (an authored example, a trimmed copy) fails here.
+{
+  const shown = (await readHtml("/apps"))(".manifest code");
+  if (shown.length !== 1) {
+    fail(`/apps: expected one builders-band app.json, found ${shown.length}`);
+  } else if (shown.text() !== BUILDERS_SNIPPET.text) {
+    fail(
+      `/apps: the builders-band app.json is not ${BUILDERS_SNIPPET.path} as ` +
+        "src/data/apps-snippet.mjs: BUILDERS_SNIPPET holds it"
+    );
+  } else {
+    for (const problem of appManifestProblems(JSON.parse(shown.text()))) {
+      fail(`/apps: the builders-band app.json fails the pinned core's rules: ${problem}`);
     }
   }
 }

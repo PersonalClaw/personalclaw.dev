@@ -3,6 +3,7 @@ import { ArrowRight, Box, KeyRound, ScanSearch, ShieldCheck } from "lucide-react
 import { AppDirectory } from "../components/AppDirectory";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { appCategories, apps } from "../data/apps";
+import { BUILDERS_SNIPPET } from "../data/apps-snippet.mjs";
 import { releaseFacts } from "../data/release";
 import { APPS_URL } from "../data/site";
 
@@ -11,6 +12,10 @@ import { APPS_URL } from "../data/site";
 // this page describes the release. scripts/validate-source-pins.mjs enforces it.
 const appGuideUrl =
   `${releaseFacts.apps.source.repositoryUrl}/blob/${releaseFacts.apps.source.commit}/docs/app-creation-guide.md`;
+
+// The builders band shows a real first-party manifest, as the file reads at the pinned apps
+// release (src/data/apps-snippet.mjs). Named by the pin it was read at, never a typed version.
+const snippetPin = releaseFacts.apps.source.tag ?? releaseFacts.apps.source.shortCommit;
 
 // Trailing slash: AppDirectory appends the slug directly.
 const appTreeBase = `${releaseFacts.apps.source.repositoryUrl}/tree/${releaseFacts.apps.source.commit}/`;
@@ -124,12 +129,12 @@ const appTreeBase = `${releaseFacts.apps.source.repositoryUrl}/tree/${releaseFac
           permission is a declaration, not a fence.
         </p>
         <div class="manifest">
-          <span>app.json</span>
-          <code>{`{
-  "name": "your-app",
-  "provider": { "type": "tool" },
-  "permissions": { "network": false }
-}`}</code>
+          <span>{BUILDERS_SNIPPET.path} at {snippetPin}</span>
+          <code
+            tabindex="0"
+            role="region"
+            aria-label={`${BUILDERS_SNIPPET.path} at ${snippetPin}`}
+          >{BUILDERS_SNIPPET.text}</code>
         </div>
         <a
           class="button button-primary"
@@ -269,6 +274,13 @@ const appTreeBase = `${releaseFacts.apps.source.repositoryUrl}/tree/${releaseFac
     display: grid;
     grid-template-columns: 0.8fr 1.2fr;
     gap: clamp(3rem, 10vw, 10rem);
+  }
+
+  /* A grid item is as wide as its longest unbreakable line by default, and the manifest's
+     description is one long line. min-width: 0 keeps that line scrolling inside its code
+     block instead of widening the page. */
+  .build-layout > div {
+    min-width: 0;
   }
 
   .build-layout h2 {
