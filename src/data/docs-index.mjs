@@ -24,9 +24,9 @@ const artifactPath = path.join(process.cwd(), ".generated", "docs-index.json");
 
 /**
  * @typedef {{ route: string, title: string, source: string }} DocsPage
- * @typedef {{ dir: string, label: string, sourceDir: string, route: string, crossLinked: boolean, pages: DocsPage[] }} DocsTree
+ * @typedef {{ dir: string, label: string, sourceDir: string, route: string, prose: string, crossLinked: boolean, pages: DocsPage[] }} DocsTree
  * @typedef {{ repository: string, commit: string, tag: string | null }} DocsSource
- * @typedef {{ schemaVersion: number, core: DocsSource, landing: { route: string, title: string }, trees: DocsTree[] }} DocsIndex
+ * @typedef {{ schemaVersion: number, core: DocsSource, landing: { route: string, title: string, prose: string }, trees: DocsTree[] }} DocsIndex
  */
 
 /** @type {DocsIndex | null} */

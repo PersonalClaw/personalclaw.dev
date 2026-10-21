@@ -318,11 +318,35 @@ async function loadIndexDescriptions(source, tree, publishedFiles) {
 }
 
 /** Frontmatter for Starlight. Values are quoted, so escape embedded quotes. */
-function frontmatter(title, description) {
+function frontmatter(title, description, editUrl) {
   const esc = (s) => s.replace(/"/g, '\\"');
   const lines = [`title: "${esc(title)}"`];
   if (description) lines.push(`description: "${esc(description)}"`);
+  lines.push(`editUrl: "${esc(editUrl)}"`);
   return `---\n${lines.join("\n")}\n---\n`;
+}
+
+// "Edit page" opens the file a page is made from, so each page names it in its own
+// frontmatter. Starlight's site-wide `editLink.baseUrl` cannot: it appends the page's
+// path in THIS repository's collection (`src/content/docs/docs/<tree>/<page>.md`), a
+// path core does not have, so every docs page shipped a dead edit link. A synced page
+// edits core's file at the path it was read from; the landing and the section indexes
+// are prose this repository writes, so they edit that prose here. Both go to `main`,
+// each repository's default branch, because GitHub cannot edit at a tag.
+// scripts/validate-build.mjs checks every page's link against the docs index.
+const WEBSITE_REPOSITORY = "PersonalClaw/personalclaw.dev";
+
+/** A repository-relative path in URL form, whatever the platform's separator. */
+function urlPath(relativePath) {
+  return relativePath.split(path.sep).join("/");
+}
+
+function coreEditUrl(core, relativePath) {
+  return `https://github.com/${core.repository}/edit/main/${urlPath(relativePath)}`;
+}
+
+function proseEditUrl(prosePath) {
+  return `https://github.com/${WEBSITE_REPOSITORY}/edit/main/${urlPath(prosePath)}`;
 }
 
 /**
@@ -403,7 +427,7 @@ async function writePreface(tree, synced, core) {
   const markdown = body.join("\n");
   await writeFile(
     path.join(contentRoot, tree.dir, "index.md"),
-    frontmatter(title, summary) + "\n" + markdown,
+    frontmatter(title, summary, proseEditUrl(tree.preface)) + "\n" + markdown,
     "utf8"
   );
   // Returned rather than pushed into `synced`: that list is "pages generated from a
@@ -442,7 +466,7 @@ async function writeLanding(trees, synced, prefaces, core) {
 
   await writeFile(
     path.join(contentRoot, "index.md"),
-    frontmatter(title, summary) + "\n" + body.join("\n"),
+    frontmatter(title, summary, proseEditUrl(LANDING.preface)) + "\n" + body.join("\n"),
     "utf8"
   );
   return { title, summary, markdown: body.join("\n") };
@@ -529,7 +553,7 @@ async function main() {
 
       await writeFile(
         path.join(contentRoot, tree.dir, `${slug}.md`),
-        frontmatter(title, summary) + "\n" + body,
+        frontmatter(title, summary, coreEditUrl(manifest.sources.core, relativePath)) + "\n" + body,
         "utf8"
       );
       synced.push({ tree: tree.dir, slug, title, summary, source: relativePath });
@@ -686,12 +710,13 @@ async function main() {
       commit: manifest.sources.core.commit,
       tag: manifest.sources.core.tag
     },
-    landing: { route: "/docs", title: landing.title },
+    landing: { route: "/docs", title: landing.title, prose: urlPath(LANDING.preface) },
     trees: TREES.map((tree) => ({
       dir: tree.dir,
       label: tree.label,
       sourceDir: `docs/${sourceDirOf(tree)}`,
       route: `/docs/${tree.dir}`,
+      prose: urlPath(tree.preface),
       crossLinked: tree.crossLinked === true,
       pages: synced
         .filter((page) => page.tree === tree.dir)

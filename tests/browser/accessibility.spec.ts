@@ -42,6 +42,46 @@ for (const routePath of DOCS_SAMPLE) {
   });
 }
 
+// The docs have a second theme. Starlight follows the reader's colour-scheme preference
+// (and its theme picker), so a reader with a light system setting gets it unasked. The
+// suite runs dark (playwright.config.ts), and the light theme shipped dark surfaces under
+// a darker accent at 2.9:1 for as long as nothing here looked (D1 in docs/site-audit.md).
+// Reduced motion changes no colour, so that project, desktop's viewport again, is skipped.
+test.describe("in the light theme", () => {
+  test.use({ colorScheme: "light" });
+
+  for (const routePath of DOCS_SAMPLE) {
+    test(`${routePath} is light and has no automated WCAG A or AA violations`, async ({
+      page
+    }, testInfo) => {
+      test.skip(testInfo.project.name === "reduced-motion", "the light theme has no motion of its own");
+      await openPage(page, routePath);
+      await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+
+      // "Light" is a fact about the page, not about the attribute: the ground must be
+      // lighter than the text on it. The bug this guards against kept the attribute
+      // right and the surfaces dark.
+      const luminance = await page.evaluate(() => {
+        const channel = (value: number) => {
+          const c = value / 255;
+          return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+        };
+        const of = (colour: string) => {
+          const [r, g, b] = (colour.match(/\d+(?:\.\d+)?/g) ?? []).map(Number);
+          return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
+        };
+        const body = getComputedStyle(document.body);
+        return { ground: of(body.backgroundColor), text: of(body.color) };
+      });
+      expect.soft(luminance.ground, "page ground luminance").toBeGreaterThan(0.6);
+      expect.soft(luminance.text, "body text luminance").toBeLessThan(0.05);
+
+      const results = await new AxeBuilder({ page }).withTags(WCAG).analyze();
+      expect(results.violations).toEqual([]);
+    });
+  }
+});
+
 test("the docs sample covers every published tree", () => {
   // A new tree in sync-docs.mjs must gain a sample here, or it ships unchecked —
   // exactly the gap this block was added to close.
