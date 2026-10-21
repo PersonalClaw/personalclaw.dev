@@ -44,20 +44,20 @@ Edit `screenshots.manifest.json`:
 ### 2. Stand up the seeded screenshot instance
 
 Screenshots must show PersonalClaw **at its best with natural real-world data** — not the
-empty dev home used for behavior validation. Clone the working dev home rather than
-re-configuring providers from scratch:
+empty dev home used for behavior validation, and never the install's own home. Seed core's
+demo home into a scratch home and run a gateway for it on a free loopback port, as core's
+[`docs/screenshots/CAPTURE.md`](https://github.com/PersonalClaw/PersonalClaw/blob/main/docs/screenshots/CAPTURE.md)
+describes:
 
 ```sh
-# from the CORE repo (PersonalClaw/), against the RELEASED tag checkout:
-cp -R .dev-home .screenshot-home
-PERSONALCLAW_HOME="$PWD/.screenshot-home" PERSONALCLAW_AUTH_MODE=none \
-  .venv/bin/personalclaw gateway --no-open --port 10001
+# against the RELEASED tag's install:
+PERSONALCLAW_HOME=/tmp/pc-showcase personalclaw gateway --seed demo-home --seed-replace \
+  --port 10021 --no-open --json-ready
 ```
 
-Cloning inherits the already-configured providers (ollama chat, faster-whisper stt, model
-bindings), so no re-wiring. It also keeps marketing data out of the `:10000` validation
-instance. (Voice sidecars may be per-instance; if a voice surface is ever shot and
-contends, briefly stop `:10000` for that capture. Chat via ollama is shared-service safe.)
+The seed carries projects, tasks, knowledge documents and markdown memory, and binds no
+model. Install a model app, bind chat, and bind embedding and speech-to-text too, so no
+surface on screen is waiting on a model choice.
 
 ### 3. Seed the per-shot scenarios
 
@@ -76,9 +76,14 @@ For each `shipping` shot, capture the `appView` at the manifest's dimensions:
   upscales — the largest widths each placement requests are baked into `minWidth`).
 - Save as **PNG** to the shot's `asset` path (`src/assets/<id>.png`), overwriting.
 
-There is intentionally **no Playwright capture script**: faithful real-world data seeding
-can't be scripted reliably, and the manifest gives the reproducibility. Capture is done by
-the agent/operator driving the seeded instance per the manifest.
+Seeding can't be scripted reliably, so the manifest gives the reproducibility. Photographing
+can: `scripts/capture-app-shots.mjs` visits each `appView`, waits for it to settle and for
+the gateway connection, and writes `marketing/.captures/<id>.png` for review. Promote a shot
+into `src/assets/` only once it is reviewed:
+
+```sh
+PERSONALCLAW_TOKEN=… node scripts/capture-app-shots.mjs --base http://127.0.0.1:10021
+```
 
 ### 5. Drop assets + update copy
 
