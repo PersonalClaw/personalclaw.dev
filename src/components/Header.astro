@@ -108,7 +108,12 @@ const links = [
     }
   });
 
-  window.matchMedia("(min-width: 721px)").addEventListener("change", (event) => {
-    if (event.matches) setMenuState(false);
-  });
+  // The menu exists only while its button does, and which one shows depends on the
+  // header's width in rem (global.css), not on one viewport width: close the menu
+  // whenever the button stops rendering, from a wider window or smaller text alike.
+  if (button) {
+    new ResizeObserver(() => {
+      if (button.getClientRects().length === 0) setMenuState(false);
+    }).observe(button);
+  }
 </script>

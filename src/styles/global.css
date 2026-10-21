@@ -258,6 +258,10 @@ h3 {
 }
 
 .site-header {
+  /* The header lays itself out by its own width, measured in rem (see the
+     `site-header` container queries below), so its row follows the reader's text
+     size as well as the window. */
+  container: site-header / inline-size;
   position: sticky;
   z-index: 50;
   top: 0;
@@ -810,23 +814,13 @@ h3 {
   }
 }
 
-@media (max-width: 720px) {
-  body {
-    padding-right: env(safe-area-inset-right);
-    padding-left: env(safe-area-inset-left);
-  }
-
-  .shell,
-  .narrow {
-    width: min(calc(100% - 1.25rem), var(--shell));
-  }
-
-  .site-header {
-    min-height: 64px;
-  }
-
+/* The header's full row (the brand, six links and the button, with the links centred)
+   needs about 62rem: 995 px at default text, measured. Below that the header is the menu.
+   A viewport breakpoint held the row down to 721 px, and from there to 851 px the button
+   ran off the right edge, and at 200% text off every desktop window (X1 in
+   docs/site-audit.md). A query on the header's own width in rem moves with the text. */
+@container site-header (width < 64rem) {
   .header-inner {
-    min-height: 63px;
     grid-template-columns: 1fr auto;
     gap: 1rem;
   }
@@ -855,8 +849,11 @@ h3 {
       border-width 160ms ease;
   }
 
+  /* Room for every link, the button's included, at any text size; a short window
+     scrolls the menu rather than cutting its last links off. */
   .mobile-menu.is-open {
-    max-height: 320px;
+    max-height: calc(100dvh - 72px);
+    overflow-y: auto;
     border-bottom-width: 1px;
     opacity: 1;
     pointer-events: auto;
@@ -878,6 +875,38 @@ h3 {
 
   .mobile-menu a:last-child {
     border-bottom: 0;
+  }
+}
+
+/* At 200% text on a phone the wordmark and the menu button no longer fit side by side
+   (X2): the mark stays, and the link keeps its name from its label. */
+@container site-header (width < 14.5rem) {
+  .brand-link {
+    min-width: 44px;
+  }
+
+  .brand-link span {
+    display: none;
+  }
+}
+
+@media (max-width: 720px) {
+  body {
+    padding-right: env(safe-area-inset-right);
+    padding-left: env(safe-area-inset-left);
+  }
+
+  .shell,
+  .narrow {
+    width: min(calc(100% - 1.25rem), var(--shell));
+  }
+
+  .site-header {
+    min-height: 64px;
+  }
+
+  .header-inner {
+    min-height: 63px;
   }
 
   .section {

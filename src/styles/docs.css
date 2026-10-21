@@ -43,12 +43,33 @@
   --sl-color-black: var(--night);
 }
 
-/* Light mode: Starlight inverts the ramp itself, but the accent needs a darker coral
- * to stay ≥4.5:1 on white — #ff6b5b as link text on white is ~2.9:1, which fails. */
+/* Light mode. Starlight does set a light ramp of its own on `:root[data-theme="light"]`,
+ * but inside its cascade layers, and this file is unlayered: the dark ramp above beat it
+ * whatever the theme, so the light theme kept the dark surfaces under the darker accent
+ * below, at 2.9:1 (D1 in docs/site-audit.md). So the light theme states its whole ramp,
+ * from the same tokens turned over: --ink is the ground, --night the strongest text, and
+ * the rungs between run back up the palette. Measured against --ink #f2f1ed:
+ *   --night #0b0c0d (headings)       → 17.3:1
+ *   --surface-high #202224 (body)    → 14.1:1
+ *   --line-strong #3b3e41 (muted)    →  9.5:1
+ *   #b8351f (accent, link text)      →  5.2:1, and 4.9:1 on the tint below
+ * The one rung the palette has no value for is the tint under inline code and between
+ * hairlines, so it is mixed from two tokens rather than minted for /docs alone.
+ * #ff6b5b as link text on a light ground is ~2.9:1, which is why the accent is darker. */
 :root[data-theme="light"] {
   --sl-color-accent-low: #ffe4de;
   --sl-color-accent: #b8351f;
   --sl-color-accent-high: #7a2415;
+
+  --sl-color-white: var(--night);
+  --sl-color-gray-1: var(--surface);
+  --sl-color-gray-2: var(--surface-high);
+  --sl-color-gray-3: var(--line-strong);
+  --sl-color-gray-4: var(--ink-muted);
+  --sl-color-gray-5: var(--ink-soft);
+  --sl-color-gray-6: color-mix(in srgb, var(--ink) 85%, var(--ink-soft));
+  --sl-color-gray-7: var(--ink);
+  --sl-color-black: var(--ink);
 }
 
 /* The docs are generated from core's markdown, where a fenced block is often a long

@@ -25,6 +25,7 @@ import {
   socialImagePath
 } from "../tests/support/site-contract.mjs";
 import { BUILDERS_SNIPPET, appManifestProblems } from "../src/data/apps-snippet.mjs";
+import { docsIndex } from "../src/data/docs-index.mjs";
 import { registryArtifactExists, registryListing } from "../src/data/registry.mjs";
 
 const root = process.cwd();
@@ -36,6 +37,9 @@ const releaseFacts = JSON.parse(
 );
 
 const fail = (message) => failures.push(message);
+
+// This site's own repository: where the prose it writes over the docs corpus is edited.
+const WEBSITE_REPOSITORY = "PersonalClaw/personalclaw.dev";
 
 async function exists(filePath) {
   try {
@@ -408,6 +412,58 @@ for (const routePath of docsRoutePaths) {
   }
 }
 
+// "Edit page" has to open the file the page is made from. Starlight's default joins
+// `editLink.baseUrl` to the page's path in THIS repository's collection
+// (`src/content/docs/docs/<tree>/<page>.md`), a path core does not have, so every docs
+// page shipped a dead edit link (D3 in docs/site-audit.md). The expected target is
+// derived here from first principles rather than read back from what the sync wrote:
+// a synced page edits core's file at the path it was read from, and a page this
+// repository writes (the landing and the section indexes) edits its prose in this
+// repository, which must exist. Edits go to each repository's default branch, `main`,
+// because GitHub cannot edit at a tag.
+const docsEditTargets = new Map();
+{
+  const index = docsIndex();
+  const authored = (prose) =>
+    prose ? `https://github.com/${WEBSITE_REPOSITORY}/edit/main/${prose}` : null;
+  docsEditTargets.set(index.landing.route, {
+    url: authored(index.landing.prose),
+    prose: index.landing.prose
+  });
+  for (const tree of index.trees) {
+    docsEditTargets.set(tree.route, { url: authored(tree.prose), prose: tree.prose });
+    for (const page of tree.pages) {
+      docsEditTargets.set(page.route, {
+        url: `https://github.com/${index.core.repository}/edit/main/${page.source}`
+      });
+    }
+  }
+}
+for (const routePath of docsRoutePaths) {
+  const filePath = path.join(distDir, routeOutputPath(routePath));
+  if (!(await exists(filePath))) continue; // already reported by the docs loop above
+  const target = docsEditTargets.get(routePath);
+  if (!target?.url) {
+    fail(`${routePath}: the docs index names no source for its "Edit page" link`);
+    continue;
+  }
+  if (target.prose && !(await exists(path.join(root, target.prose)))) {
+    fail(`${routePath}: its prose ${target.prose} does not exist in this repository`);
+  }
+  const $ = load(await readFile(filePath, "utf8"));
+  const edits = $("footer .meta a")
+    .toArray()
+    .filter((anchor) => $(anchor).text().trim() === "Edit page");
+  if (edits.length !== 1) {
+    fail(`${routePath}: expected one "Edit page" link, found ${edits.length}`);
+    continue;
+  }
+  const href = $(edits[0]).attr("href");
+  if (href !== target.url) {
+    fail(`${routePath}: "Edit page" opens ${href}; it should open ${target.url}`);
+  }
+}
+
 // Republished cross-links are the one thing about a synced corpus that can be wrong
 // while looking right: `verification-and-judging.md` left un-rewritten renders as a
 // normal link and 404s. So every in-site link on those pages is resolved against the
@@ -427,10 +483,8 @@ for (const routePath of crossLinkedRoutePaths) {
     const href = $(anchor).attr("href");
     if (!href) continue;
     // An un-rewritten cross-link renders RELATIVE (`href="memory-architectures.md"`),
-    // so the check is scoped to relative hrefs. Absolute `.md` URLs are Starlight's own
-    // "Edit page" links, which are wrong on every docs page for an unrelated,
-    // pre-existing reason (editLink.baseUrl + the generated collection path) and are
-    // not this sweep's business.
+    // so the check is scoped to relative hrefs. Absolute `.md` URLs are GitHub links,
+    // such as a repo-escaping link the sync sent to the pinned commit.
     if (!/^(?:[a-z][a-z0-9+.-]*:)?\/\//i.test(href) && /\.mdx?($|[#?])/.test(href)) {
       fail(`${routePath}: un-rewritten markdown link "${href}" — it will 404`);
       continue;

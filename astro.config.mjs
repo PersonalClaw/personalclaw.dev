@@ -126,11 +126,11 @@ export default defineConfig({
         // the two renderers cannot publish two different shapes. See the file's header.
         Head: "./src/components/DocsHead.astro"
       },
-      editLink: {
-        // Docs are owned by core, so "edit this page" must point AT core — pointing
-        // at this repo would invite a PR that the drift check then deletes.
-        baseUrl: "https://github.com/PersonalClaw/PersonalClaw/edit/main/"
-      },
+      // No `editLink.baseUrl`: Starlight would append each page's path in this repo's
+      // collection, which core does not have. Each page names its own "Edit page"
+      // target instead (`editUrl`, written by scripts/sync-docs.mjs): core's file for a
+      // synced page, so an edit lands where the words are owned, and this repo's prose
+      // for the landing and the section indexes. A page without one shows no link.
       // Zero telemetry is a product feature and extends to this site: Starlight's
       // default search (Pagefind) is fully local, no external service.
       pagefind: true,
