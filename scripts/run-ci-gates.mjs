@@ -34,6 +34,7 @@ export const unitTests = {
     "tests/sync-sources-releases.test.mjs",
     "tests/compare-row-ids.test.mjs",
     "tests/product-claims.test.mjs",
+    "tests/site-audit-captures.test.mjs",
   ],
 };
 
