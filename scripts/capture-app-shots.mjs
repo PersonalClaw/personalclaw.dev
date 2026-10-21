@@ -9,7 +9,11 @@
 // Run against an ALREADY-SEEDED gateway (see the runbook): the scenarios in the manifest are
 // interaction, done first; this only photographs the result.
 //
-//   node scripts/capture-app-shots.mjs --base http://127.0.0.1:10001 [--only inbox,artifacts]
+//   PERSONALCLAW_TOKEN=… node scripts/capture-app-shots.mjs --base http://127.0.0.1:10001 [--only inbox,artifacts]
+//
+// The gateway keeps its own sign-in: the browser signs in the way the link `personalclaw token`
+// prints does (`/?token=…`), with the token taken from PERSONALCLAW_TOKEN and never printed. A
+// gateway run with its auth switched off needs no token.
 //
 // Every shot is written to marketing/.captures/<id>.png for review BEFORE anything is copied
 // into src/assets/ — a screenshot that silently replaces a good one is worse than a missing
@@ -60,6 +64,8 @@ const SHOTS = [
     // the last turn.
     scrollToEnd: true,
   },
+  // Knowledge, Memory and Artifacts are tabs of the Library destination (0.2.4); each keeps its
+  // own address.
   { id: "knowledge", hash: "#/knowledge", settle: 2600 },
   { id: "artifacts", hash: "#/artifacts", settle: 2600 },
   {
@@ -74,10 +80,13 @@ const SHOTS = [
     settle: 3000,
   },
   { id: "triggers", hash: "#/triggers", settle: 2400 },
-  // The Store is a view of the Apps page; `#/settings/apps` is the Store-sources settings.
-  { id: "apps", hash: "#/apps?view=store", settle: 2800 },
+  // The Store is a tab of the Capabilities destination (0.2.4), still the Apps page's store view;
+  // `#/settings/apps` is the Store-sources settings. The catalog loads after the page, so it gets
+  // longer to settle than a local list.
+  { id: "apps", hash: "#/apps?view=store", settle: 6000 },
   { id: "agents", hash: "#/agents", settle: 2600 },
-  { id: "memory", hash: "#/settings/memory", settle: 2600 },
+  // Memory left Settings for Library's Memory tab in 0.2.4; `#/settings/memory` now redirects.
+  { id: "memory", hash: "#/memory", settle: 2600 },
   {
     id: "notification-rules",
     hash: "#/settings/notifications",
@@ -109,6 +118,23 @@ const context = await browser.newContext({
   deviceScaleFactor: 1,
   reducedMotion: "reduce", // no half-played transitions in a still
 });
+if (process.env.PERSONALCLAW_TOKEN) {
+  let signIn;
+  try {
+    signIn = await context.request.get(
+      `${base}/?token=${encodeURIComponent(process.env.PERSONALCLAW_TOKEN)}`
+    );
+  } catch {
+    // Playwright's error carries the call log, and the call log carries the URL with the token
+    // in it, so the error is not printed: only that the gateway could not be reached.
+    console.error(`Could not reach the gateway at ${base} to sign this browser in.`);
+    process.exit(2);
+  }
+  if (!signIn.ok()) {
+    console.error(`The gateway at ${base} did not sign this browser in: HTTP ${signIn.status()}`);
+    process.exit(2);
+  }
+}
 const page = await context.newPage();
 
 const problems = [];
@@ -140,6 +166,13 @@ for (const shot of wanted) {
     await page.reload({ waitUntil: "domcontentloaded", timeout: 60000 });
   }
   await page.waitForTimeout(shot.settle);
+  // After the reload the status line says it is connecting until the gateway's socket is back;
+  // a still of that moment shows a transient banner, not the view.
+  await page
+    .getByText("Connecting to gateway", { exact: false })
+    .first()
+    .waitFor({ state: "hidden", timeout: 20000 })
+    .catch(() => problems.push("status line: still connecting to the gateway"));
 
   if (shot.scrollToEnd) {
     // The same inner-pane rule as scrollToText below: scroll every scrollable pane to its
