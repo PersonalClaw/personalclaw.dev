@@ -34,8 +34,38 @@ pins in `sources/personalclaw.sources.json`: core v0.2.3 (`c705b30264b9`), apps 
   its defaults contradict PRODUCT.md, PRODUCT.md wins (brief section 3), and those items are listed as
   set aside in [the skill's checklist](#the-redesign-skills-checklist-site-wide).
 - **Not done here.** Impeccable `critique`, the second pass #86's design names. It runs from npm and
-  this audit installs nothing; every page PR runs it at its gate anyway (brief section 2). No
-  screenshots are attached: every layout fact below comes from the measured page.
+  this audit installs nothing; every page PR runs it at its gate anyway (brief section 2). Every
+  layout fact below comes from the measured page; the captures came after it.
+
+### The captures
+
+Each route section links full-page captures of every page it read, at 390, 768, 1024 and 1440 px
+wide. The docs tier is captured in both of its themes; the rest of the site has one, dark. There
+are none at 320: at default text every route lays out at 320 as it does at 390 (each layout
+matrix's 390 row), and what breaks at 320 does so at 200% text, which a capture at default text
+does not show. They are for this review, not baselines: the visual baselines are made and compared
+in CI's pinned image ([Visual baselines](../README.md#visual-baselines)), and the shipping shots are
+the ones `marketing/screenshots.manifest.json` lists.
+
+- **The build.** Website `main` `a3cecb76fc6cbb26af560387b7886fe7eaa351ee` on 2026-10-20, at the
+  same pins, built with `npm run build` under Node 22.23.3. The two fixture pages come from a build
+  against `tests/fixtures/registry-listed.json`, as above.
+- **The capture.** The built pages served on a local port and captured on macOS in Chromium
+  156.0.8078.4 (Playwright 1.64.0, the locked version), one fresh context per capture at device
+  scale 1, with the window heights above. Each was taken once the web fonts and every image, lazy
+  ones included, had loaded, with animations stopped, and saved as a 256-colour PNG. No page threw,
+  and no request failed or answered an error; each docs page rendered the theme it was asked for.
+- **What moved since the measurements.** Three commits between `e543502` and `a3cecb7` fix findings
+  below, and some of the fixes show. The header shows its menu from 721 to 1023 px and the docs
+  light theme is light (X1 and D1, `a3cecb7`). The copy P1, P2, S1 and B1 quote is corrected
+  (`d984eaa`), which makes `/product`, `/security`, `/blog` and `/blog/launch` 26 to 208 px taller
+  than their matrices say. The others do not show in a capture: X2's header half is at 200% text, D3
+  is a link's target and C1 (`e242b58`) is the row ids. Every other height the matrices give at
+  these four widths is the capture's.
+- **The check.** `tests/site-audit-captures.test.mjs`, in `npm run test:unit`, holds each route
+  section to its captures: every linked file exists, is a PNG as wide as its column and is named
+  for its row's page, each docs page has both themes, and no file in `docs/site-audit/` goes
+  unlinked.
 
 **Severity**
 
@@ -104,6 +134,12 @@ has its own chrome (see [the docs tier](#the-docs-tier-docs)).
 | Job | Strongest proof | Primary action |
 |---|---|---|
 | One-pass understanding, along the belief ladder | Real captures plus release-derived facts | Install, downloaded for review first, with the checksum, signature and script shown before it runs |
+
+**Captures** ([how they were made](#the-captures)):
+
+| Page | 390 | 768 | 1024 | 1440 |
+|---|---|---|---|---|
+| `/` | [390](site-audit/home-390.png) | [768](site-audit/home-768.png) | [1024](site-audit/home-1024.png) | [1440](site-audit/home-1440.png) |
 
 **What stays**
 
@@ -215,6 +251,12 @@ removes them.
 |---|---|---|
 | The guided tour | The video plus annotated captures | Install, or open the docs |
 
+**Captures** ([how they were made](#the-captures)):
+
+| Page | 390 | 768 | 1024 | 1440 |
+|---|---|---|---|---|
+| `/product` | [390](site-audit/product-390.png) | [768](site-audit/product-768.png) | [1024](site-audit/product-1024.png) | [1440](site-audit/product-1440.png) |
+
 **What stays**
 
 - The tour's player: click to play, `preload="none"`, a poster, a captions track, and a 16:9 frame
@@ -291,6 +333,12 @@ removes them.
 |---|---|---|
 | The app directory and a build-an-app path | The live catalog from the pinned manifest | Browse, or read the app contract |
 
+**Captures** ([how they were made](#the-captures)):
+
+| Page | 390 | 768 | 1024 | 1440 |
+|---|---|---|---|---|
+| `/apps` | [390](site-audit/apps-390.png) | [768](site-audit/apps-768.png) | [1024](site-audit/apps-1024.png) | [1440](site-audit/apps-1440.png) |
+
 **What stays**
 
 - `AppDirectory`: search and category filters, `?q=` and `?category=` written with `replaceState`
@@ -363,6 +411,12 @@ removes them.
 |---|---|---|
 | Trust boundaries and known limits | Enforced controls with code citations | Read the threat model |
 
+**Captures** ([how they were made](#the-captures)):
+
+| Page | 390 | 768 | 1024 | 1440 |
+|---|---|---|---|---|
+| `/security` | [390](site-audit/security-390.png) | [768](site-audit/security-768.png) | [1024](site-audit/security-1024.png) | [1440](site-audit/security-1440.png) |
+
 **What stays**
 
 - The hero's candor: "not an operating-system jail", and the opt-in container and VM tier named as
@@ -430,6 +484,12 @@ removes them.
 |---|---|---|
 | Exactly what shipped, and how to verify it | Commits, SBOM, attestations | Verify a release |
 
+**Captures** ([how they were made](#the-captures)):
+
+| Page | 390 | 768 | 1024 | 1440 |
+|---|---|---|---|---|
+| `/release` | [390](site-audit/release-390.png) | [768](site-audit/release-768.png) | [1024](site-audit/release-1024.png) | [1440](site-audit/release-1440.png) |
+
 **What stays**
 
 - The two pinned commits and tags, with links, held by `validate:release-parity`.
@@ -492,6 +552,12 @@ removes them.
 |---|---|---|
 | What it does and doesn't do | Every row sourced to a file at the tag | Install |
 
+**Captures** ([how they were made](#the-captures)):
+
+| Page | 390 | 768 | 1024 | 1440 |
+|---|---|---|---|---|
+| `/compare` | [390](site-audit/compare-390.png) | [768](site-audit/compare-768.png) | [1024](site-audit/compare-1024.png) | [1440](site-audit/compare-1440.png) |
+
 **What stays**
 
 - 27 rows in five groups, each citing a file at v0.2.3 and checked on 2026-10-20: 11 hold, 12 are
@@ -546,6 +612,13 @@ ledger's other fields (C3).
 | Job | Strongest proof | Primary action |
 |---|---|---|
 | Posts verified against a named release | The release each claim was checked on | Follow by feed |
+
+**Captures** ([how they were made](#the-captures)):
+
+| Page | 390 | 768 | 1024 | 1440 |
+|---|---|---|---|---|
+| `/blog` | [390](site-audit/blog-390.png) | [768](site-audit/blog-768.png) | [1024](site-audit/blog-1024.png) | [1440](site-audit/blog-1440.png) |
+| `/blog/launch` | [390](site-audit/blog-launch-390.png) | [768](site-audit/blog-launch-768.png) | [1024](site-audit/blog-launch-1024.png) | [1440](site-audit/blog-launch-1440.png) |
 
 **What stays**
 
@@ -609,6 +682,14 @@ ledger's other fields (C3).
 At the pin the registry lists no apps, so `/registry` renders its empty state and no
 `/registry/<app>` page exists. One listing page (`/registry/registry-fixture-clean`) and the listed
 index were read from the fixture build.
+
+**Captures** ([how they were made](#the-captures)):
+
+| Page | 390 | 768 | 1024 | 1440 |
+|---|---|---|---|---|
+| `/registry`, at the pin | [390](site-audit/registry-390.png) | [768](site-audit/registry-768.png) | [1024](site-audit/registry-1024.png) | [1440](site-audit/registry-1440.png) |
+| `/registry`, fixture build | [390](site-audit/registry-fixture-390.png) | [768](site-audit/registry-fixture-768.png) | [1024](site-audit/registry-fixture-1024.png) | [1440](site-audit/registry-fixture-1440.png) |
+| `/registry/registry-fixture-clean`, fixture build | [390](site-audit/registry-registry-fixture-clean-390.png) | [768](site-audit/registry-registry-fixture-clean-768.png) | [1024](site-audit/registry-registry-fixture-clean-1024.png) | [1440](site-audit/registry-registry-fixture-clean-1440.png) |
 
 **What stays**
 
@@ -674,6 +755,22 @@ words, so only the theme and the docs layer are findings here.
 | Job | Strongest proof | Primary action |
 |---|---|---|
 | Running, extending, trusting | Generated from the pinned core commit | The getting-started guide |
+
+**Captures** in both themes ([how they were made](#the-captures)):
+
+| Page | 390 | 768 | 1024 | 1440 |
+|---|---|---|---|---|
+| `/docs` | [dark](site-audit/docs-390-dark.png), [light](site-audit/docs-390-light.png) | [dark](site-audit/docs-768-dark.png), [light](site-audit/docs-768-light.png) | [dark](site-audit/docs-1024-dark.png), [light](site-audit/docs-1024-light.png) | [dark](site-audit/docs-1440-dark.png), [light](site-audit/docs-1440-light.png) |
+| `/docs/guides` | [dark](site-audit/docs-guides-390-dark.png), [light](site-audit/docs-guides-390-light.png) | [dark](site-audit/docs-guides-768-dark.png), [light](site-audit/docs-guides-768-light.png) | [dark](site-audit/docs-guides-1024-dark.png), [light](site-audit/docs-guides-1024-light.png) | [dark](site-audit/docs-guides-1440-dark.png), [light](site-audit/docs-guides-1440-light.png) |
+| `/docs/reference` | [dark](site-audit/docs-reference-390-dark.png), [light](site-audit/docs-reference-390-light.png) | [dark](site-audit/docs-reference-768-dark.png), [light](site-audit/docs-reference-768-light.png) | [dark](site-audit/docs-reference-1024-dark.png), [light](site-audit/docs-reference-1024-light.png) | [dark](site-audit/docs-reference-1440-dark.png), [light](site-audit/docs-reference-1440-light.png) |
+| `/docs/architecture` | [dark](site-audit/docs-architecture-390-dark.png), [light](site-audit/docs-architecture-390-light.png) | [dark](site-audit/docs-architecture-768-dark.png), [light](site-audit/docs-architecture-768-light.png) | [dark](site-audit/docs-architecture-1024-dark.png), [light](site-audit/docs-architecture-1024-light.png) | [dark](site-audit/docs-architecture-1440-dark.png), [light](site-audit/docs-architecture-1440-light.png) |
+| `/docs/security` | [dark](site-audit/docs-security-390-dark.png), [light](site-audit/docs-security-390-light.png) | [dark](site-audit/docs-security-768-dark.png), [light](site-audit/docs-security-768-light.png) | [dark](site-audit/docs-security-1024-dark.png), [light](site-audit/docs-security-1024-light.png) | [dark](site-audit/docs-security-1440-dark.png), [light](site-audit/docs-security-1440-light.png) |
+| `/docs/research` | [dark](site-audit/docs-research-390-dark.png), [light](site-audit/docs-research-390-light.png) | [dark](site-audit/docs-research-768-dark.png), [light](site-audit/docs-research-768-light.png) | [dark](site-audit/docs-research-1024-dark.png), [light](site-audit/docs-research-1024-light.png) | [dark](site-audit/docs-research-1440-dark.png), [light](site-audit/docs-research-1440-light.png) |
+| `/docs/guides/getting-started` | [dark](site-audit/docs-guides-getting-started-390-dark.png), [light](site-audit/docs-guides-getting-started-390-light.png) | [dark](site-audit/docs-guides-getting-started-768-dark.png), [light](site-audit/docs-guides-getting-started-768-light.png) | [dark](site-audit/docs-guides-getting-started-1024-dark.png), [light](site-audit/docs-guides-getting-started-1024-light.png) | [dark](site-audit/docs-guides-getting-started-1440-dark.png), [light](site-audit/docs-guides-getting-started-1440-light.png) |
+| `/docs/reference/cli` | [dark](site-audit/docs-reference-cli-390-dark.png), [light](site-audit/docs-reference-cli-390-light.png) | [dark](site-audit/docs-reference-cli-768-dark.png), [light](site-audit/docs-reference-cli-768-light.png) | [dark](site-audit/docs-reference-cli-1024-dark.png), [light](site-audit/docs-reference-cli-1024-light.png) | [dark](site-audit/docs-reference-cli-1440-dark.png), [light](site-audit/docs-reference-cli-1440-light.png) |
+| `/docs/architecture/overview` | [dark](site-audit/docs-architecture-overview-390-dark.png), [light](site-audit/docs-architecture-overview-390-light.png) | [dark](site-audit/docs-architecture-overview-768-dark.png), [light](site-audit/docs-architecture-overview-768-light.png) | [dark](site-audit/docs-architecture-overview-1024-dark.png), [light](site-audit/docs-architecture-overview-1024-light.png) | [dark](site-audit/docs-architecture-overview-1440-dark.png), [light](site-audit/docs-architecture-overview-1440-light.png) |
+| `/docs/security/threat-model` | [dark](site-audit/docs-security-threat-model-390-dark.png), [light](site-audit/docs-security-threat-model-390-light.png) | [dark](site-audit/docs-security-threat-model-768-dark.png), [light](site-audit/docs-security-threat-model-768-light.png) | [dark](site-audit/docs-security-threat-model-1024-dark.png), [light](site-audit/docs-security-threat-model-1024-light.png) | [dark](site-audit/docs-security-threat-model-1440-dark.png), [light](site-audit/docs-security-threat-model-1440-light.png) |
+| `/docs/research/security-and-guardrails` | [dark](site-audit/docs-research-security-and-guardrails-390-dark.png), [light](site-audit/docs-research-security-and-guardrails-390-light.png) | [dark](site-audit/docs-research-security-and-guardrails-768-dark.png), [light](site-audit/docs-research-security-and-guardrails-768-light.png) | [dark](site-audit/docs-research-security-and-guardrails-1024-dark.png), [light](site-audit/docs-research-security-and-guardrails-1024-light.png) | [dark](site-audit/docs-research-security-and-guardrails-1440-dark.png), [light](site-audit/docs-research-security-and-guardrails-1440-light.png) |
 
 **What stays**
 
@@ -793,8 +890,9 @@ Each holds at `e543502`. The pre-push gate (`npm run test:prepush`) ran green on
 
 ## Questions for Gate A
 
-1. #86's "Done when" asks for screenshots at four widths. This audit has none; every layout fact
-   comes from the measured page. Attach captures at Gate A, or accept the measurements?
+1. #86's "Done when" asks for screenshots at four widths. Answered: each route section links its
+   captures at 390, 768, 1024 and 1440 px ([the captures](#the-captures)). The layout facts are
+   still the measured ones.
 2. Impeccable `critique`, #86's second pass, was not run here. Run it at Gate A, or leave it to each
    page PR's gate, where section 2 already requires it?
 3. The screen-reader rows come from Chromium's accessibility tree, not from a screen reader. Accept
