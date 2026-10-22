@@ -112,5 +112,15 @@ for (const size of FIRST_VIEWPORTS) {
       const caption = await box(systemWindow.locator(".system-caption"));
       expect(caption.top, "the caption starts below the capture").toBeGreaterThanOrEqual(shot.bottom - 0.5);
     }
+
+    // What follows on the theater starts beside or below the window's overhang, never under it.
+    const next = await box(page.locator("#trust-title"));
+    const textRight = await page.locator("#trust-title").evaluate((element) => {
+      const range = document.createRange();
+      range.selectNodeContents(element);
+      return Math.max(...[...range.getClientRects()].map((rect) => rect.right));
+    });
+    const covered = next.top < frame.bottom && textRight > frame.left;
+    expect(covered, "the next chapter's heading is not under the window").toBe(false);
   });
 }

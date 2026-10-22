@@ -17,7 +17,7 @@ test("primary navigation is keyboard operable", async ({ page }, testInfo) => {
 
   const destination =
     testInfo.project.name === "mobile"
-      ? page.getByRole("link", { name: "Product", exact: true }).last()
+      ? page.locator("#mobile-menu").getByRole("link", { name: "Product", exact: true })
       : page.getByRole("link", { name: "Product", exact: true }).first();
 
   if (testInfo.project.name === "mobile") {
@@ -37,6 +37,8 @@ test("primary navigation is keyboard operable", async ({ page }, testInfo) => {
 test("system tabs support roving keyboard navigation", async ({ page }) => {
   await openPage(page, "/");
 
+  // Four views: Home, a thread, a goal loop and Apps (#88).
+  await expect(page.getByRole("tab")).toHaveText(["Home", "Chat", "Loops", "Apps"]);
   const home = page.getByRole("tab", { name: "Home" });
   await tabTo(page, home);
   await page.keyboard.press("ArrowRight");
@@ -67,7 +69,7 @@ test("app search and category filters work by keyboard", async ({ page }) => {
   await expect(page).toHaveURL(/category=models/);
 });
 
-test("install command can be copied without a pointer", async ({
+test("the download command can be copied without a pointer", async ({
   page,
   context,
   baseURL
@@ -77,9 +79,12 @@ test("install command can be copied without a pointer", async ({
   });
   await openPage(page, "/");
 
-  const copy = page.locator(".copy-button");
-  await expect(copy).toHaveAccessibleName("Copy install command");
+  const install = page.locator(".home-hero").getByRole("button", { name: "Install PersonalClaw" });
+  await tabTo(page, install);
+  await page.keyboard.press("Enter");
+  const copy = page.locator("#install-panel .copy-button").first();
+  await expect(copy).toHaveAccessibleName("Copy download command");
   await tabTo(page, copy);
   await page.keyboard.press("Enter");
-  await expect(copy).toHaveAccessibleName("Install command copied");
+  await expect(copy).toHaveAccessibleName("Download command copied");
 });

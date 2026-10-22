@@ -1,98 +1,56 @@
 ---
-import { Image } from "astro:assets";
-import {
-  ArrowRight,
-  Bot,
-  Box,
-  Check,
-  CirclePause,
-  CirclePlay,
-  Database,
-  Eye,
-  KeyRound,
-  Network,
-  PlugZap,
-  ScanSearch,
-  ShieldCheck,
-  Terminal,
-  Workflow
-} from "lucide-react";
-import appsCapture from "../assets/apps.png";
+import { CirclePause, CirclePlay, ShieldCheck, Workflow } from "lucide-react";
+import inboxCapture from "../assets/inbox.png";
 import loopsCapture from "../assets/loops.png";
+import DeferredCapture from "../components/DeferredCapture.astro";
+import InstallPanel from "../components/InstallPanel.astro";
 import SystemWindow from "../components/SystemWindow.astro";
-import { CopyCommand } from "../components/CopyCommand";
 import BaseLayout from "../layouts/BaseLayout.astro";
-import { apps } from "../data/apps";
-import { installerPython } from "../data/installer.mjs";
+import { BUILDERS_SNIPPET } from "../data/apps-snippet.mjs";
+import { capabilityMatrix } from "../data/capabilities.mjs";
 import { releaseFacts } from "../data/release";
-import { GITHUB_URL, INSTALL_COMMAND } from "../data/site";
+import { INSTALL_PANEL_ID } from "../data/site";
+import { trustRows } from "../data/trust.mjs";
 
-// The quickstart names the Python the one-liner installs on, read from the installer /install
-// serves (src/data/installer.mjs), so the page and the script cannot name two versions.
-const INSTALLER_PYTHON = installerPython();
+// Home runs PRODUCT.md's belief ladder in five chapters (#88, SITE-REDESIGN.md section 5.1):
+// proof and install; delegation and control; the ownership boundary; apps and security; current
+// maturity. Every number and version below comes from releaseFacts or the /compare matrix, and
+// every link into core or apps is built from the commit the site pins.
+const core = releaseFacts.core;
+const coreBlob = `${core.source.repositoryUrl}/blob/${core.source.commit}`;
+const appsBlob = `${releaseFacts.apps.source.repositoryUrl}/blob/${releaseFacts.apps.source.commit}`;
 
-// The tape names apps by SLUG and resolves each one through src/data/apps.ts, whose names
-// and categories src/data/release.ts already checks against every manifest at the pinned
-// apps commit. So a bundle renamed or dropped between releases fails the build here
-// instead of leaving the homepage advertising an app that /apps cannot show.
-//
-// It used to be a literal array of twelve display strings. All twelve happened to be
-// correct, which is the problem with a transcribed list: it is only ever verified by
-// somebody choosing to re-check it, and nothing here was going to.
-const featuredSlugs = [
-  "openai-models",
-  "anthropic-models",
-  "bedrock-models",
-  "google-models",
-  "vllm-models",
-  "claude-code-agent",
-  "codex-agent",
-  "tavily-search",
-  "slack-channel",
-  "git-sync",
-  "minutes",
-  "growth"
+const trust = trustRows(core);
+
+// The FAQ answers in the /compare rows' own words where a row exists, so an answer cannot say more
+// than the row the matrix checked at the pin.
+const matrix = capabilityMatrix();
+const row = (id: string) => {
+  const found = matrix.rows.find((candidate) => candidate.id === id);
+  if (!found) throw new Error(`src/pages/index.astro: /compare has no row "${id}"`);
+  return found;
+};
+const models = releaseFacts.apps.categories.find((category) => category.name === "Models");
+if (!models) throw new Error("src/pages/index.astro: the pinned apps have no Models category");
+
+// What lives under ~/.personalclaw, by core's own inventory (src/personalclaw/durability/inventory.py
+// at the pin): its seven domains, each with stores it lists. A snapshot is exactly these domains.
+const homeDomains = [
+  { name: "Memory", stores: ["memory.db", "learning.db", "lessons.jsonl"] },
+  { name: "Knowledge", stores: ["knowledge.db", "sources", "research_reports.json"] },
+  { name: "Work", stores: ["sessions", "projects", "loop/loops.db", "artifacts"] },
+  { name: "Automation", stores: ["triggers.json", "crons.json", "workflows"] },
+  { name: "Platform", stores: ["apps", "agents", "skills", "inbox"] },
+  { name: "Config", stores: ["config.json", "active_models.json", "mcp.json"] },
+  { name: "Security", stores: ["credentials", "grants", "security_events.jsonl"] }
 ];
+const inventoryUrl = `${coreBlob}/src/personalclaw/durability/inventory.py`;
 
-/*
- * THE INSTALL LINE BELOW NO LONGER SAYS "every path installs the same release artifact".
- * That held for three of the four paths: uv, pipx and pip each install the one published
- * PyPI wheel. The container path does not. `deploy/compose/compose.yaml` PULLS two prebuilt
- * images — `personalclaw-gateway` and `personalclaw-web` — rather than installing the wheel,
- * so it is a different artifact and a different topology, and "one artifact" made Compose
- * sound like a packaging preference. It also does not BUILD: an earlier draft of this line
- * said Compose builds the tagged source, which is only true of the separate
- * `compose.build.yaml`; the default file resolves image tags and starts them.
- *
- * WORTH KNOWING BEFORE THIS LINE GROWS ANY CLAIM ABOUT THE CONTAINER DASHBOARD: the
- * published gateway image for v0.1.3 did not serve the SPA — measured then,
- * `GET /` on `personalclaw-gateway:latest` answered 503 "PersonalClaw — Build the dashboard"
- * while `/api/healthz` reported 200 and version 0.1.3. Compose still reaches a dashboard
- * because the `personalclaw-web` image serves it, which is exactly why this sentence names
- * a PAIR. Do not shorten it to "run the gateway in Docker and open the dashboard".
- *
- * (All of this is frontmatter, not a template comment: Astro emits template comments into
- * the HTML, and a retracted claim should not ship inside the page that retracted it.)
- *
- * THE `{" "}` IN THAT PARAGRAPH IS LOAD-BEARING. Astro's HTML compression drops the
- * newline-plus-indent between `see the` and the `<a>` on the next line, so the built markup
- * read `see the<a …>install guide</a>` — one glued word. The old sentence hid it: `theinstall`
- * did not fit the line, so `overflow-wrap` broke it mid-token at exactly the point the missing
- * space would have been, and the page looked correct. The rewrite above shortened the line
- * enough for both words to share it, and the defect became visible at 390px. An explicit
- * `{" "}` is the fix the release note below already uses for the same reason.
- */
-const appsBySlug = new Map(apps.map((app) => [app.slug, app]));
-const unknownFeatured = featuredSlugs.filter((slug) => !appsBySlug.has(slug));
-if (unknownFeatured.length > 0) {
-  throw new Error(
-    `src/pages/index.astro features app slug(s) that are not in the pinned app ` +
-      `directory: ${unknownFeatured.join(", ")}. Either the bundle was renamed or ` +
-      `removed upstream, or the slug is a typo — the homepage must not name an app ` +
-      `that /apps cannot show.`
-  );
-}
-const featuredApps = featuredSlugs.map((slug) => appsBySlug.get(slug)!.name);
+// The app belt: every category at the pinned apps commit, each opening /apps filtered to it.
+const categories = releaseFacts.apps.categories;
+const appGuideUrl = `${appsBlob}/docs/app-creation-guide.md`;
+
+const latest = core.changelog.latest;
 ---
 
 <BaseLayout>
@@ -102,20 +60,15 @@ const featuredApps = featuredSlugs.map((slug) => appsBySlug.get(slug)!.name);
         <div class="hero-copy">
           <span class="hero-mark" aria-hidden="true"></span>
           <h1 class="display" id="home-title">PersonalClaw</h1>
-          <p class="hero-line">One agentic OS.<br />Your machine. Your rules.</p>
+          <p class="hero-line">One agentic OS.<br />Your machine.<br />Your rules.</p>
           <p class="hero-support">
             Chat, autonomous goals, memory, knowledge, and automation behind one
             gateway you own.
           </p>
           <div class="hero-actions">
-            <a
-              class="button button-primary hero-cta"
-              href={GITHUB_URL}
-              target="_blank"
-              rel="noreferrer"
-            >
-              Get PersonalClaw
-            </a>
+            <button class="button button-primary hero-cta" type="button" popovertarget={INSTALL_PANEL_ID}>
+              Install PersonalClaw
+            </button>
             <a class="hero-tour-link" href="/product#tour">
               <CirclePlay size={18} aria-hidden="true" />
               Watch the tour
@@ -127,256 +80,256 @@ const featuredApps = featuredSlugs.map((slug) => appsBySlug.get(slug)!.name);
         </div>
       </div>
     </div>
-    <div class="hero-theater">
-      <div class="shell">
-        <ul class="hero-facts" aria-label="Project facts">
-          <li><Check size={15} aria-hidden="true" /> MIT licensed</li>
-          <li><Check size={15} aria-hidden="true" /> No usage tracking</li>
-          <li><Check size={15} aria-hidden="true" /> Self-hosted</li>
-        </ul>
-      </div>
-    </div>
   </section>
 
-  <section class="section section-rule ownership" id="system">
+  <InstallPanel />
+
+  <section class="section trust" aria-labelledby="trust-title">
     <div class="shell">
-      <div class="statement">
-        <p class="kicker">Built for one owner</p>
-        <h2>Not another account. A system that belongs to you.</h2>
+      <div class="chapter-head">
+        <h2 class="section-title" id="trust-title">Check it before you trust it.</h2>
+        <p>Each claim names its evidence and the release it was last checked against.</p>
       </div>
-
-      <div class="ownership-grid">
-        <article>
-          <span class="index">01</span>
-          <Database size={24} aria-hidden="true" />
-          <h3>Your state stays home.</h3>
-          <p>
-            Conversations, memory, knowledge, configuration, and app state live
-            under one PersonalClaw home on infrastructure you control.
-          </p>
-        </article>
-        <article>
-          <span class="index">02</span>
-          <Eye size={24} aria-hidden="true" />
-          <h3>Autonomy stays visible.</h3>
-          <p>
-            Goal loops expose their plan, current cycle, tool activity, and
-            output. Pause, nudge, or stop the work at any time.
-          </p>
-        </article>
-        <article>
-          <span class="index">03</span>
-          <PlugZap size={24} aria-hidden="true" />
-          <h3>Every vendor is removable.</h3>
-          <p>
-            Model providers, search, speech, channels, tools, and agent runtimes
-            connect through an app boundary instead of the core.
-          </p>
-        </article>
-      </div>
-    </div>
-  </section>
-
-  <section class="section product-story">
-    <div class="shell story-layout">
-      <div class="story-copy">
-        <p class="kicker">Goal loops</p>
-        <h2 class="section-title">Delegate an outcome. Keep the controls.</h2>
-        <p>
-          PersonalClaw classifies a goal, builds a plan, and works cycle by
-          cycle under a deterministic supervisor. It can run without constant
-          prompting without disappearing behind a spinner.
-        </p>
-        <ul class="proof-list">
-          <li><CirclePause size={19} aria-hidden="true" /> Pause, nudge, or stop a loop</li>
-          <li><Workflow size={19} aria-hidden="true" /> Inspect every cycle and result</li>
-          <li><ShieldCheck size={19} aria-hidden="true" /> Keep tool approvals in the host</li>
-        </ul>
-        <a class="text-link" href="/product">
-          Tour the product <ArrowRight size={17} aria-hidden="true" />
-        </a>
-      </div>
-      <div class="story-media">
-        <Image
-          src={loopsCapture}
-          alt="A finished PersonalClaw goal loop with its cycle, time, spend, and the deliverable it reported"
-          widths={[640, 960, 1280]}
-          sizes="(max-width: 900px) 100vw, 62vw"
-          format="webp"
-          quality={86}
-        />
-      </div>
-    </div>
-  </section>
-
-  <section class="section section-rule architecture">
-    <div class="shell">
-      <div class="section-head">
-        <div>
-          <p class="kicker">One local gateway</p>
-          <h2>A coherent system, not a pile of prompts.</h2>
-        </div>
-        <p>
-          The gateway coordinates interfaces, agentic work, durable context, and
-          permission-gated apps. Core operation remains available without a
-          network connection.
-        </p>
-      </div>
-
-      <div class="system-path" aria-label="PersonalClaw system architecture">
-        <article>
-          <span>You</span>
-          <Terminal size={26} aria-hidden="true" />
-          <h3>Dashboard · CLI · channels</h3>
-        </article>
-        <span class="path-arrow" aria-hidden="true">→</span>
-        <article>
-          <span>Gateway</span>
-          <Network size={26} aria-hidden="true" />
-          <h3>One process, one API</h3>
-        </article>
-        <span class="path-arrow" aria-hidden="true">→</span>
-        <article>
-          <span>Agentic core</span>
-          <Bot size={26} aria-hidden="true" />
-          <h3>Chat · loops · automation</h3>
-        </article>
-        <span class="path-arrow" aria-hidden="true">→</span>
-        <article>
-          <span>Context</span>
-          <Database size={26} aria-hidden="true" />
-          <h3>Memory · knowledge · skills</h3>
-        </article>
-        <span class="path-arrow" aria-hidden="true">→</span>
-        <article>
-          <span>Apps</span>
-          <Box size={26} aria-hidden="true" />
-          <h3>Your vendors and tools</h3>
-        </article>
-      </div>
-    </div>
-  </section>
-
-  <section class="section ecosystem">
-    <div class="shell">
-      <div class="ecosystem-intro">
-        <div>
-          <p class="kicker">First-party ecosystem</p>
-          <h2 class="section-title">{releaseFacts.apps.total} apps. No permanent provider.</h2>
-        </div>
-        <a class="button button-secondary" href="/apps">
-          Browse all apps <ArrowRight size={18} aria-hidden="true" />
-        </a>
-      </div>
-
-      <div class="app-tape" aria-label="Featured first-party apps">
-        {featuredApps.map((app) => (
-          <span>{app}</span>
+      <ul class="trust-rows">
+        {trust.map((item) => (
+          <li data-trust-row={item.id}>
+            <p class="trust-claim">
+              {item.claim}
+              {item.verdict && <span class="trust-verdict"> {item.verdict}.</span>}
+            </p>
+            <p class="trust-evidence">
+              <span class="trust-label">Evidence</span>
+              {item.evidence}: <a href={item.href}>{item.label}</a>
+            </p>
+            <p class="trust-release">
+              <span class="trust-label">Last verified</span>
+              {item.verified}
+            </p>
+          </li>
         ))}
-      </div>
+      </ul>
+    </div>
+  </section>
 
-      <div class="ecosystem-stage">
-        <div class="ecosystem-note">
+  <section class="section delegation" aria-labelledby="delegation-title">
+    <div class="shell">
+      <h2 class="section-title chapter-title" id="delegation-title">Hand off the work. Keep the controls.</h2>
+      <div class="feature">
+        <div class="feature-copy">
+          <h3>Delegate a goal, not a prompt.</h3>
           <p>
-            Install models, search, tools, speech, channels, ACP agents, and
-            complete product interfaces from one permission-aware store.
+            A goal loop plans, works cycle by cycle under a deterministic supervisor, and reports
+            against the goal. It runs without constant prompting, and never behind a spinner.
           </p>
-          <dl>
-            <div>
-              <dt>{releaseFacts.apps.total}</dt>
-              <dd>First-party apps</dd>
-            </div>
-            <div>
-              <dt>{releaseFacts.apps.categoryCount}</dt>
-              <dd>App categories</dd>
-            </div>
-            <div>
-              <dt>1</dt>
-              <dd>App contract</dd>
-            </div>
-          </dl>
+          <ul class="proof-list">
+            <li><CirclePause size={19} aria-hidden="true" /> Pause, nudge, or stop a loop</li>
+            <li><Workflow size={19} aria-hidden="true" /> Inspect every cycle and result</li>
+          </ul>
         </div>
-        <Image
-          src={appsCapture}
-          alt="PersonalClaw app store showing installed and available apps"
-          widths={[640, 960, 1280]}
-          sizes="(max-width: 900px) 100vw, 68vw"
-          format="webp"
-          quality={86}
-        />
+        <div class="feature-media">
+          <DeferredCapture
+            src={loopsCapture}
+            alt="A finished PersonalClaw goal loop with its cycle, time, spend, and the deliverable it reported"
+            sizes="(max-width: 900px) 92vw, 58vw"
+          />
+        </div>
+      </div>
+      <div class="feature feature-flip">
+        <div class="feature-copy">
+          <h3>Approve from the keyboard.</h3>
+          <p>
+            When an agent wants a tool that needs your say, the request waits in the chat and in
+            your inbox. <kbd>Cmd</kbd> <kbd>Enter</kbd> (<kbd>Ctrl</kbd> <kbd>Enter</kbd> off a Mac)
+            approves the request that has keyboard focus. A delete, a change outside the chat's folder, a send to other people, spending, or a
+            tool that doesn't say what it does asks once more first.
+          </p>
+          <a class="text-link" href="/docs/guides/keyboard">Every key, in the keyboard guide</a>
+        </div>
+        <div class="feature-media">
+          <DeferredCapture
+            src={inboxCapture}
+            alt="The PersonalClaw inbox with a loop waiting on an answer and an agent request waiting on an approval"
+            sizes="(max-width: 900px) 92vw, 58vw"
+          />
+        </div>
       </div>
     </div>
   </section>
 
-  <section class="section security-band">
-    <div class="shell security-layout">
-      <div class="security-copy">
-        <p class="kicker">Security is architecture</p>
-        <h2 class="section-title">Autonomy with a boundary.</h2>
+  <section class="section boundary" aria-labelledby="boundary-title">
+    <div class="shell">
+      <div class="chapter-head">
+        <h2 class="section-title" id="boundary-title">Your state stays home.</h2>
         <p>
-          The model can propose. Deterministic controls decide what reaches your
-          shell, network, and installed app surface.
+          Everything PersonalClaw keeps lives in one folder on your machine. A model, a search
+          engine or a channel is reached through something you add.
         </p>
-        <a class="text-link" href="/security">
-          Inspect the security model <ArrowRight size={17} aria-hidden="true" />
-        </a>
       </div>
+      <figure class="boundary-map">
+        <div class="boundary-home" role="group" aria-labelledby="boundary-home-title">
+          <p class="boundary-title" id="boundary-home-title">
+            On your machine: <code>~/.personalclaw</code>
+          </p>
+          <ul class="boundary-domains">
+            {homeDomains.map((domain) => (
+              <li>
+                <span class="domain-name">{domain.name}</span>
+                <span class="domain-stores">{domain.stores.join(", ")}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div class="boundary-edge" aria-hidden="true"></div>
+        <div class="boundary-out" role="group" aria-labelledby="boundary-out-title">
+          <p class="boundary-title" id="boundary-out-title">Across the network, when you add it</p>
+          <ul class="boundary-apps">
+            <li>A model provider app you bind</li>
+            <li>A search provider app you bind</li>
+            <li>A channel app you connect</li>
+            <li>An MCP server you add</li>
+          </ul>
+          <p class="boundary-note">
+            The one call it makes on its own, the update check, is on{" "}
+            <a href="/compare#telemetry">/compare</a>, with how to turn it off.
+          </p>
+        </div>
+        <figcaption>
+          The domains and stores are core's own list, from{" "}
+          <a href={inventoryUrl}>durability/inventory.py</a> at {core.source.tag ?? core.source.shortCommit}. A snapshot is made of
+          exactly these domains.
+        </figcaption>
+      </figure>
+    </div>
+  </section>
 
-      <div class="security-controls">
-        <article>
-          <ShieldCheck size={22} aria-hidden="true" />
-          <div>
-            <h3>Host approval gate</h3>
-            <p>Tool policy remains outside the model and spawned agent.</p>
-          </div>
-        </article>
-        <article>
-          <ScanSearch size={22} aria-hidden="true" />
-          <div>
-            <h3>Quarantine and scanner gate</h3>
-            <p>App installation pauses before enablement when risk is detected.</p>
-          </div>
-        </article>
-        <article>
-          <KeyRound size={22} aria-hidden="true" />
-          <div>
-            <h3>Scoped app tokens</h3>
-            <p>Apps call the gateway with bounded tokens; their own code still runs as you, and the install review says so.</p>
-          </div>
-        </article>
+  <section class="section apps-security" aria-labelledby="apps-title">
+    <div class="shell">
+      <div class="chapter-head">
+        <h2 class="section-title" id="apps-title">Every vendor is an app.</h2>
+        <p>
+          Models, search, speech, channels, tools and agent runtimes are apps you install and
+          uninstall, each one a bundle with its own permissions.{" "}
+          {releaseFacts.apps.total} first-party apps ship at this release.
+        </p>
+      </div>
+      <ul class="app-belt" aria-label="App categories">
+        {categories.map((category) => (
+          <li>
+            <a href={`/apps?category=${category.name.toLowerCase()}`}>
+              {category.name} <span class="belt-count">{category.apps}</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+      <div class="build-on">
+        <div class="build-copy">
+          <h3>Build on it.</h3>
+          <p>
+            An app is a folder with an <code>app.json</code>. When someone installs it, it lands in
+            quarantine, a scan gives it a verdict, and it waits for their consent before it runs.
+          </p>
+          <a class="text-link" href={appGuideUrl}>The app creation guide</a>
+        </div>
+        <figure class="build-snippet">
+          <figcaption>{BUILDERS_SNIPPET.path}, a first-party app at the pinned apps commit</figcaption>
+          <pre tabindex="0" aria-label={`${BUILDERS_SNIPPET.path}`}><code>{BUILDERS_SNIPPET.text}</code></pre>
+        </figure>
+      </div>
+      <div class="security-note">
+        <ShieldCheck size={22} aria-hidden="true" />
+        <p>
+          The model proposes; deterministic controls outside it decide what reaches your shell,
+          your network and your apps. An app gets a scoped gateway token, and its own code still
+          runs as you. <a href="/security">How the boundary holds</a>
+        </p>
       </div>
     </div>
   </section>
 
-  <section class="section quickstart">
-    <div class="narrow">
-      <p class="kicker">Run it yourself</p>
-      <h2 class="section-title">One command to a local gateway.</h2>
-      <p class="quickstart-lede">
-        The installer brings its own Python {INSTALLER_PYTHON} via <code>uv</code> — nothing to
-        set up first. The dashboard opens at <code>localhost:10000</code> after
-        the gateway starts. Prefer <code>uv</code> directly, pipx, or pip? All
-        three install the same published wheel. Docker Compose runs a published
-        gateway and dashboard image pair instead — see the{" "}
-        <a href="/docs/guides/getting-started">install guide</a
-        >.
-      </p>
-      <CopyCommand command={INSTALL_COMMAND} client:idle />
-      <div class="release-note">
-        <strong>Package version {releaseFacts.core.versionLabel}.</strong>
+  <section class="section maturity" aria-labelledby="maturity-title">
+    <div class="shell maturity-layout">
+      <div class="maturity-copy">
+        <h2 class="section-title" id="maturity-title">Early, and honest about it.</h2>
         <p>
-          {releaseFacts.status.summary}{" "}
-          <a href="/release">Inspect the exact sources.</a>
+          PersonalClaw is pre-1.0: a release can change how your data is stored, with no automatic
+          migration. Run <code>personalclaw snapshot</code> before you update, and{" "}
+          <code>personalclaw restore</code> brings it back.{" "}
+          <a href="/compare">What holds and what doesn't, row by row</a>
         </p>
+        <h3>The latest releases</h3>
+        <ol class="releases">
+          {latest.map((release) => (
+            <li>
+              <p class="release-head">
+                <a href={`${core.source.repositoryUrl}/releases/tag/v${release.heading}`}>v{release.heading}</a>
+                <time datetime={release.date}>{release.date}</time>
+              </p>
+              <p class="release-summary">{release.summary}</p>
+            </li>
+          ))}
+        </ol>
       </div>
-      <a
-        class="button button-primary final-cta"
-        href={GITHUB_URL}
-        target="_blank"
-        rel="noreferrer"
-      >
-        Get PersonalClaw
-      </a>
+      <div class="faq" id="faq">
+        <h3>Questions</h3>
+        <details>
+          <summary>Does it phone home?</summary>
+          <p>{row("telemetry").statement}</p>
+          <p>{row("disable_update_check").statement}</p>
+          <p><a href="/compare#telemetry">The telemetry row</a> and <a href="/compare#disable_update_check">the update check row</a></p>
+        </details>
+        <details>
+          <summary>What runs locally?</summary>
+          <p>
+            The gateway, the dashboard and everything under <code>~/.personalclaw</code>.{" "}
+            {row("local_models").statement}
+          </p>
+          <p><a href="/compare#local_models">The local models row</a></p>
+        </details>
+        <details>
+          <summary>Which models work?</summary>
+          <p>
+            Any model a Models app connects, hosted or on your own machine. {models.apps} Models
+            apps ship at this release.
+          </p>
+          <p><a href="/apps?category=models">The Models apps</a></p>
+        </details>
+        <details>
+          <summary>Do I need Docker?</summary>
+          <p>
+            No. The installer uses <code>uv</code> and brings its own Python. Docker Compose is one
+            of the other ways to run it.
+          </p>
+          <p><a href="/docs/guides/getting-started">The install guide</a></p>
+        </details>
+        <details>
+          <summary>What breaks between 0.x versions?</summary>
+          <p>{row("data_stability").statement}</p>
+          <p>{row("backup_export").statement}</p>
+          <p><a href="/compare#data_stability">The data stability row</a> and <a href="/compare#backup_export">the backup row</a></p>
+        </details>
+        <details>
+          <summary>How do approvals work?</summary>
+          <p>
+            A tool that needs your say waits for it: Allow or Deny on the approval, or{" "}
+            <kbd>Cmd</kbd> <kbd>Enter</kbd> (<kbd>Ctrl</kbd> <kbd>Enter</kbd> off a Mac) on the one that
+            has keyboard focus, and the riskiest
+            actions ask once more.
+          </p>
+          <p><a href="/security">The security model</a></p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <section class="closing" aria-labelledby="closing-title">
+    <div class="shell closing-inner">
+      <h2 class="section-title" id="closing-title">Run it on your machine.</h2>
+      <div class="closing-actions">
+        <button class="button button-primary closing-cta" type="button" popovertarget={INSTALL_PANEL_ID}>
+          Install PersonalClaw
+        </button>
+        <a class="closing-docs" href="/docs">Read the docs</a>
+      </div>
     </div>
   </section>
 </BaseLayout>
@@ -386,8 +339,12 @@ const featuredApps = featuredSlugs.map((slug) => appsBySlug.get(slug)!.name);
      field, and the System Window hanging across the field's lower edge into the dark
      theater, so the brand and the product proof share the first screen. --hero-overlap
      is how far the window reaches past the coral; the theater's top padding returns it. */
-  .home-hero {
+  .home-hero,
+  .trust {
     --hero-overlap: clamp(6.5rem, 13vw, 12.5rem);
+  }
+
+  .home-hero {
     background: var(--theater);
   }
 
@@ -432,8 +389,9 @@ const featuredApps = featuredSlugs.map((slug) => appsBySlug.get(slug)!.name);
     font-size: var(--hero-display);
   }
 
+  /* Three lines, broken where the sentences end rather than by a measure in ch, which split
+     "One agentic OS." on a phone. */
   .hero-line {
-    max-width: 11ch;
     margin-bottom: 1.2rem;
     font-size: clamp(1.45rem, 2.7vw, 2.45rem);
     font-weight: 520;
@@ -495,124 +453,161 @@ const featuredApps = featuredSlugs.map((slug) => appsBySlug.get(slug)!.name);
     box-shadow: 0 32px 80px color-mix(in srgb, var(--coral-ink) 45%, transparent);
   }
 
-  .hero-theater {
-    padding-block: calc(var(--hero-overlap) + 1.5rem) 2.5rem;
-    border-bottom: 1px solid var(--line);
-  }
+  /* The trust chapter starts on the theater the window lands in: its heading sits beside the
+     window's lower half on desktop, and the rows begin below the window (see .trust). */
 
-  .hero-facts {
-    display: flex;
-    margin: 0;
-    padding: 0;
+
+  /* The chapters below the hero: each opens with its heading and one sentence, then one
+     dominant piece of proof. No kickers, no numbered labels, no cards. */
+  /* Heading over its one sentence, never a headline with a small explainer beside it. */
+  .chapter-head {
+    display: grid;
+    max-width: 52rem;
     gap: 1.25rem;
-    flex-wrap: wrap;
-    justify-content: end;
-    color: var(--ink-muted);
-    font-size: 0.82rem;
-    list-style: none;
+    margin-bottom: clamp(2.5rem, 5vw, 4rem);
   }
 
-  .hero-facts li {
-    display: inline-flex;
-    gap: 0.35rem;
-    align-items: center;
-  }
-
-  .hero-facts svg {
-    color: var(--success);
-  }
-
-  .statement {
-    display: grid;
-    grid-template-columns: 0.5fr 1.5fr;
-    gap: 2rem;
-    align-items: start;
-  }
-
-  .statement .kicker {
-    margin-top: 0.75rem;
-  }
-
-  .statement h2 {
-    max-width: 16ch;
-  }
-
-  .ownership-grid {
-    display: grid;
-    margin-top: clamp(4rem, 9vw, 8rem);
-    grid-template-columns: repeat(3, 1fr);
-    border-top: 1px solid var(--line);
-  }
-
-  .ownership-grid article {
-    position: relative;
-    padding: 2.25rem 2.5rem 0 0;
-    border-right: 1px solid var(--line);
-  }
-
-  .ownership-grid article + article {
-    padding-left: 2.5rem;
-  }
-
-  .ownership-grid article:last-child {
-    border-right: 0;
-  }
-
-  .ownership-grid .index {
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
-    color: var(--ink-muted);
-    font-family: var(--font-mono);
-    font-size: 0.72rem;
-  }
-
-  .ownership-grid svg {
-    margin-bottom: 3.5rem;
-    color: var(--coral);
-  }
-
-  .ownership-grid h3 {
-    margin-bottom: 0.65rem;
-    font-size: 1.35rem;
-    font-weight: 580;
-  }
-
-  .ownership-grid p {
-    max-width: 29rem;
+  .chapter-head h2,
+  .chapter-title {
     margin: 0;
-    color: var(--ink-soft);
   }
 
-  .product-story {
-    overflow: hidden;
-    background: var(--night-soft);
+  .chapter-title {
+    margin-bottom: clamp(2.5rem, 5vw, 4rem);
   }
 
-  .story-layout {
-    display: grid;
-    grid-template-columns: minmax(280px, 0.7fr) minmax(620px, 1.3fr);
-    gap: clamp(3rem, 7vw, 8rem);
-    align-items: center;
-  }
-
-  .story-copy h2,
-  .ecosystem-intro h2,
-  .security-copy h2,
-  .quickstart h2 {
-    margin-bottom: 1.5rem;
-  }
-
-  .story-copy > p:not(.kicker),
-  .security-copy > p:not(.kicker) {
+  .chapter-head p {
+    max-width: 34rem;
+    margin: 0;
     color: var(--ink-soft);
     font-size: 1.08rem;
   }
 
+  .text-link {
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
+    color: var(--coral-bright);
+    font-weight: 650;
+  }
+
+  .text-link:hover {
+    color: var(--ink);
+  }
+
+  /* Chapter 1, the proof: a claim, its evidence, the release it was checked at, on the
+     theater the window lands in. */
+  .trust {
+    padding-top: clamp(2.5rem, 4vw, 3.5rem);
+    background: var(--theater);
+  }
+
+  /* Beside the window on desktop: the heading keeps to the copy's column, and the head is
+     taller than the window's overhang, so the rows clear it. */
+  .trust .chapter-head {
+    max-width: min(46%, 36rem);
+    min-height: var(--hero-overlap);
+  }
+
+  .trust-rows {
+    margin: 0;
+    padding: 0;
+    border-top: 1px solid var(--line);
+    list-style: none;
+  }
+
+  .trust-rows li {
+    display: grid;
+    grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 0.55fr);
+    gap: 1.5rem;
+    align-items: baseline;
+    padding-block: 1.15rem;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .trust-rows p {
+    margin: 0;
+  }
+
+  .trust-claim {
+    color: var(--ink);
+    font-size: 1.08rem;
+  }
+
+  .trust-verdict {
+    color: var(--ink-soft);
+    font-weight: 600;
+  }
+
+  .trust-evidence,
+  .trust-release {
+    color: var(--ink-soft);
+  }
+
+  .trust-label {
+    display: block;
+    color: var(--ink-muted);
+    font-size: var(--fs-label);
+  }
+
+  /* Chapter 2: capture and text, alternating. */
+  .delegation {
+    background: var(--night-soft);
+  }
+
+  .feature {
+    display: grid;
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+    gap: clamp(2.5rem, 6vw, 6rem);
+    align-items: center;
+  }
+
+  .feature + .feature {
+    margin-top: clamp(4rem, 8vw, 7rem);
+  }
+
+  .feature-flip {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+  }
+
+  .feature-flip .feature-copy {
+    order: 2;
+  }
+
+  .feature-copy h3 {
+    margin-bottom: 1rem;
+    font-size: var(--fs-title);
+    font-weight: var(--fw-title);
+    line-height: var(--lh-title);
+  }
+
+  .feature-copy > p {
+    max-width: 34rem;
+    color: var(--ink-soft);
+    font-size: 1.08rem;
+  }
+
+  .feature-copy kbd {
+    padding: 0.05rem 0.4rem;
+    border: 1px solid var(--line-strong);
+    border-radius: 4px;
+    background: var(--theater-high);
+    color: var(--ink);
+    font-family: var(--font-mono);
+    font-size: var(--fs-mono);
+  }
+
+  .feature-media :global(img) {
+    width: 100%;
+    height: auto;
+    border: 1px solid var(--line-strong);
+    border-radius: 8px;
+  }
+
   .proof-list {
     display: grid;
-    padding: 1.25rem 0;
-    gap: 0;
+    margin: 1.25rem 0 0;
+    padding: 0;
     list-style: none;
   }
 
@@ -626,274 +621,372 @@ const featuredApps = featuredSlugs.map((slug) => appsBySlug.get(slug)!.name);
   }
 
   .proof-list svg {
-    color: var(--coral);
+    color: var(--ink-muted);
   }
 
-  .text-link {
-    display: inline-flex;
-    min-height: 44px;
-    gap: 0.45rem;
-    align-items: center;
-    color: var(--coral-bright);
+  /* Chapter 3: the boundary, drawn in HTML so its words stay text. */
+  .boundary-map {
+    display: grid;
+    grid-template-columns: minmax(0, 1.7fr) auto minmax(0, 1fr);
+    margin: 0;
+    gap: clamp(1.25rem, 3vw, 2.5rem);
+    align-items: stretch;
+  }
+
+  .boundary-home,
+  .boundary-out {
+    padding: clamp(1.25rem, 3vw, 2rem);
+    border-radius: 8px;
+  }
+
+  .boundary-home {
+    border: 1px solid var(--line-strong);
+    background: var(--theater);
+  }
+
+  .boundary-out {
+    border: 1px dashed var(--line-strong);
+  }
+
+  .boundary-title {
+    margin-bottom: 1.25rem;
+    color: var(--ink);
     font-weight: 650;
   }
 
-  .text-link:hover {
-    color: var(--ink);
-  }
-
-  .story-media {
-    margin-right: min(-6vw, -2rem);
-  }
-
-  .story-media :global(img),
-  .ecosystem-stage :global(img) {
-    width: 100%;
-    border: 1px solid var(--line-strong);
-    border-radius: 8px;
-    box-shadow: 0 35px 90px rgba(0, 0, 0, 0.42);
-  }
-
-  .system-path {
+  .boundary-domains {
     display: grid;
-    grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr auto 1fr;
-    align-items: stretch;
-    border-block: 1px solid var(--line);
-  }
-
-  .system-path article {
-    display: flex;
-    min-height: 210px;
-    padding: 1.4rem;
-    flex-direction: column;
-  }
-
-  .system-path article > span {
-    color: var(--ink-muted);
-    font-family: var(--font-mono);
-    font-size: 0.72rem;
-  }
-
-  .system-path svg {
-    margin: auto 0 1rem;
-    color: var(--coral);
-  }
-
-  .system-path h3 {
+    grid-template-columns: repeat(auto-fit, minmax(min(12rem, 100%), 1fr));
     margin: 0;
-    font-size: 1rem;
-    font-weight: 560;
+    padding: 0;
+    gap: 1rem 1.5rem;
+    list-style: none;
   }
 
-  .path-arrow {
+  .boundary-domains li {
     display: grid;
-    min-width: 38px;
-    place-items: center;
-    color: var(--coral);
-  }
-
-  .ecosystem {
-    overflow: hidden;
-  }
-
-  .ecosystem-intro {
-    display: flex;
-    gap: 2rem;
-    align-items: end;
-    justify-content: space-between;
-  }
-
-  .ecosystem-intro h2 {
-    max-width: 13ch;
-    margin-bottom: 0;
-  }
-
-  .app-tape {
-    display: flex;
-    width: max-content;
-    margin: 4rem 0;
-    gap: 0.55rem;
-    transform: translateX(-3rem);
-  }
-
-  .app-tape span {
-    display: inline-flex;
-    min-height: 44px;
-    padding: 0.55rem 1rem;
-    align-items: center;
-    border: 1px solid var(--line-strong);
-    border-radius: 999px;
-    color: var(--ink-soft);
-    white-space: nowrap;
-  }
-
-  .ecosystem-stage {
-    display: grid;
-    grid-template-columns: minmax(260px, 0.5fr) minmax(600px, 1.5fr);
-    gap: 3rem;
-    align-items: end;
-  }
-
-  .ecosystem-note > p {
-    color: var(--ink-soft);
-    font-size: 1.05rem;
-  }
-
-  .ecosystem-note dl {
-    display: grid;
-    margin: 3rem 0 0;
-    gap: 0;
-  }
-
-  .ecosystem-note dl div {
-    display: grid;
-    padding-block: 1rem;
-    grid-template-columns: 70px 1fr;
-    align-items: baseline;
+    align-content: start;
+    gap: 0.2rem;
+    padding-top: 0.75rem;
     border-top: 1px solid var(--line);
   }
 
-  .ecosystem-note dt {
-    color: var(--coral);
-    font-size: 1.6rem;
-    font-weight: 650;
+  .domain-name {
+    color: var(--ink);
+    font-weight: 600;
   }
 
-  .ecosystem-note dd {
+  .domain-stores {
+    color: var(--ink-muted);
+    font-family: var(--font-mono);
+    font-size: var(--fs-mono);
+  }
+
+  /* The edge of the machine: the one line everything outside has to cross. */
+  .boundary-edge {
+    width: 2px;
+    background: var(--line-strong);
+  }
+
+  .boundary-apps {
+    display: grid;
+    margin: 0 0 1.25rem;
+    padding: 0;
+    gap: 0.6rem;
+    color: var(--ink-soft);
+    list-style: none;
+  }
+
+  .boundary-note,
+  .boundary-map figcaption {
     margin: 0;
     color: var(--ink-muted);
-    font-size: 0.85rem;
+    font-size: var(--fs-label);
   }
 
-  .security-band {
-    border-block: 1px solid rgba(255, 107, 91, 0.22);
-    background:
-      linear-gradient(120deg, rgba(255, 107, 91, 0.1), transparent 38%),
-      #0d0e0f;
+  .boundary-map figcaption {
+    grid-column: 1 / -1;
   }
 
-  .security-layout {
-    display: grid;
-    grid-template-columns: 0.8fr 1.2fr;
-    gap: clamp(3rem, 10vw, 10rem);
+  /* Links inside running text keep a 44 px target, like every control on the site. */
+  .trust-evidence a,
+  .boundary-note a,
+  .boundary-map figcaption a,
+  .security-note a,
+  .maturity-copy a,
+  .faq a {
+    display: inline-flex;
+    min-width: 44px;
+    min-height: 44px;
     align-items: center;
+    color: var(--coral-bright);
+    font-weight: 600;
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.2em;
+    vertical-align: middle;
   }
 
-  .security-copy h2 {
-    max-width: 9ch;
+  /* Chapter 4: apps and security. */
+  .apps-security {
+    background: var(--night-soft);
   }
 
-  .security-controls {
-    border-top: 1px solid var(--line-strong);
+  .app-belt {
+    display: flex;
+    margin: 0 0 clamp(3rem, 6vw, 5rem);
+    padding: 0;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    list-style: none;
   }
 
-  .security-controls article {
-    display: grid;
-    min-height: 124px;
-    padding: 1.5rem 0;
-    grid-template-columns: 48px 1fr;
-    gap: 1rem;
-    align-items: start;
-    border-bottom: 1px solid var(--line-strong);
+  .app-belt a {
+    display: inline-flex;
+    min-height: 44px;
+    padding: 0.5rem 1rem;
+    gap: 0.6rem;
+    align-items: center;
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+    color: var(--ink);
+    font-weight: 600;
+    transition:
+      border-color 160ms ease,
+      background-color 160ms ease;
   }
 
-  .security-controls > article > svg {
-    color: var(--coral);
+  .app-belt a:hover {
+    border-color: var(--ink-muted);
+    background: var(--theater-high);
   }
 
-  .security-controls h3 {
-    margin-bottom: 0.25rem;
-    font-size: 1.1rem;
-  }
-
-  .security-controls p {
-    margin: 0;
+  .belt-count {
     color: var(--ink-muted);
+    font-weight: 500;
   }
 
-  .quickstart {
-    text-align: center;
+  .build-on {
+    display: grid;
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+    gap: clamp(2rem, 5vw, 5rem);
+    align-items: start;
   }
 
-  .quickstart .kicker {
-    justify-content: center;
+  .build-copy h3 {
+    margin-bottom: 1rem;
+    font-size: var(--fs-title);
+    font-weight: var(--fw-title);
+    line-height: var(--lh-title);
   }
 
-  .quickstart h2 {
-    margin-inline: auto;
-  }
-
-  .quickstart-lede {
-    max-width: 38rem;
-    margin: 0 auto 2.5rem;
+  .build-copy p {
+    max-width: 32rem;
     color: var(--ink-soft);
   }
 
-  .quickstart-lede a {
-    display: inline-flex;
-    min-height: 44px;
-    align-items: center;
-    color: var(--coral-bright);
-    text-decoration: underline;
-    text-decoration-color: rgba(255, 147, 125, 0.4);
-    text-underline-offset: 0.2em;
-    vertical-align: middle;
-  }
-
-  .quickstart-lede a:hover {
-    color: var(--ink);
-  }
-
-  .quickstart-lede code {
-    color: var(--coral-bright);
-    font-family: var(--font-mono);
-    font-size: 0.85em;
-  }
-
-  .quickstart :global(.command-block) {
-    text-align: left;
-  }
-
-  .release-note {
-    display: grid;
-    margin-top: 1.25rem;
-    padding: 1.25rem 0;
-    grid-template-columns: 180px 1fr;
-    gap: 1.5rem;
-    text-align: left;
-    border-block: 1px solid var(--line);
-  }
-
-  .release-note strong {
-    color: var(--amber);
-  }
-
-  .release-note p {
+  .build-snippet {
     margin: 0;
+  }
+
+  .build-snippet figcaption {
+    margin-bottom: 0.6rem;
+    color: var(--ink-muted);
+    font-size: var(--fs-label);
+  }
+
+  .build-snippet pre {
+    max-height: 22rem;
+    margin: 0;
+    padding: 1.1rem 1.25rem;
+    overflow: auto;
+    border: 1px solid var(--line-strong);
+    border-radius: 8px;
+    background: var(--well);
+    color: var(--ink-soft);
+    font-family: var(--font-mono);
+    font-size: var(--fs-mono);
+    line-height: var(--lh-mono);
+    white-space: pre-wrap;
+  }
+
+  .security-note {
+    display: flex;
+    max-width: 52rem;
+    margin-top: clamp(3rem, 6vw, 5rem);
+    gap: 1rem;
+    align-items: start;
+  }
+
+  .security-note svg {
+    flex: none;
+    margin-top: 0.2rem;
     color: var(--ink-muted);
   }
 
-  .release-note a {
+  .security-note p {
+    margin: 0;
+    color: var(--ink-soft);
+    font-size: 1.08rem;
+  }
+
+  /* Chapter 5: current maturity. */
+  .maturity-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: clamp(2.5rem, 6vw, 6rem);
+    align-items: start;
+  }
+
+  .maturity-copy > p {
+    margin-bottom: 2.5rem;
+    color: var(--ink-soft);
+    font-size: 1.08rem;
+  }
+
+  .maturity h3 {
+    margin-bottom: 1rem;
+    font-size: var(--fs-label);
+    font-weight: 650;
+  }
+
+  .releases {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .releases li {
+    padding-block: 1rem;
+    border-top: 1px solid var(--line);
+  }
+
+  .release-head {
+    display: flex;
+    margin-bottom: 0.35rem;
+    gap: 1rem;
+    align-items: baseline;
+  }
+
+  .release-head time {
+    color: var(--ink-muted);
+    font-size: var(--fs-label);
+  }
+
+  /* Three lines, and a box exactly three lines tall: a summary can name a key (⌘, ⇧) that the
+     site's fonts don't carry, and a fallback glyph must not change the page's height. */
+  .release-summary {
+    display: -webkit-box;
+    max-height: calc(3 * var(--lh-body) * 1em);
+    margin: 0;
+    overflow: hidden;
+    color: var(--ink-soft);
+    line-height: var(--lh-body);
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+  }
+
+  .faq details {
+    border-top: 1px solid var(--line);
+  }
+
+  .faq details:last-of-type {
+    border-bottom: 1px solid var(--line);
+  }
+
+  .faq summary {
+    display: flex;
+    min-height: 56px;
+    gap: 1rem;
+    align-items: center;
+    justify-content: space-between;
+    color: var(--ink);
+    cursor: pointer;
+    font-weight: 600;
+    list-style: none;
+  }
+
+  .faq summary::-webkit-details-marker {
+    display: none;
+  }
+
+  /* The open and closed state, drawn: a plus that turns into a cross. */
+  .faq summary::after {
+    flex: none;
+    color: var(--ink-muted);
+    content: "+";
+    font-size: var(--fs-title);
+    font-weight: 300;
+    line-height: 1;
+    transition: transform 160ms ease;
+  }
+
+  .faq details[open] summary::after {
+    transform: rotate(45deg);
+  }
+
+  .faq details p {
+    max-width: 40rem;
+    margin: 0 0 0.9rem;
+    color: var(--ink-soft);
+  }
+
+  .faq details p:last-child {
+    margin-bottom: 1.25rem;
+  }
+
+  /* The closing call to action, back on coral, in coral ink. */
+  .closing {
+    padding-block: clamp(4.5rem, 9vw, 8rem);
+    background: var(--coral);
+    color: var(--coral-ink);
+  }
+
+  .closing :focus-visible {
+    outline-color: var(--coral-ink);
+  }
+
+  .closing-inner {
+    display: flex;
+    gap: 2rem;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+
+  .closing h2 {
+    margin: 0;
+    color: var(--coral-ink);
+  }
+
+  .closing-actions {
+    display: flex;
+    gap: 0.5rem 1.4rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .closing-cta {
+    background: var(--coral-ink);
+    color: var(--coral);
+  }
+
+  .closing-cta:hover {
+    background: var(--night);
+    color: var(--coral-bright);
+  }
+
+  .closing-docs {
     display: inline-flex;
     min-height: 44px;
     align-items: center;
-    color: var(--coral-bright);
+    color: var(--coral-ink);
+    font-weight: 650;
     text-decoration: underline;
-    text-decoration-color: rgba(255, 147, 125, 0.4);
-    text-underline-offset: 0.2em;
-    vertical-align: middle;
+    text-underline-offset: 0.3em;
   }
 
-  .release-note a:hover {
-    color: var(--ink);
-  }
-
-  .final-cta {
-    margin-top: 2.2rem;
-  }
-
-  /* The window rises into place but is never hidden: it is the first screen's proof, so a
-     paused or skipped animation still shows it. */
   @keyframes window-arrive {
     from {
       transform: translateY(1.25rem) scale(0.99);
@@ -908,32 +1001,12 @@ const featuredApps = featuredSlugs.map((slug) => appsBySlug.get(slug)!.name);
       grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
     }
 
-    .story-layout,
-    .ecosystem-stage {
-      grid-template-columns: 0.68fr 1.32fr;
-      gap: 2.5rem;
+    .trust-rows li {
+      grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
     }
 
-    .system-path {
-      grid-template-columns: 1fr 1fr 1fr;
-    }
-
-    .system-path article {
-      min-height: 170px;
-      border-right: 1px solid var(--line);
-      border-bottom: 1px solid var(--line);
-    }
-
-    .system-path article:nth-of-type(3) {
-      border-right: 0;
-    }
-
-    .system-path article:nth-of-type(n + 4) {
-      border-bottom: 0;
-    }
-
-    .path-arrow {
-      display: none;
+    .trust-release {
+      grid-column: 2;
     }
   }
 
@@ -954,21 +1027,11 @@ const featuredApps = featuredSlugs.map((slug) => appsBySlug.get(slug)!.name);
       margin-bottom: 1rem;
     }
 
-    /* The value prop and trust chips are conversion content — condensed here,
-       never dropped: phones are the most common first visit. */
+    /* The value prop is conversion content: condensed here, never dropped, since phones
+       are the most common first visit. */
     .hero-support {
       margin-bottom: 1.1rem;
       font-size: 0.94rem;
-    }
-
-    .hero-theater {
-      padding-bottom: 1.75rem;
-    }
-
-    .hero-facts {
-      gap: 0.75rem;
-      justify-content: start;
-      font-size: 0.75rem;
     }
 
     h1 {
@@ -980,91 +1043,48 @@ const featuredApps = featuredSlugs.map((slug) => appsBySlug.get(slug)!.name);
       font-size: 1.3rem;
     }
 
-    .statement,
-    .story-layout,
-    .ecosystem-stage,
-    .security-layout {
-      grid-template-columns: 1fr;
+    .feature,
+    .build-on,
+    .maturity-layout {
+      grid-template-columns: minmax(0, 1fr);
     }
 
-    .ownership-grid {
-      grid-template-columns: 1fr;
+    .feature-flip .feature-copy {
+      order: 0;
     }
 
-    .ownership-grid article,
-    .ownership-grid article + article {
-      min-height: 260px;
-      padding: 2rem 0;
-      border-right: 0;
-      border-bottom: 1px solid var(--line);
+    .boundary-map {
+      grid-template-columns: minmax(0, 1fr);
     }
 
-    .ownership-grid article:last-child {
-      border-bottom: 0;
+    /* The window spans the screen here, so the trust chapter starts below its overhang. */
+    .trust {
+      padding-top: calc(var(--hero-overlap) + 2.5rem);
     }
 
-    .ownership-grid svg {
-      margin-bottom: 2.5rem;
+    .trust .chapter-head {
+      max-width: none;
+      min-height: 0;
     }
 
-    .story-media {
-      margin: 0;
+    .boundary-edge {
+      width: auto;
+      height: 2px;
     }
 
-    .system-path {
-      grid-template-columns: 1fr 1fr;
+    .trust-rows li {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 0.5rem;
     }
 
-    .system-path article:nth-of-type(3) {
-      border-right: 1px solid var(--line);
-    }
-
-    .system-path article:nth-of-type(even) {
-      border-right: 0;
-    }
-
-    .system-path article:nth-of-type(n + 4) {
-      border-bottom: 1px solid var(--line);
-    }
-
-    .system-path article:last-child {
-      border-bottom: 0;
-    }
-
-    .ecosystem-intro {
-      align-items: start;
-      flex-direction: column;
+    .trust-release {
+      grid-column: auto;
     }
   }
 
   @media (max-width: 560px) {
     .hero-actions {
       gap: 0.25rem 1rem;
-    }
-
-    .statement {
-      gap: 1rem;
-    }
-
-    .system-path {
-      grid-template-columns: 1fr;
-    }
-
-    .system-path article,
-    .system-path article:nth-of-type(3),
-    .system-path article:nth-of-type(even) {
-      min-height: 150px;
-      border-right: 0;
-      border-bottom: 1px solid var(--line);
-    }
-
-    .app-tape {
-      margin-block: 2.8rem;
-    }
-
-    .release-note {
-      grid-template-columns: 1fr;
-      gap: 0.5rem;
     }
   }
 </style>

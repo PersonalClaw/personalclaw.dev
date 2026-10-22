@@ -38,6 +38,7 @@ export const unitTests = {
     "tests/product-claims.test.mjs",
     "tests/site-audit-captures.test.mjs",
     "tests/github-api.test.mjs",
+    "tests/install-commands.test.mjs",
   ],
 };
 
