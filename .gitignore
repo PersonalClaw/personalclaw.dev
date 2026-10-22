@@ -10,6 +10,8 @@ test-results/
 .env*.local
 .generated/
 .source-cache/
+# Content-addressed GitHub API answers kept by scripts/github-api.mjs for local builds (never in CI).
+.cache/
 
 # Linked git worktrees (`git worktree add .worktrees/<name>`), as core and apps ignore them.
 # Each one is an embedded git repository: `git add -A` would stage it as a gitlink to a path

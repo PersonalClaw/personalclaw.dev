@@ -18,6 +18,7 @@
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { githubJson } from "./github-api.mjs";
 import {
   INSTALLER_CHECKSUM_PATH,
   INSTALLER_PATH,
@@ -58,10 +59,9 @@ async function fetchBytes(url, headers = plainHeaders) {
   return Buffer.from(await response.arrayBuffer());
 }
 
-async function fetchJson(url) {
-  const response = await fetch(url, { headers: apiHeaders });
-  if (!response.ok) throw new Error(`GitHub request failed (${response.status}) for ${url}`);
-  return response.json();
+// Through scripts/github-api.mjs, which spares the shared API quota on local runs.
+function fetchJson(url) {
+  return githubJson(url, apiHeaders);
 }
 
 async function resolveTagCommit(repository, tag) {

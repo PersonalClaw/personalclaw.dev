@@ -3,6 +3,7 @@ import { access, chmod, mkdir, readFile, readdir, rename, rm, writeFile } from "
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { promisify } from "node:util";
+import { githubJson } from "./github-api.mjs";
 import Ajv2020 from "ajv/dist/2020.js";
 import { parse as parseToml } from "smol-toml";
 import {
@@ -219,12 +220,9 @@ function cacheDirectory(source) {
   return path.join(cacheRoot, repositoryName, source.commit);
 }
 
-async function fetchJson(url) {
-  const response = await fetch(url, { headers: githubHeaders });
-  if (!response.ok) {
-    throw new Error(`GitHub request failed (${response.status}) for ${url}`);
-  }
-  return response.json();
+// Through scripts/github-api.mjs, which spares the shared API quota on local runs.
+function fetchJson(url) {
+  return githubJson(url, githubHeaders);
 }
 
 async function fetchBytes(url) {

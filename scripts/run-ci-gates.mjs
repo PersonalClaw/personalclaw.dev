@@ -1,8 +1,10 @@
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { verifyRecord } from "./build-record.mjs";
+import { GITHUB_API_CACHE_DIR, cacheEnabled } from "./github-api.mjs";
 
 const PASS = "PASS";
 const FAIL = "FAIL";
@@ -35,6 +37,7 @@ export const unitTests = {
     "tests/compare-row-ids.test.mjs",
     "tests/product-claims.test.mjs",
     "tests/site-audit-captures.test.mjs",
+    "tests/github-api.test.mjs",
   ],
 };
 
@@ -351,10 +354,22 @@ if (isMain) {
     console.error(`Unknown argument(s): ${unknownArguments.join(", ")}`);
     process.exitCode = 2;
   } else {
-    const result = runCiGates({
-      staticOnly: process.argv.includes("--static"),
-      prebuilt: process.argv.includes("--prebuilt"),
-    });
-    process.exitCode = result.exitCode;
+    // A local run reads each live GitHub API URL once for all its steps (scripts/github-api.mjs),
+    // from a folder that is the run's alone and is deleted when the run ends. CI keeps no cache.
+    let runCache = null;
+    if (cacheEnabled()) {
+      mkdirSync(GITHUB_API_CACHE_DIR, { recursive: true });
+      runCache = mkdtempSync(path.join(GITHUB_API_CACHE_DIR, "run-"));
+      process.env.GITHUB_API_RUN_DIR = runCache;
+    }
+    try {
+      const result = runCiGates({
+        staticOnly: process.argv.includes("--static"),
+        prebuilt: process.argv.includes("--prebuilt"),
+      });
+      process.exitCode = result.exitCode;
+    } finally {
+      if (runCache) rmSync(runCache, { recursive: true, force: true });
+    }
   }
 }

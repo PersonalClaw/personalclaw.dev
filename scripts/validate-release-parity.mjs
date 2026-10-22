@@ -50,6 +50,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import Ajv2020 from "ajv/dist/2020.js";
 import { parse as parseToml } from "smol-toml";
+import { githubJson } from "./github-api.mjs";
 import {
   INSTALLER_PATH,
   PUBLISHED_INSTALLER,
@@ -102,14 +103,9 @@ function compareTags(left, right) {
   return 0;
 }
 
-async function fetchJson(url) {
-  const response = await fetch(url, { headers: githubHeaders });
-  if (!response.ok) {
-    const error = new Error(`GitHub request failed (${response.status}) for ${url}`);
-    error.status = response.status;
-    throw error;
-  }
-  return response.json();
+// Through scripts/github-api.mjs, which spares the shared API quota on local runs.
+function fetchJson(url) {
+  return githubJson(url, githubHeaders);
 }
 
 /** Every release tag in a repository, newest first. */
