@@ -29,9 +29,7 @@ test("primary navigation is keyboard operable", async ({ page }, testInfo) => {
   await tabTo(page, destination);
   await page.keyboard.press("Enter");
   await expect(page).toHaveURL("/product");
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-    "The whole system, under one roof."
-  );
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Watch it do the work.");
 });
 
 test("system tabs support roving keyboard navigation", async ({ page }) => {

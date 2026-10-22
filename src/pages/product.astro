@@ -1,179 +1,220 @@
 ---
 import { Image } from "astro:assets";
-import {
-  ArrowRight,
-  BellRing,
-  Bot,
-  Brain,
-  Check,
-  CirclePause,
-  Clock3,
-  Eye,
-  FileSearch,
-  GitFork,
-  Inbox,
-  Layers,
-  MessagesSquare,
-  ShieldCheck,
-  Sparkles,
-  Stethoscope,
-  Workflow
-} from "lucide-react";
+import { CirclePlay } from "lucide-react";
 import agentsCapture from "../assets/agents.png";
-import artifactsCapture from "../assets/artifacts.png";
 import chatCapture from "../assets/chat.png";
-import doctorCapture from "../assets/doctor.png";
-import guardrailsCapture from "../assets/guardrails.png";
-import inboxCapture from "../assets/inbox.png";
 import knowledgeCapture from "../assets/knowledge.png";
+import loopsCapture from "../assets/loops.png";
 import memoryCapture from "../assets/memory.png";
-import notificationRulesCapture from "../assets/notification-rules.png";
 import triggersCapture from "../assets/triggers.png";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { GITHUB_URL } from "../data/site";
+import { CHAPTER_PARAM, tourChapters } from "../data/tour.mjs";
 
 /*
- * WHY SEVERAL CLAIMS ON THIS PAGE ARE NARROWER THAN THEY WERE.
+ * WHY SEVERAL CLAIMS ON THIS PAGE ARE NARROWER THAN THEY COULD BE.
  *
- * Every feature bullet below was read against the RELEASED tag this site publishes, and the
- * ones that only held on core's development branch were narrowed or cut. Recorded here in
+ * Every claim below was read against the RELEASED tag this site pins (core v0.2.4, apps
+ * v0.2.2), and the ones that hold only in part say only the part that holds. Recorded here in
  * the frontmatter rather than beside the markup on purpose: an Astro template comment is
- * emitted into the HTML, and a retracted claim quoted verbatim in the shipped page is a
- * string a reader — or a scraper — can still find and believe.
+ * emitted into the HTML, and a retracted claim quoted verbatim in the shipped page is a string
+ * a reader — or a scraper — can still find and believe (docs/site-audit.md, P12).
  *
- * CUT ENTIRELY — the safety-profile bullet. `guardrails/policy.py` is a closed island at
- * this release: `SafetyProfile`, `profile_for_session`, `tool_grants`, `tool_allowlist` and
- * `egress_tier` have no reference outside that module, its re-export and its own test file,
- * and the gateway still picks between auto-approve and hook-based approval in exactly the
- * branch the module's own docstring claims to have replaced. It was wired a week AFTER the
- * tag, so it is a development-branch feature. /compare's `tool_approval` row carries the
- * same finding, including the correction that the profile is as inert as the two list
- * fields it already disclosed.
+ * SIX SECTIONS (#90). The page used to carry nine capability sections. The inbox and
+ * notification rules fold into automation, the guardrails into goal loops and the artifacts
+ * into chat, each as a line under "What you control" with no capture of its own; the Doctor
+ * leaves /product. Four of their shots are retired in marketing/screenshots.manifest.json; the
+ * inbox shot stays, placed on Home, which shows it.
  *
- * GUARDRAILS, narrowed. The incident kill switch reaches four automation paths — cron,
- * event triggers, script hooks, subagent spawn — not "every automation": the module names
- * seven seams and three are unwired. The app's own guardrails panel already listed the
- * four, so this page was the only surface overstating it. Budgets are enforced per DAY; the
- * per-run limit is a settable control nothing reads, and a per-run DOLLAR ceiling has never
- * existed in any version. The three prompt-scanning modes are real but do not cover the
- * native tool-calling path.
+ * CUT ENTIRELY — the safety-profile bullet. `guardrails/policy.py` was a closed island when
+ * this was first read: nothing outside the module and its test referenced it. It stays cut
+ * until a reading at the pin finds it wired; /compare's `tool_approval` row says the same.
  *
- * DOCTOR. "Read-only" now says "dashboard Doctor", which earns it — sqlite opened ro, and
- * probes that decline the mutating helpers. The CLI `personalclaw doctor` rewrites
- * `personalclaw.json` unprompted when it finds a fixable defect, so the unqualified
- * sentence was false about the command a reader is most likely to type.
+ * CHAT. The permission modes are Normal, Trust reads and Trust per chat; YOLO is gateway-wide,
+ * auto-approves everywhere until it expires, and picking any other mode turns it off. The
+ * memory mode (Persistent, Temporary, Incognito) is chosen when a chat is created and no route
+ * changes it after. Regenerate and the variant switcher exist on the latest answer only, so the
+ * page says "the latest answer". Branching needs a Persistent chat; rewind keeps the discarded
+ * tail. ARTIFACTS: previews render for some types and office or video types do not, so the page
+ * claims the library and its versions (the viewer's Versions rail, revert and compare), not
+ * previews.
  *
- * MEMORY. Procedural moved out of the RECALL list. All three layers are written, but
- * procedural is a write-only sink here: its single reader has no production caller and
- * procedural rows are explicitly excluded from the injection query. Correction learning and
- * fact promotion are both real, with live callers and a visible surface.
+ * GOAL LOOPS. Pause keeps the workers for Resume; Stop is final and keeps the findings, the
+ * report and any unmerged work, so the page says "stop it for good" and what a stopped loop
+ * keeps. Only an Attended loop stops to ask (an Unattended one never pauses), so the asking line
+ * names the Attended loop.
  *
- * STACK. "SQLite state" was the wrong shape, not a wrong word — the project's own
- * durability inventory is five SQLite entries against twenty-one trees, eighteen JSON files
- * and five JSONL logs. Chat history is JSONL and config is JSON; SQLite holds memory,
- * knowledge, the lexicon and loops.
+ * GUARDRAILS, narrowed. The incident kill switch holds every kind of unattended work at once
+ * (clock and watch triggers, idle triggers and loop cycles, workflow runs, script-hook actions,
+ * every subagent spawn, the inbound doors, the background maintenance) and resumes only on an
+ * explicit confirm. It was said to "never affect interactive chat"; at v0.2.4 a chat's turns keep
+ * running but a subagent a chat asks for is refused too, so the page says the turns keep running
+ * and the spawns are held. Budgets are daily token and dollar ceilings on unattended spend only
+ * (chat turns and Attended loops are not counted), unlimited until set: "on what your
+ * automations spend". A per-run DOLLAR ceiling has never existed. The prompt-scanning modes are
+ * left off this page.
  *
- * WEBHOOKS. "React to webhooks" and "an inbound webhook endpoint" read as reachable from
- * anywhere. At the pinned release both doors (`inbound/webhook.py`: a webhook automation's
- * own address with a sender token made for it, and the agent-turn hook with the owner's
- * webhook token) answer only programs on this machine and refuse any other address; a
- * sender elsewhere comes in through a tunnel or relay the owner runs here. So the copy says
- * "programs on this machine" and the section cites /compare#webhooks, which carries the
- * same finding with its source.
+ * MEMORY. Semantic and episodic recall, lessons from corrections, and promotion of repeated
+ * episodes to facts all have live callers. The procedural layer is now read back at v0.2.4, but
+ * only as a few global tool-outcome priors, so the page says "which tools have served it well"
+ * rather than "recall" of everything it records. The memory page deletes facts, episodes, lessons
+ * and entities and edits facts, so "edit" names facts alone.
+ *
+ * KNOWLEDGE. Entities are extracted only when a model is set, so the line says so. Knowledge is a
+ * database and a folder of originals under the PersonalClaw home; no path is typed.
+ *
+ * AUTOMATION. The dashboard's create form offers an interval, a cron schedule, a one-shot, a
+ * lifecycle event, a data event and a finished run; the other store kinds come through the
+ * automation tools, so the page names the form's. An inbox row links back only when it carries a
+ * reference (a channel message has none), so the page says "a row a loop, chat or run raised".
+ *
+ * WEBHOOKS. Both inbound doors (`inbound/webhook.py`) answer only programs on this machine and
+ * refuse any other address before reading a token; a sender elsewhere comes in through a tunnel
+ * or relay the owner runs here. The automation section says so and cites /compare#webhooks.
+ *
+ * AGENT RUNTIMES. The coding agents are apps over ACP; no count is typed and none is named, so a
+ * catalogue change cannot leave this page wrong. Calls an agent asks about go through the host
+ * gate (`acp/permission_authority.py`), and a call it ran without asking is recorded as ungated
+ * (`acp/ungated.py`). Every cloud model provider is an app; core ships a local one and a small
+ * offline fallback model in its own tree, so "no provider is built in" would be false.
  *
  * TELEMETRY. "No product telemetry" was wider than /compare's `telemetry` row: by default
- * PersonalClaw asks GitHub whether a newer release exists, at start and on an interval, and
- * a setting turns that off (the `disable_update_check` row). The closing section says both
- * halves and cites the row. No interval is typed: the row carries it.
+ * PersonalClaw asks GitHub whether a newer release exists, at start and on an interval, and a
+ * setting turns that off. The closing section says both halves and cites the row; no interval
+ * is typed. The closing section no longer types a Python version (P4).
+ *
+ * WAITING ON YOU. Core's one list of everything waiting on you (`GET /api/waiting`) landed after
+ * the pinned tag, so this page claims the inbox as v0.2.4 ships it, not that list.
  *
  * Every section here that talks about a row's subject cites that row, and
  * `npm run validate:compare` fails the build when one does not (scripts/product-claims.mjs).
- *
- * ARTIFACTS. Previews really render for widgets, HTML, React, documents, SVG and images,
- * but office and video types are routed down the image path and show a broken glyph — so
- * "not placeholder tiles" was true of the types named and false of the rest. Dedup matches
- * on NAME: there is no content hash anywhere in the artifacts package.
- *
- * CHAT. The memory mode is chosen when a session is created and frozen after the first
- * turn; no route changes it later and the control disappears once a chat starts.
  */
+
+const chapters = tourChapters();
+
+/** `m:ss`, from the track's seconds. */
+const clock = (seconds: number) =>
+  `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, "0")}`;
+
+interface Capability {
+  id: string;
+  title: string;
+  problem: string;
+  capture: ImageMetadata;
+  alt: string;
+  controls: { text: string; cite?: { href: string; label: string } }[];
+  docs: { href: string; label: string };
+}
+
+const capabilities: Capability[] = [
+  {
+    id: "chat",
+    title: "Ask, then let it do the work.",
+    problem:
+      "A chat that can only answer leaves the doing to you. Here a conversation runs tools, writes files and starts longer work, and it stops to ask before a call you have not allowed.",
+    capture: chatCapture,
+    alt: "PersonalClaw chat with a conversation, its tool calls and the approval it waits on",
+    controls: [
+      { text: "Each chat's permission mode: Normal, Trust reads or Trust. YOLO approves everywhere until it runs out." },
+      { text: "Its memory: Persistent, Temporary or Incognito, chosen when the chat starts." },
+      { text: "Its model, chat by chat." },
+      { text: "Where it goes next: branch from a message, rewind a turn, or regenerate the latest answer and switch between its versions." },
+      { text: "The files it makes, kept in a library with every version, to revert or compare." }
+    ],
+    docs: { href: "/docs/architecture/chat-sessions", label: "How chat sessions work" }
+  },
+  {
+    id: "loops",
+    title: "Hand off a goal. Watch it work.",
+    problem:
+      "Long work does not fit in one reply. A goal loop plans, works cycle after cycle and reports against the goal you set, in a cockpit that shows its plan, its current cycle, its tool calls and what it produced.",
+    capture: loopsCapture,
+    alt: "A finished PersonalClaw goal loop with its cycle, time, spend, and the deliverable it reported",
+    controls: [
+      { text: "Pause and resume a loop, nudge it while it runs, or stop it for good. A stopped loop keeps its findings, its report and any work not yet merged." },
+      { text: "Whether it asks: an Attended loop stops when it needs an answer, and the question waits in your inbox." },
+      { text: "A kill switch that holds every kind of unattended work at once, subagent spawns included, until you resume it. Your chat turns keep running." },
+      { text: "Daily token and dollar ceilings on what your automations spend." }
+    ],
+    docs: { href: "/docs/architecture/loops", label: "How goal loops work" }
+  },
+  {
+    id: "memory",
+    title: "Stop explaining yourself twice.",
+    problem:
+      "Every new chat with a model starts from nothing. Memory keeps what it learns about you: facts, past episodes, the lessons your corrections teach it, the facts it promotes from what keeps coming up, and which tools have served it well.",
+    capture: memoryCapture,
+    alt: "PersonalClaw memory view with layered learned context",
+    controls: [
+      { text: "What it holds: see all of it, edit its facts, and delete any fact, episode, lesson or entity." },
+      { text: "Which chats it learns from: a Temporary chat neither reads nor writes it, and an Incognito chat reads it and writes nothing back." }
+    ],
+    docs: { href: "/docs/architecture/knowledge-memory", label: "How memory and knowledge work" }
+  },
+  {
+    id: "knowledge",
+    title: "Answers from your own sources.",
+    problem:
+      "A model knows the public web, not your notes. Knowledge holds what you add on purpose, kept apart from memory, in a database on your machine, and chat searches it when a question needs it.",
+    capture: knowledgeCapture,
+    alt: "PersonalClaw knowledge base with tagged source documents",
+    controls: [
+      { text: "What goes in: notes, links it fetches when you save them, and files from documents and spreadsheets to images, audio and video." },
+      { text: "What it knows about each item: with a model set, the people, places and things in it." },
+      { text: "Where it lives: one database and a folder of originals in your PersonalClaw home." }
+    ],
+    docs: { href: "/docs/architecture/knowledge-memory", label: "How memory and knowledge work" }
+  },
+  {
+    id: "automation",
+    title: "Work that starts without you asking.",
+    problem:
+      "Recurring work should not wait for you to remember it. Schedules, events and finished runs start work on their own, and what needs you lands in one inbox instead of a toast that scrolls past.",
+    capture: triggersCapture,
+    alt: "PersonalClaw automation triggers with schedules and status",
+    controls: [
+      { text: "When it runs: on an interval, a cron schedule or once, on a lifecycle or data event, or when another run finishes. A schedule can run an agent in the background." },
+      {
+        text: "Webhooks from programs on this machine only. A sender elsewhere comes in through a tunnel or relay you run here.",
+        cite: { href: "/compare#webhooks", label: "What webhooks can and cannot do" }
+      },
+      { text: "On or off: every schedule and trigger has its own switch." },
+      { text: "What interrupts you: Notify, Badge, Digest or Never, for each kind of notification." },
+      { text: "One inbox for a loop's question, an approval, a proposed skill or a message. A row a loop, chat or run raised links straight back to it." }
+    ],
+    docs: { href: "/docs/architecture/tasks-triggers", label: "How tasks and triggers work" }
+  },
+  {
+    id: "agents",
+    title: "Bring the agent that fits the job.",
+    problem:
+      "One vendor's agent should not be the only one you can run. PersonalClaw runs its own agent, or a coding agent you install as an app over the Agent Client Protocol, and the models behind them are apps too.",
+    capture: agentsCapture,
+    alt: "PersonalClaw agents view showing configured agent runtimes",
+    controls: [
+      { text: "Which agent a chat runs on: the native agent, or a coding agent you installed." },
+      { text: "One approval gate for every call an installed agent asks about, and a record of any call it ran without asking." },
+      { text: "Your models: every cloud provider is an app you add or remove. Core ships only a local one and a small offline fallback." }
+    ],
+    docs: { href: "/docs/architecture/provider-boundary", label: "How agents and providers plug in" }
+  }
+];
 ---
 
 <BaseLayout
   title="Product · PersonalClaw"
   description="Explore PersonalClaw's agentic chat, autonomous goal loops, memory, knowledge, automation, and agent runtimes."
 >
-  <section class="product-hero">
-    <Image
-      class="hero-image"
-      src={chatCapture}
-      alt="PersonalClaw agentic chat with conversation history, tools, and context"
-      widths={[800, 1200, 1600]}
-      sizes="100vw"
-      format="webp"
-      quality={88}
-      loading="eager"
-    />
-    <div class="shell hero-overlay">
-      <div>
-        <p class="kicker">The product</p>
-        <h1 class="display">The whole system, under one roof.</h1>
-        <p>
-          Move from conversation to autonomous work, durable context, and
-          scheduled action without splitting your personal operating layer
-          across five services.
+  <section class="tour" id="tour" aria-labelledby="product-title" data-tour data-param={CHAPTER_PARAM}>
+    <div class="shell tour-grid">
+      <div class="tour-copy">
+        <h1 class="tour-title" id="product-title">Watch it do the work.</h1>
+        <p class="tour-lede">
+          One unedited run on one machine: a chat with a local model, the approval it stops
+          on, a goal loop, knowledge searched locally, and the file the agent wrote. It was
+          recorded at an earlier release, so some screens have changed since.
         </p>
-        <a class="button button-primary" href="#chat">
-          Start the tour <ArrowRight size={18} aria-hidden="true" />
-        </a>
       </div>
-    </div>
-  </section>
-
-  <section class="section product-promise section-rule">
-    <div class="shell promise-grid">
-      <div class="promise-statement">
-        <p class="kicker">Designed as a system</p>
-        <h2 class="section-title">Every mode of work shares the same context and controls.</h2>
-      </div>
-      <div class="promise-points">
-        <p>
-          Chat, goal loops, and automation use the same context engine,
-          approvals, skills, apps, and durable state.
-        </p>
-        <ul>
-          <li><Check size={18} aria-hidden="true" /> One local gateway</li>
-          <li><Check size={18} aria-hidden="true" /> One web dashboard</li>
-          <li><Check size={18} aria-hidden="true" /> One inspectable home directory</li>
-        </ul>
-      </div>
-    </div>
-  </section>
-
-  <section class="section tour section-rule" id="tour">
-    <div class="shell">
-      <div class="tour-head">
-        <p class="kicker">The 84-second tour</p>
-        <h2 class="section-title">One unedited run through the parts that matter.</h2>
-      </div>
-      <p class="tour-support">
-        A single recording of v0.1.3 on one machine, made before the release this
-        site publishes, so some screens have changed since; the version in the
-        capture's status bar says which. Chat against a local model, the approval it
-        stops on, a goal loop, the local corpus, and the file the agent actually wrote.
-        No narration, no cuts, nothing sped up.
-      </p>
-      <!-- No autoplay: nothing else on this site plays media on load, and an 84-second
-           capture that starts itself is a worse first impression than a good still. The
-           wrapper reserves 16/9 so the poster, the first decoded frame and a failed load
-           all occupy the same box — this section contributes no layout shift.
-
-           preload="none", not the handoff's "metadata". Chromium serves "metadata" by
-           range-requesting the header and ABORTING the rest, and
-           tests/browser/support.ts asserts zero failed network requests on every route.
-           What "metadata" buys is a scrubber that knows its duration before first play,
-           and the heading and copy both state the length in words. So this section costs
-           the poster and nothing else until a visitor opts in. -->
       <div class="tour-frame">
         <video
           class="tour-video"
@@ -184,6 +225,7 @@ import { GITHUB_URL } from "../data/site";
           playsinline
           preload="none"
           poster="/media/personalclaw-tour-poster.webp"
+          aria-label="The PersonalClaw tour"
         >
           <source src="/media/personalclaw-tour.mp4" type="video/mp4" />
           <track
@@ -195,491 +237,168 @@ import { GITHUB_URL } from "../data/site";
           />
         </video>
       </div>
-      <ol class="tour-beats" aria-label="What the tour shows, in order">
-        <li><span class="index">01</span> Chat against a model on this machine</li>
-        <li><span class="index">02</span> The approval it stops on before writing</li>
-        <li><span class="index">03</span> A goal loop with its findings</li>
-        <li><span class="index">04</span> Knowledge searched locally</li>
-        <li><span class="index">05</span> The artifact it wrote, on disk</li>
-      </ol>
-    </div>
-  </section>
-
-  <section class="section feature-section" id="chat">
-    <div class="shell feature-grid">
-      <div class="feature-copy">
-        <span class="feature-icon"><MessagesSquare size={23} aria-hidden="true" /></span>
-        <p class="kicker">Agentic chat</p>
-        <h2 class="section-title">Conversation that can become work.</h2>
-        <p>
-          Run tools with approval controls, organize sessions, branch from
-          earlier turns, compare answer variants, and tune model or memory
-          behavior per conversation.
-        </p>
-        <ul class="feature-list">
-          <li>Session fork and undo</li>
-          <li>Folders, tags, and kanban</li>
-          <li>Temporary and incognito memory modes, set when a chat starts</li>
-          <li>Per-session model overrides</li>
-        </ul>
-      </div>
-      <div class="feature-media">
-        <Image
-          src={chatCapture}
-          alt="PersonalClaw chat session with tools and conversation controls"
-          widths={[640, 960, 1280]}
-          sizes="(max-width: 900px) 100vw, 62vw"
-          format="webp"
-          quality={86}
-        />
-      </div>
-    </div>
-  </section>
-
-  <section class="autonomy-band">
-    <div class="shell autonomy-grid">
-      <div class="autonomy-title">
-        <p class="kicker">Autonomous goals</p>
-        <h2 class="section-title">The agent keeps going. You keep the final say.</h2>
-      </div>
-      <div class="autonomy-points">
-        <article>
-          <Eye size={23} aria-hidden="true" />
-          <h3>Observe</h3>
-          <p>See the plan, active cycle, tool activity, and result as it happens.</p>
-        </article>
-        <article>
-          <CirclePause size={23} aria-hidden="true" />
-          <h3>Intervene</h3>
-          <p>Pause, nudge, resume, or stop without losing the accumulated run state.</p>
-        </article>
-        <article>
-          <ShieldCheck size={23} aria-hidden="true" />
-          <h3>Bound</h3>
-          <p>Deterministic supervisors and approval modes constrain autonomous action.</p>
-        </article>
-      </div>
-    </div>
-  </section>
-
-  <section class="section context-section">
-    <div class="shell">
-      <div class="section-head">
-        <div>
-          <p class="kicker">Durable context</p>
-          <h2>Memory and knowledge do different jobs.</h2>
-        </div>
-        <p>
-          PersonalClaw keeps learned personal context separate from the source
-          material you deliberately add. Both remain inspectable.
+      <div class="tour-nav">
+        <ol class="tour-chapters" aria-label="Tour chapters">
+          {chapters.map((chapter, index) => (
+            <li>
+              <button
+                type="button"
+                class="chapter"
+                data-chapter={chapter.id}
+                data-start={chapter.start}
+                aria-pressed={index === 0 ? "true" : "false"}
+              >
+                <span class="chapter-label">{chapter.label}</span>
+                <span class="chapter-time">{clock(chapter.start)}</span>
+              </button>
+            </li>
+          ))}
+        </ol>
+        <p class="tour-hint">
+          <CirclePlay size={16} aria-hidden="true" />
+          Choose a chapter, then press play: the tour starts there.
         </p>
       </div>
+    </div>
+  </section>
 
-      <div class="context-grid">
-        <article>
-          <div class="context-copy">
-            <Brain size={23} aria-hidden="true" />
-            <div>
-              <h3>Memory learns how you work.</h3>
-              <p>
-                Semantic and episodic layers support recall, correction learning,
-                and promotion of repeated facts. A procedural layer records
-                tool-outcome priors alongside them.
-              </p>
-            </div>
-          </div>
+  {capabilities.map((capability) => (
+    <section
+      class="capability section-rule"
+      id={capability.id}
+      aria-labelledby={`${capability.id}-title`}
+      data-capability={capability.id}
+    >
+      <div class="shell capability-grid">
+        <figure
+          class="capability-media"
+          style={`aspect-ratio: ${capability.capture.width} / ${capability.capture.height}`}
+          data-media
+        >
           <Image
-            src={memoryCapture}
-            alt="PersonalClaw memory view with layered learned context"
-            widths={[520, 760, 980]}
-            sizes="(max-width: 800px) 100vw, 50vw"
+            src={capability.capture}
+            alt={capability.alt}
+            widths={[640, 960, 1280]}
+            sizes="(max-width: 900px) 100vw, 58vw"
             format="webp"
-            quality={84}
+            quality={86}
           />
-        </article>
-        <article>
-          <div class="context-copy">
-            <FileSearch size={23} aria-hidden="true" />
-            <div>
-              <h3>Knowledge keeps the source.</h3>
-              <p>
-                Ingest documents, web pages, and media; enrich them with
-                entities and make them searchable from chat.
-              </p>
-            </div>
-          </div>
-          <Image
-            src={knowledgeCapture}
-            alt="PersonalClaw knowledge base with tagged source documents"
-            widths={[520, 760, 980]}
-            sizes="(max-width: 800px) 100vw, 50vw"
-            format="webp"
-            quality={84}
-          />
-        </article>
-      </div>
-    </div>
-  </section>
-
-  <section class="section automation-section section-rule">
-    <div class="shell automation-grid">
-      <div class="automation-media">
-        <Image
-          src={triggersCapture}
-          alt="PersonalClaw automation triggers with schedules and status"
-          widths={[640, 960, 1280]}
-          sizes="(max-width: 900px) 100vw, 62vw"
-          format="webp"
-          quality={86}
-        />
-      </div>
-      <div class="feature-copy">
-        <span class="feature-icon"><Clock3 size={23} aria-hidden="true" /></span>
-        <p class="kicker">Automation</p>
-        <h2 class="section-title">Let the system notice first.</h2>
-        <p>
-          Schedule recurring work, start work from a webhook a program on this
-          machine sends, monitor connected channels, and dispatch background
-          subagents without building a second automation stack. Anything that
-          needs you lands in one inbox you can answer in place &mdash; a loop
-          waiting on a decision, a proposed skill, an approval you walked away
-          from.
-        </p>
-        <ul class="feature-list">
-          <li>Cron and interval triggers, plus webhooks from programs on this machine</li>
-          <li>One inbox for decisions, approvals, and messages</li>
-          <li>Delivery per kind: notify, badge, digest, or never</li>
-          <li>Background subagents</li>
-          <li>Automatically matched workflow SOPs</li>
-        </ul>
-        <a class="text-link" href="/compare#webhooks">What webhooks can and cannot do</a>
-      </div>
-    </div>
-  </section>
-
-  <section class="section context-section section-rule">
-    <div class="shell">
-      <div class="section-head">
-        <div>
-          <p class="kicker">One place to answer</p>
-          <h2>Work that waits on you, in one queue.</h2>
-        </div>
-        <p>
-          A loop needing a decision, a proposed skill, an approval you walked
-          away from &mdash; these used to be toasts that scrolled past while the
-          work stayed stalled. Now they are items you answer in place.
-        </p>
-      </div>
-
-      <div class="context-grid">
-        <article>
-          <div class="context-copy">
-            <Inbox size={23} aria-hidden="true" />
-            <div>
-              <h3>Everything waiting, together.</h3>
-              <p>
-                Decisions, proposals, approvals, and messages share one inbox.
-                Each row deep-links to the loop or chat it came from.
-              </p>
-            </div>
-          </div>
-          <Image
-            src={inboxCapture}
-            alt="PersonalClaw inbox with a loop's question, a tool approval, and a skill proposal, filtered by kind"
-            widths={[520, 760, 980]}
-            sizes="(max-width: 800px) 100vw, 50vw"
-            format="webp"
-            quality={84}
-          />
-        </article>
-        <article>
-          <div class="context-copy">
-            <BellRing size={23} aria-hidden="true" />
-            <div>
-              <h3>You choose what interrupts.</h3>
-              <p>
-                Per kind of notification: notify, badge, batch into a daily
-                digest, or never. Quietening one noisy kind no longer raises the
-                bar for everything.
-              </p>
-            </div>
-          </div>
-          <Image
-            src={notificationRulesCapture}
-            alt="PersonalClaw per-kind notification delivery rules"
-            widths={[520, 760, 980]}
-            sizes="(max-width: 800px) 100vw, 50vw"
-            format="webp"
-            quality={84}
-          />
-        </article>
-      </div>
-    </div>
-  </section>
-
-  <section class="section automation-section section-rule">
-    <div class="shell automation-grid">
-      <div class="automation-media">
-        <Image
-          src={artifactsCapture}
-          alt="PersonalClaw artifacts library with live previews and collections"
-          widths={[640, 960, 1280]}
-          sizes="(max-width: 900px) 100vw, 62vw"
-          format="webp"
-          quality={86}
-        />
-      </div>
-      <div class="feature-copy">
-        <span class="feature-icon"><Layers size={23} aria-hidden="true" /></span>
-        <p class="kicker">What it produced</p>
-        <h2 class="section-title">Output you can find again.</h2>
-        <p>
-          Documents, spreadsheets, charts, and diagrams the agent made stay in a
-          library with live previews &mdash; searchable, versioned, and grouped
-          into collections instead of scattered through a chat log.
-        </p>
-        <ul class="feature-list">
-          <li>Live previews for widgets, documents, SVG and images</li>
-          <li>Version history and diffs between revisions</li>
-          <li>Collections, and name collisions caught at save time</li>
-        </ul>
-      </div>
-    </div>
-  </section>
-
-  <section class="section agents-section">
-    <div class="shell">
-      <div class="agents-copy">
-        <div>
-          <p class="kicker">Bring the right agent</p>
-          <h2 class="section-title">Native, ACP, or app-defined.</h2>
-        </div>
-        <div>
-          <p>
-            PersonalClaw can run its native agent or connect external coding
-            agents through ACP. Claude Code, OpenAI Codex, Gemini CLI and Kiro CLI
-            meet the same host approval gate for every call they ask about, and a
-            call one runs without asking is recorded as ungated.
-          </p>
-          <a class="text-link" href="/apps">
-            Explore agent apps <ArrowRight size={17} aria-hidden="true" />
-          </a>
+        </figure>
+        <div class="capability-copy">
+          <h2 class="capability-title" id={`${capability.id}-title`}>{capability.title}</h2>
+          <p class="capability-problem">{capability.problem}</p>
+          <h3 class="controls-title">What you control</h3>
+          <ul class="controls">
+            {capability.controls.map((control) => (
+              <li>
+                {control.text}
+                {control.cite && (
+                  <a class="text-link control-cite" href={control.cite.href}>{control.cite.label}</a>
+                )}
+              </li>
+            ))}
+          </ul>
+          <a class="text-link docs-link" href={capability.docs.href}>{capability.docs.label}</a>
         </div>
       </div>
-      <Image
-        src={agentsCapture}
-        alt="PersonalClaw agents view showing configured agent runtimes"
-        widths={[720, 1080, 1440]}
-        sizes="100vw"
-        format="webp"
-        quality={86}
-      />
-      <div class="agent-proof" aria-label="Agent runtime properties">
-        <span><Bot size={18} aria-hidden="true" /> Multiple runtimes</span>
-        <span><GitFork size={18} aria-hidden="true" /> ACP boundary</span>
-        <span><Workflow size={18} aria-hidden="true" /> Shared context</span>
-        <span><Sparkles size={18} aria-hidden="true" /> Replaceable providers</span>
-      </div>
-    </div>
-  </section>
+    </section>
+  ))}
 
-  <section class="section automation-section section-rule">
-    <div class="shell automation-grid">
-      <div class="feature-copy">
-        <span class="feature-icon"><ShieldCheck size={23} aria-hidden="true" /></span>
-        <p class="kicker">Runs safely on its own</p>
-        <h2 class="section-title">Autonomy with a floor under it.</h2>
-        <p>
-          Before you hand the system unattended work, it gives you the controls
-          to trust it: a kill switch that holds scheduled runs, triggers, script
-          hooks, loop cycles and unattended subagent spawns at once, daily spend
-          ceilings, outbound
-          secret scanning, and per-provider circuit breakers. Interactive chat is
-          never affected.
-        </p>
-        <ul class="feature-list">
-          <li>Incident kill switch, explicit resume</li>
-          <li>Token and dollar budgets per day</li>
-          <li>Outbound prompt scanning on agentic calls: warn, redact, or block</li>
-          <li>Per-provider circuit breakers, with provider health on view</li>
-        </ul>
-      </div>
-      <div class="automation-media">
-        <Image
-          src={guardrailsCapture}
-          alt="PersonalClaw Guardrails settings with the incident kill switch, daily spend budgets, and outbound scan mode"
-          widths={[640, 960, 1280]}
-          sizes="(max-width: 900px) 100vw, 62vw"
-          format="webp"
-          quality={86}
-        />
-      </div>
-    </div>
-  </section>
-
-  <section class="section automation-section section-rule">
-    <div class="shell automation-grid">
-      <div class="automation-media">
-        <Image
-          src={doctorCapture}
-          alt="PersonalClaw Doctor showing tiered health probes across every subsystem, all systems healthy"
-          widths={[640, 960, 1280]}
-          sizes="(max-width: 900px) 100vw, 62vw"
-          format="webp"
-          quality={86}
-        />
-      </div>
-      <div class="feature-copy">
-        <span class="feature-icon"><Stethoscope size={23} aria-hidden="true" /></span>
-        <p class="kicker">Diagnoses itself</p>
-        <h2 class="section-title">See what's healthy, and fix what isn't.</h2>
-        <p>
-          The dashboard Doctor runs read-only health probes across every
-          subsystem — memory, channels, local models, app backends, the SPA,
-          model-provider breakers. A degraded capability is never mistaken for a
-          dead gateway, confirm-gated fixes repair the common faults, and a
-          health-scored engine keeps the stores tidy on its own.
-        </p>
-        <ul class="feature-list">
-          <li>Tiered probes with per-capability evidence</li>
-          <li>No-model degraded mode, stated plainly</li>
-          <li>Confirm-gated repairs and crash capture</li>
-          <li>Health-scored self-maintenance</li>
-        </ul>
-      </div>
-    </div>
-  </section>
-
-  <section class="section product-cta">
+  <section class="product-cta" aria-labelledby="cta-title">
     <div class="narrow">
-      <p class="kicker">Open source · self-hosted</p>
-      <h2 class="section-title">Run the system on your machine.</h2>
+      <h2 class="section-title" id="cta-title">Run it on your machine.</h2>
       <p>
-        Python 3.12 or 3.13, an aiohttp gateway, React dashboard, and state on disk as
-        SQLite plus plain JSON and JSONL. No analytics, no crash reporting and no usage
-        reporting; by default it does ask GitHub for a newer release when it starts and on
-        an interval, and one setting turns that off.
+        The gateway, the dashboard and everything they keep stay on your machine. No
+        analytics, no crash reporting and no usage reporting; by default it does ask GitHub
+        for a newer release when it starts and on an interval, and one setting turns that off.
       </p>
       <p class="cta-source">
-        <a class="text-link" href="/compare#telemetry">What it sends, and what it does not</a>
+        <a class="cta-link" href="/compare#telemetry">What it sends, and what it does not</a>
       </p>
-      <div>
-        <a
-          class="button button-primary"
-          href={GITHUB_URL}
-          target="_blank"
-          rel="noreferrer"
-        >
-          Get PersonalClaw <ArrowRight size={18} aria-hidden="true" />
+      <div class="cta-actions">
+        <a class="button button-primary cta-primary" href={GITHUB_URL} target="_blank" rel="noreferrer">
+          Get PersonalClaw
         </a>
-        <a class="button button-secondary" href="/security">
-          Read the security model
-        </a>
+        <a class="cta-link" href="/security">Read the security model</a>
       </div>
     </div>
   </section>
 </BaseLayout>
 
+<script>
+  // The tour's chapters (#90): the one chosen is kept in the URL (`?chapter=`) with
+  // `replaceState`, so a reload, Back to the page and a copied link come back to it and a choice
+  // adds no history entry. Choosing only selects: the video asks for no byte until a visitor
+  // presses play, and the first play starts at the chosen chapter. Once it has played, a choice
+  // seeks at once.
+  const tour = document.querySelector<HTMLElement>("[data-tour]");
+  const video = tour?.querySelector("video");
+  if (tour && video) {
+    const param = tour.dataset.param ?? "chapter";
+    const buttons = [...tour.querySelectorAll<HTMLButtonElement>("[data-chapter]")];
+    let played = false;
+
+    const select = (id: string | null) => {
+      const chosen = buttons.find((b) => b.dataset.chapter === id) ?? buttons[0];
+      for (const b of buttons) b.setAttribute("aria-pressed", String(b === chosen));
+      return chosen;
+    };
+    const selected = () => buttons.find((b) => b.getAttribute("aria-pressed") === "true") ?? buttons[0];
+    const seek = (b: HTMLButtonElement) => {
+      video.currentTime = Number(b.dataset.start ?? 0);
+    };
+    const followUrl = () => select(new URLSearchParams(window.location.search).get(param));
+
+    followUrl();
+    window.addEventListener("pageshow", followUrl);
+
+    for (const button of buttons) {
+      button.addEventListener("click", () => {
+        const chosen = select(button.dataset.chapter ?? null);
+        const url = new URL(window.location.href);
+        if (chosen === buttons[0]) url.searchParams.delete(param);
+        else url.searchParams.set(param, chosen.dataset.chapter ?? "");
+        window.history.replaceState(window.history.state, "", url);
+        if (played) seek(chosen);
+      });
+    }
+
+    video.addEventListener("play", () => {
+      if (played) return;
+      played = true;
+      const chosen = selected();
+      if (Number(chosen.dataset.start ?? 0) > 0) seek(chosen);
+    });
+  }
+</script>
+
 <style>
-  .product-hero {
-    position: relative;
-    height: min(780px, calc(100dvh - 112px));
-    min-height: 620px;
-    overflow: hidden;
-    border-bottom: 1px solid var(--line);
-    background: var(--night-soft);
+  .tour {
+    padding-block: clamp(2.5rem, 6vw, 5rem) clamp(4rem, 8vw, 7rem);
+    background: var(--theater);
   }
 
-  .product-hero::after {
-    position: absolute;
-    z-index: 1;
-    inset: 0;
-    background:
-      linear-gradient(90deg, rgba(11, 12, 13, 0.99) 0%, rgba(11, 12, 13, 0.92) 34%, rgba(11, 12, 13, 0.2) 76%),
-      linear-gradient(0deg, var(--night) 0%, transparent 42%);
-    content: "";
-  }
-
-  .product-hero :global(.hero-image) {
-    position: absolute;
-    width: min(1500px, 94vw);
-    height: auto;
-    top: 7%;
-    right: -9%;
-    border: 1px solid var(--line-strong);
-    border-radius: 8px;
-    box-shadow: 0 40px 100px rgba(0, 0, 0, 0.55);
-  }
-
-  .hero-overlay {
+  .tour-grid {
     display: grid;
-    position: relative;
-    z-index: 2;
-    height: 100%;
-    align-items: center;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    grid-template-rows: auto 1fr;
+    gap: 0 clamp(1.5rem, 3vw, 3rem);
+    align-items: start;
   }
 
-  .hero-overlay > div {
-    max-width: 690px;
+  .tour-copy,
+  .tour-nav {
+    grid-column: 1 / span 4;
   }
 
-  h1 {
-    max-width: 11ch;
-    margin-bottom: 1.5rem;
-  }
-
-  .hero-overlay p:not(.kicker) {
-    max-width: 42rem;
-    margin-bottom: 1.8rem;
-    color: var(--ink-soft);
-    font-size: 1.15rem;
-  }
-
-  .promise-grid {
-    display: grid;
-    grid-template-columns: 1.2fr 0.8fr;
-    gap: clamp(3rem, 10vw, 10rem);
-  }
-
-  .promise-statement h2,
-  .feature-copy h2,
-  .autonomy-title h2,
-  .agents-copy h2,
-  .product-cta h2 {
-    margin-bottom: 1.4rem;
-  }
-
-  .promise-statement h2 {
-    max-width: 13ch;
-    margin-bottom: 0;
-  }
-
-  .promise-points > p,
-  .tour-support {
-    color: var(--ink-soft);
-    font-size: 1.08rem;
-  }
-
-  .tour-head h2 {
-    max-width: 26ch;
-    margin-bottom: 0;
-  }
-
-  .tour-support {
-    max-width: 62ch;
-    margin-top: 1.75rem;
-  }
-
-  /* The 16/9 box is reserved here, not by the video, so the poster and the decoded
-     frames land in the same place and this section shifts nothing. */
   .tour-frame {
-    max-width: 1080px;
-    margin-top: 2rem;
+    grid-column: 5 / -1;
+    grid-row: 1 / span 2;
     overflow: hidden;
     border: 1px solid var(--line-strong);
     border-radius: 8px;
     background: var(--surface);
-    box-shadow: 0 35px 90px rgba(0, 0, 0, 0.42);
+    box-shadow: 0 40px 100px rgba(0, 0, 0, 0.48);
     aspect-ratio: 16 / 9;
   }
 
@@ -689,386 +408,266 @@ import { GITHUB_URL } from "../data/site";
     height: 100%;
   }
 
-  .tour-beats {
-    display: grid;
-    max-width: 1080px;
-    margin-top: 1.5rem;
-    padding: 0;
-    gap: 0;
-    grid-template-columns: repeat(5, 1fr);
-    list-style: none;
-    border-top: 1px solid var(--line);
+  .tour-title {
+    margin-bottom: 1.25rem;
+    font-size: var(--fs-heading);
+    font-weight: var(--fw-heading);
+    line-height: var(--lh-heading);
   }
 
-  .tour-beats li {
-    display: flex;
-    min-height: 48px;
-    padding: 0.9rem 1rem 0.9rem 0;
-    gap: 0.6rem;
-    align-items: baseline;
+  .tour-lede {
+    max-width: 68ch;
+    margin-bottom: 1.75rem;
     color: var(--ink-soft);
-    font-size: var(--fs-label);
   }
 
-  .tour-beats .index {
-    color: var(--coral);
-    font-family: var(--font-mono);
-    font-size: var(--fs-mono);
-  }
-
-  .promise-points ul,
-  .feature-list {
+  .tour-chapters {
+    display: grid;
+    margin: 0 0 1rem;
     padding: 0;
-    margin: 2rem 0 0;
+    gap: 0.25rem;
     list-style: none;
   }
 
-  .promise-points li {
+  .chapter {
     display: flex;
-    min-height: 48px;
-    gap: 0.65rem;
-    align-items: center;
-    border-bottom: 1px solid var(--line);
-  }
-
-  .promise-points svg {
-    color: var(--success);
-  }
-
-  .feature-grid,
-  .automation-grid {
-    display: grid;
-    grid-template-columns: minmax(280px, 0.68fr) minmax(600px, 1.32fr);
-    gap: clamp(3rem, 7vw, 7rem);
-    align-items: center;
-  }
-
-  .feature-section,
-  .automation-section {
-    overflow: hidden;
-  }
-
-  .feature-icon {
-    display: grid;
-    width: 48px;
-    height: 48px;
-    margin-bottom: 2rem;
-    place-items: center;
-    border: 1px solid var(--line-strong);
-    border-radius: 50%;
-    color: var(--coral);
-  }
-
-  .feature-copy > p:not(.kicker) {
-    color: var(--ink-soft);
-    font-size: 1.06rem;
-  }
-
-  .feature-list li {
-    min-height: 43px;
-    padding: 0.6rem 0;
-    border-bottom: 1px solid var(--line);
-    color: var(--ink-soft);
-  }
-
-  .feature-list + .text-link {
-    margin-top: 1rem;
-  }
-
-  .feature-media {
-    margin-right: min(-5vw, -2rem);
-  }
-
-  .feature-media :global(img),
-  .automation-media :global(img),
-  .context-grid :global(img),
-  .agents-section > .shell > :global(img) {
     width: 100%;
-    border: 1px solid var(--line-strong);
-    border-radius: 8px;
-    box-shadow: 0 34px 90px rgba(0, 0, 0, 0.4);
+    min-height: 44px;
+    padding: 0.55rem 1rem;
+    gap: 1rem;
+    align-items: center;
+    justify-content: space-between;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--ink-soft);
+    font: inherit;
+    font-size: var(--fs-label);
+    font-weight: var(--fw-label);
+    line-height: var(--lh-label);
+    text-align: left;
+    cursor: pointer;
+    transition:
+      background-color 160ms ease,
+      color 160ms ease;
   }
 
-  .autonomy-band {
-    padding-block: clamp(5rem, 9vw, 8rem);
-    border-block: 1px solid rgba(255, 107, 91, 0.25);
+  .chapter:hover {
+    background: var(--theater-high);
+    color: var(--ink);
+  }
+
+  /* Selection is one of coral's four meanings: the chosen chapter is a coral pill with night
+     text, as the System Window's selected tab is. */
+  .chapter[aria-pressed="true"] {
     background: var(--coral);
     color: var(--night);
   }
 
-  .autonomy-band .kicker {
-    color: var(--night);
+  .chapter-time {
+    flex: none;
+    font-family: var(--font-mono);
+    font-size: var(--fs-mono);
+    font-weight: var(--fw-mono);
   }
 
-  .autonomy-grid {
-    display: grid;
-    grid-template-columns: 0.72fr 1.28fr;
-    gap: clamp(3rem, 8vw, 8rem);
-  }
-
-  .autonomy-title h2 {
-    max-width: 11ch;
+  .tour-hint {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
     margin: 0;
+    color: var(--ink-muted);
+    font-size: var(--fs-label);
   }
 
-  .autonomy-points {
+  .capability {
+    padding-block: clamp(4rem, 9vw, 8rem);
+  }
+
+  .capability-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: clamp(1.5rem, 4vw, 4rem);
+    align-items: center;
   }
 
-  .autonomy-points article {
-    padding: 0 1.6rem;
-    border-left: 1px solid rgba(11, 12, 13, 0.28);
-  }
-
-  .autonomy-points svg {
-    margin-bottom: 3rem;
-  }
-
-  .autonomy-points h3 {
-    margin-bottom: 0.45rem;
-    font-size: 1.2rem;
-  }
-
-  .autonomy-points p {
+  .capability-media {
+    grid-column: 1 / span 7;
     margin: 0;
-    color: rgba(11, 12, 13, 0.78);
-  }
-
-  .context-section {
-    background: var(--night-soft);
-  }
-
-  .context-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-  }
-
-  .context-grid article {
     overflow: hidden;
-    border: 1px solid var(--line);
+    border: 1px solid var(--line-strong);
     border-radius: 8px;
-    background: var(--surface);
+    background: var(--theater);
   }
 
-  .context-grid article :global(img) {
-    border: 0;
-    border-top: 1px solid var(--line);
-    border-radius: 0;
-    box-shadow: none;
+  .capability-media :global(img) {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
   }
 
-  .context-copy {
-    display: grid;
-    min-height: 200px;
-    padding: 2rem;
-    grid-template-columns: 42px 1fr;
-    gap: 1rem;
+  .capability-copy {
+    grid-column: 8 / -1;
   }
 
-  .context-copy > svg {
-    color: var(--coral);
+  /* Capture and text alternate, section by section. */
+  .capability:nth-of-type(odd) .capability-media {
+    grid-column: 6 / -1;
+    grid-row: 1;
   }
 
-  .context-copy h3 {
-    font-size: 1.35rem;
+  .capability:nth-of-type(odd) .capability-copy {
+    grid-column: 1 / span 5;
+    grid-row: 1;
   }
 
-  .context-copy p {
-    margin: 0;
+  .capability-title {
+    max-width: 14ch;
+    margin-bottom: 1.25rem;
+    font-size: var(--fs-heading);
+    font-weight: var(--fw-heading);
+    line-height: var(--lh-heading);
+  }
+
+  .capability-problem {
+    max-width: 68ch;
+    margin-bottom: 1.75rem;
     color: var(--ink-soft);
   }
 
-  .automation-grid {
-    grid-template-columns: minmax(600px, 1.32fr) minmax(280px, 0.68fr);
+  .controls-title {
+    margin-bottom: 0.75rem;
+    font-size: var(--fs-label);
+    font-weight: var(--fw-label);
+    line-height: var(--lh-label);
   }
 
-  .automation-media {
-    margin-left: min(-5vw, -2rem);
-  }
-
-  .agents-copy {
+  .controls {
     display: grid;
-    margin-bottom: 3.5rem;
-    grid-template-columns: 1fr 0.7fr;
-    gap: 4rem;
-    align-items: end;
+    max-width: 68ch;
+    margin: 0 0 1.5rem;
+    padding: 0;
+    gap: 0.75rem;
+    list-style: none;
   }
 
-  .agents-copy h2 {
-    max-width: 12ch;
-    margin: 0;
-  }
-
-  .agents-copy > div:last-child p {
+  .controls li {
+    padding-left: 1rem;
+    border-left: 2px solid var(--line-strong);
     color: var(--ink-soft);
   }
 
   .text-link {
     display: inline-flex;
     min-height: 44px;
-    gap: 0.45rem;
     align-items: center;
     color: var(--coral-bright);
     font-weight: 650;
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.2em;
   }
 
-  .agent-proof {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    border-bottom: 1px solid var(--line);
-  }
-
-  .agent-proof span {
+  .control-cite {
     display: flex;
-    min-height: 92px;
-    padding: 1rem;
-    gap: 0.75rem;
-    align-items: center;
-    border-right: 1px solid var(--line);
-    color: var(--ink-soft);
+    width: fit-content;
   }
 
-  .agent-proof span:last-child {
-    border-right: 0;
+  .text-link:hover {
+    color: var(--ink);
   }
 
-  .agent-proof svg {
-    color: var(--coral);
-  }
-
+  /* The page's one coral field: the closing call to action, in coral ink (5.8:1). */
   .product-cta {
-    border-top: 1px solid var(--line);
-    text-align: center;
+    padding-block: clamp(5rem, 10vw, 9rem);
+    background: var(--coral);
+    color: var(--coral-ink);
   }
 
-  .product-cta .kicker {
-    justify-content: center;
+  .product-cta :focus-visible {
+    outline-color: var(--coral-ink);
   }
 
   .product-cta h2 {
-    margin-inline: auto;
-  }
-
-  .product-cta p {
-    max-width: 39rem;
-    margin: 0 auto 2rem;
-    color: var(--ink-soft);
-  }
-
-  .product-cta .cta-source {
-    margin-top: -1.25rem;
     margin-bottom: 1.25rem;
   }
 
-  .product-cta > div > div {
+  .product-cta p {
+    max-width: 68ch;
+    margin-bottom: 0.5rem;
+  }
+
+  .product-cta .cta-source {
+    margin-bottom: 2rem;
+  }
+
+  .cta-actions {
     display: flex;
-    gap: 0.7rem;
-    justify-content: center;
     flex-wrap: wrap;
+    gap: 1rem 1.5rem;
+    align-items: center;
   }
 
-  @media (max-width: 920px) {
-    .tour-beats {
-      grid-template-columns: 1fr 1fr;
+  /* The coral button would vanish on the field: the primary action is the field's own ink, with
+     a coral label (5.8:1), as Home's is. */
+  .cta-primary {
+    background: var(--coral-ink);
+    color: var(--coral);
+  }
+
+  .cta-primary:hover {
+    background: var(--night);
+    color: var(--coral-bright);
+  }
+
+  .cta-link {
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
+    color: var(--coral-ink);
+    font-weight: 650;
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.2em;
+  }
+
+  /* One column below 960 px: the twelve-column track's gaps alone would outgrow a phone at 200%
+     text. */
+  @media (max-width: 960px) {
+    .tour-grid,
+    .capability-grid {
+      grid-template-columns: minmax(0, 1fr);
     }
 
-    .tour-beats li {
-      padding-right: 0.75rem;
+    .tour-grid {
+      row-gap: 1.5rem;
     }
 
-    .product-hero :global(.hero-image) {
-      width: 1120px;
+    .tour-copy,
+    .tour-nav,
+    .tour-frame,
+    .capability-media,
+    .capability-copy,
+    .capability:nth-of-type(odd) .capability-media,
+    .capability:nth-of-type(odd) .capability-copy {
+      grid-column: 1 / -1;
+      grid-row: auto;
+    }
+
+    .tour-frame {
+      grid-row: auto;
+    }
+
+    .capability-title {
       max-width: none;
-      right: -32rem;
-    }
-
-    .promise-grid,
-    .feature-grid,
-    .automation-grid,
-    .autonomy-grid,
-    .agents-copy {
-      grid-template-columns: 1fr;
-    }
-
-    .feature-media,
-    .automation-media {
-      margin: 0;
-    }
-
-    .automation-media {
-      grid-row: 2;
-    }
-
-    .autonomy-points {
-      margin-top: 1rem;
     }
   }
 
-  @media (max-width: 720px) {
-    .tour-support {
-      margin-top: 1.25rem;
-    }
-
-    .tour-beats {
-      grid-template-columns: 1fr;
-    }
-
-    .tour-beats li {
-      min-height: 44px;
-      padding-block: 0.65rem;
-      border-bottom: 1px solid var(--line);
-    }
-
-    .product-hero {
-      min-height: 560px;
-      height: calc(100dvh - 112px);
-      max-height: 732px;
-    }
-
-    .product-hero::after {
-      background:
-        linear-gradient(180deg, var(--night) 0%, rgba(11, 12, 13, 0.92) 56%, rgba(11, 12, 13, 0.2) 100%);
-    }
-
-    .product-hero :global(.hero-image) {
-      width: 900px;
-      top: 44%;
-      right: -22rem;
-    }
-
-    .hero-overlay {
-      align-items: start;
-      padding-top: 4rem;
-    }
-
-    .autonomy-points,
-    .context-grid,
-    .agent-proof {
-      grid-template-columns: 1fr;
-    }
-
-    .autonomy-points article {
-      min-height: 180px;
-      padding: 1.4rem 0;
-      border-top: 1px solid rgba(11, 12, 13, 0.28);
-      border-left: 0;
-    }
-
-    .autonomy-points svg {
-      margin-bottom: 2rem;
-    }
-
-    .context-copy {
-      min-height: 170px;
-      padding: 1.4rem;
-    }
-
-    .agent-proof span {
-      min-height: 68px;
-      border-right: 0;
-      border-bottom: 1px solid var(--line);
+  @media (forced-colors: active) {
+    .chapter[aria-pressed="true"] {
+      border-color: Highlight;
+      outline: 2px solid Highlight;
     }
   }
 </style>
