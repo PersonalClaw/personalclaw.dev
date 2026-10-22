@@ -25,7 +25,11 @@ const metricBudgets = {
 const resourceBudgets = {
   script: 160 * 1024,
   font: 280 * 1024,
-  image: 2.25 * 1024 * 1024
+  image: 2.25 * 1024 * 1024,
+  // No route loads a video byte while it loads: a video's bytes wait for its play control, or
+  // for an idle hint its manifest entry allows (#94). No shipping entry allows one, so every
+  // route's media budget is zero; the entry that first does gives its route its budgetBytes here.
+  media: 0
 };
 
 async function freePort() {
