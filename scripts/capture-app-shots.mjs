@@ -9,7 +9,7 @@
 // Run against an ALREADY-SEEDED gateway (see the runbook): the scenarios in the manifest are
 // interaction, done first; this only photographs the result.
 //
-//   PERSONALCLAW_TOKEN=… node scripts/capture-app-shots.mjs --base http://127.0.0.1:10001 [--only inbox,artifacts]
+//   PERSONALCLAW_TOKEN=… node scripts/capture-app-shots.mjs --base http://127.0.0.1:10001 [--only chat,loops]
 //
 // The gateway keeps its own sign-in: the browser signs in the way the link `personalclaw token`
 // prints does (`/?token=…`), with the token taken from PERSONALCLAW_TOKEN and never printed. A
@@ -64,10 +64,8 @@ const SHOTS = [
     // the last turn.
     scrollToEnd: true,
   },
-  // Knowledge, Memory and Artifacts are tabs of the Library destination (0.2.4); each keeps its
-  // own address.
+  // Knowledge and Memory are tabs of the Library destination (0.2.4); each keeps its own address.
   { id: "knowledge", hash: "#/knowledge", settle: 2600 },
-  { id: "artifacts", hash: "#/artifacts", settle: 2600 },
   {
     // `#/loops` is the LAUNCHER ("What do you want to accomplish?"), which photographs an
     // empty prompt. The manifest asks for a loop MID-RUN, and that lives at `#/loop/<id>`.
@@ -87,17 +85,6 @@ const SHOTS = [
   { id: "agents", hash: "#/agents", settle: 2600 },
   // Memory left Settings for Library's Memory tab in 0.2.4; `#/settings/memory` now redirects.
   { id: "memory", hash: "#/memory", settle: 2600 },
-  {
-    id: "notification-rules",
-    hash: "#/settings/notifications",
-    settle: 2600,
-    // The per-kind matrix IS the feature, and it sits below the generic Delivery /
-    // Quiet-hours controls. Without this the shot photographs a severity dropdown and
-    // crops out the thing the release added.
-    scrollToText: "Per-kind delivery",
-  },
-  { id: "doctor", hash: "#/settings/doctor", settle: 3400 },
-  { id: "guardrails", hash: "#/settings/guardrails", settle: 2400 },
 ];
 
 const wanted = only.length ? SHOTS.filter((s) => only.includes(s.id)) : SHOTS;

@@ -39,6 +39,7 @@ export const unitTests = {
     "tests/site-audit-captures.test.mjs",
     "tests/github-api.test.mjs",
     "tests/install-commands.test.mjs",
+    "tests/tour-chapters.test.mjs",
   ],
 };
 
