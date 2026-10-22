@@ -24,7 +24,7 @@ const views = await Promise.all(
       ...view,
       src: variants[3].src,
       srcSet: variants.map((variant, variantIndex) => `${variant.src} ${widths[variantIndex]}w`).join(", "),
-      sizes: "(max-width: 720px) 96vw, (max-width: 1200px) 92vw, 1280px",
+      sizes: "(max-width: 820px) 96vw, (max-width: 1440px) 56vw, 820px",
       width: source.width,
       height: source.height
     };

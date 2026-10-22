@@ -27,7 +27,7 @@ The personal AI agent platform you fully own: one local gateway, observable auto
 ## Conversion & proof
 
 - Primary CTA: **Get PersonalClaw**, linking to the public GitHub repository and installation path.
-- Secondary CTA: **Explore the system**, moving visitors into the product tour before they commit.
+- Secondary CTA: **Watch the tour**, the guided product tour at `/product#tour`, before visitors commit.
 - The line to remember: **One agentic OS. Your machine. Your rules.**
 - Belief ladder:
   1. PersonalClaw does real work across chat, goals, knowledge, tasks, and automation.

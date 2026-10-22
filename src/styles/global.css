@@ -246,7 +246,7 @@ h3 {
 .button-secondary:hover,
 .button-quiet:hover {
   border-color: var(--ink-muted);
-  background: var(--surface-high);
+  background: var(--theater-high);
 }
 
 .icon-button {
@@ -316,7 +316,7 @@ h3 {
 
 .desktop-nav a:hover,
 .desktop-nav a[aria-current] {
-  background: var(--surface-high);
+  background: var(--theater-high);
   color: var(--ink);
 }
 
@@ -335,7 +335,7 @@ h3 {
 }
 
 .header-github:hover {
-  background: var(--surface-high);
+  background: var(--theater-high);
   color: var(--ink);
 }
 
@@ -434,12 +434,14 @@ h3 {
   margin: 0;
 }
 
+/* The window keeps the theater's own ink wherever it sits, the coral field included. */
 .system-window {
   position: relative;
   overflow: hidden;
   border: 1px solid var(--line-strong);
   border-radius: 8px;
-  background: var(--window);
+  background: var(--theater);
+  color: var(--ink);
   box-shadow: 0 40px 100px rgba(0, 0, 0, 0.48);
 }
 
@@ -492,7 +494,9 @@ h3 {
   background: var(--night);
 }
 
+/* A tab label is one word and never breaks: the strip scrolls instead. */
 .system-tabs button {
+  flex: none;
   min-width: 64px;
   min-height: 44px;
   padding: 0.35rem 0.75rem;
@@ -503,6 +507,7 @@ h3 {
   cursor: pointer;
   font-size: 0.78rem;
   font-weight: 650;
+  white-space: nowrap;
 }
 
 .system-tabs button[aria-selected="true"] {
@@ -544,7 +549,7 @@ h3 {
   position: relative;
   overflow: hidden;
   aspect-ratio: 16 / 9.6;
-  background: var(--window-frame);
+  background: var(--theater);
 }
 
 .system-image {
@@ -750,7 +755,7 @@ h3 {
 
 .app-card:hover {
   z-index: 1;
-  background: var(--surface-high);
+  background: var(--theater-high);
   transform: translateY(-2px);
 }
 

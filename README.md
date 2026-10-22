@@ -116,9 +116,9 @@ This source flow is active. `sources/personalclaw.sources.json` pins full commit
 
 ## Design Direction
 
-The creative north star is **The Friendly Machine, Seen at Work**.
+The creative north star is **Coral First, Then the Machine**: the brand speaks once, loudly, in coral, then gets out of the way so real product work fills the screen.
 
-PersonalClaw is presented as a capable machine working beside one owner in a quiet night studio. Near-black surfaces establish the environment; coral marks action, focus, and active intelligence. The visual system stays warm without becoming ornamental and technical without falling into terminal cosplay.
+Home opens on a coral field with the proposition in dark ink, and the real System Window crosses from it into the dark theater where every capture plays, so the proposition, the product proof and the install action share the first screen. Past the field, coral marks only action, focus and live agent work.
 
 The complete rationale, token system, interaction rules, responsive behavior, and content voice live in:
 
