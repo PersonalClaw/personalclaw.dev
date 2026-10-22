@@ -150,6 +150,7 @@ function parityRun(plant) {
     for (const file of [
       "scripts/validate-release-parity.mjs",
       "scripts/served-installer.mjs",
+      "scripts/github-api.mjs",
       "sources/personalclaw.sources.json",
       "sources/personalclaw.sources.schema.json",
       "package.json",
