@@ -44,3 +44,22 @@ test("footer navigation carries every header destination", async ({ page }) => {
     expect(footerLinks, `footer is missing header destination ${href}`).toContain(href);
   }
 });
+
+// Without a family of their own, code, keys and samples take the browser's `monospace`,
+// which differs per machine. In CI's pinned image it laid Home out one way at load and
+// another once the first full-page capture had painted it (31 px), failing the Home
+// baseline at random. Every one of them takes the site's mono instead.
+test("code, keys, samples and preformatted text use the site's mono", async ({
+  page
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "desktop", "a computed style, the same at every width");
+  for (const route of qualityRoutes) {
+    await openPage(page, route.path);
+    const offFont = await page.locator("code, kbd, samp, pre").evaluateAll((elements) =>
+      elements
+        .filter((element) => !getComputedStyle(element).fontFamily.startsWith('"JetBrains Mono Variable"'))
+        .map((element) => `${element.tagName.toLowerCase()} "${(element.textContent ?? "").trim().slice(0, 40)}"`)
+    );
+    expect(offFont, `${route.path}: elements on the browser's own monospace`).toEqual([]);
+  }
+});
