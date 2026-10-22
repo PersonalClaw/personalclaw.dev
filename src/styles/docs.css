@@ -52,7 +52,7 @@
  * from the same tokens turned over: --ink is the ground, --night the strongest text, and
  * the rungs between run back up the palette. Measured against --ink #f2f1ed:
  *   --night #0b0c0d (headings)       → 17.3:1
- *   --surface-high #202224 (body)    → 14.1:1
+ *   --theater-high #202224 (body)    → 14.1:1
  *   --line-strong #3b3e41 (muted)    →  9.5:1
  *   #b8351f (accent, link text)      →  5.2:1, and 4.9:1 on the tint below
  * The one rung the palette has no value for is the tint under inline code and between
@@ -65,7 +65,7 @@
 
   --sl-color-white: var(--night);
   --sl-color-gray-1: var(--surface);
-  --sl-color-gray-2: var(--surface-high);
+  --sl-color-gray-2: var(--theater-high);
   --sl-color-gray-3: var(--line-strong);
   --sl-color-gray-4: var(--ink-muted);
   --sl-color-gray-5: var(--ink-soft);

@@ -1,20 +1,20 @@
 ---
 name: PersonalClaw
-description: An immersive product theater for the self-hosted agentic operating system
+description: Coral first, then the machine: the brand speaks once on a coral field, and real product work fills the dark theater below it
 colors:
   night: "#0b0c0d"
   night-soft: "#101112"
   well: "#090a0b"
-  window: "#121416"
-  window-frame: "#111416"
+  theater: "#121416"
   surface: "#171819"
-  surface-high: "#202224"
+  theater-high: "#202224"
   line: "#2b2d2f"
   line-strong: "#3b3e41"
   ink: "#f2f1ed"
   ink-soft: "#c4c4bf"
   ink-muted: "#92938f"
   coral: "#ff6b5b"
+  coral-ink: "#3f1008"
   coral-bright: "#ff937d"
   ember: "#bd4537"
   amber: "#ffb454"
@@ -66,116 +66,155 @@ spacing:
   5xl: "6rem"
   6xl: "8rem"
 components:
+  coral-field:
+    backgroundColor: "{colors.coral}"
+    textColor: "{colors.coral-ink}"
+  theater:
+    backgroundColor: "{colors.theater}"
+    textColor: "{colors.ink}"
   primary-cta:
     backgroundColor: "{colors.coral}"
     textColor: "{colors.night}"
     rounded: "{rounded.control}"
-    minHeight: "48px"
+    height: "48px"
+  primary-cta-on-coral:
+    backgroundColor: "{colors.coral-ink}"
+    textColor: "{colors.coral}"
+    rounded: "{rounded.control}"
+    height: "48px"
   secondary-cta:
-    backgroundColor: "{colors.surface-high}"
+    backgroundColor: "{colors.theater-high}"
     textColor: "{colors.ink}"
     rounded: "{rounded.control}"
-    minHeight: "48px"
+    height: "48px"
   media-frame:
-    backgroundColor: "{colors.surface}"
+    backgroundColor: "{colors.theater}"
     rounded: "{rounded.media}"
-  focus-ring:
-    color: "{colors.coral-bright}"
-    width: "2px"
 ---
 
 # Design System: PersonalClaw Marketing
 
-## Creative North Star
+## 1. Overview
 
-**The Friendly Machine, Seen at Work**
+**Creative North Star: "Coral First, Then the Machine"**
 
-The website is the public window into PersonalClaw's night studio. The interface is not represented by an abstract AI illustration or a fabricated dashboard. Real product captures form a continuous visual field, and the warm claw signal moves through them only when the system is active.
+The brand speaks once, loudly, in coral, then gets out of the way so real product work fills the screen. Home opens on a coral field, continuous with the social card, carrying the mark, the name and the proposition in dark ink. Below it starts the dark theater, where every capture plays. The real System Window hangs across the boundary between the two, so the proposition, the product proof and the install action share the first screen. That crossing is the direction the maintainer chose on 2026-10-14 (#87), and it is the one thing on the page allowed to be loud.
 
-The physical scene is a technical owner at a personal desk after dark, moving between an editor, terminal, and PersonalClaw while autonomous work continues in view. This forces a dark-first site and makes the existing dark product captures the natural material.
+The scene behind the theater is a technical owner at a personal desk after dark, moving between an editor, a terminal and PersonalClaw while autonomous work continues in view. That is why the captures are dark and the theater is near-black. Coral is the brand and the action, never a backdrop for product work.
 
-## Color Strategy
+The system rejects what PRODUCT.md rejects: the hosted-chat wrapper look, generic AI-tool marketing, glow and purple or blue gradients, fake product UI, and beige-paper calm. It also rejects the near-black-plus-one-accent cluster that most AI tools land in; the coral field is how this site leaves it without leaving the brand.
 
-The site uses a **Committed** color strategy. Near-black surfaces establish the studio; coral carries roughly one third of the visible color in hero actions, active controls, and selected system paths. Amber is only the end of the existing claw gradient. Green is semantic status only.
+**Key Characteristics:**
+- One coral field per page at most: the hero, the final call to action, a brand moment. Everywhere else coral marks only actions and live agent states.
+- The System Window is the one signature. It crosses from coral into the theater in the first viewport at 1440 x 900 and at 390 x 844, and a browser test holds it there (`tests/browser/first-viewport.spec.ts`).
+- No full-screen brand preamble: the coral field ends inside the first viewport, so the product proof is never a scroll away.
+- A 12-column grid in a 1440 px shell; captures may bleed full width; prose stays at 68 characters or less, and features alternate capture and text.
+- Real captures only, from core's reproducible capture pipeline, optimized through Astro assets. The mark is its source SVG.
+- One orchestrated entrance (the window rising into place over 650 ms), then motion is functional only: 160 ms control feedback, 240 ms tab changes, 450 to 650 ms media reveals. Every path has a no-motion equivalent, and no entrance ever hides content: a paused animation still shows the window.
+- Active, concrete copy ("Run agents", "Pause a loop", "Keep state on your machine"). Every number and version comes from `releaseFacts`. Pre-1.0 candor sits near install, never in the hero.
 
-Neutrals stay close to true gray with a slight red tint for cohesion. There are no blue-slate sections, purple glows, cream paper surfaces, or decorative multicolor gradients.
+## 2. Colors: The Coral and Theater Palette
 
-## Typography
+Two grounds, coral and theater, and one ink for each. Coral carries the hero; the theater carries the product.
 
-DM Sans remains because it is already embedded in PersonalClaw's product identity. Marketing scale comes from its variable weight and wide display range rather than adding a fashionable second family. JetBrains Mono is limited to real commands, paths, provider names, and architecture labels.
+### Primary
+- **Claw Coral** (coral): the hero field, the final call to action's field, primary buttons on dark, the selected System Window tab, focus on dark and live agent states. It is the app's `coral-primary`, the same value.
+- **Coral Ink** (coral-ink): every word on the coral field, and the primary button that sits on it. 5.8:1 on coral; white on coral is 2.8:1 and fails. It is the app's `on-coral`.
+- **Bright Coral** (coral-bright): hover for coral actions, the focus ring on dark, kickers and inline accents on the theater.
 
-Display copy uses lighter fractional weights and solid color. The display and heading floors are capped by the screen's width as well as the text size (`min(3.5rem, 14vw)`, `min(2.25rem, 9vw)`), so at 200% text on a 320 px phone a heading's longest word still fits its line; a word that cannot fit breaks rather than running off the edge. Body copy stays at 17px with a maximum measure of 68 characters. Letter spacing is `0`; the display floor is no tighter than `-0.03em`.
+### Secondary
+- **Ember** (ember): the 2 px edge of a dangerous state (the registry's blocked badge). Never a fill under text.
+- **Amber** (amber): only the warm end of the mark's claw gradient.
+- **Signal Green** (success): semantic status only (the window's live dot, a passing check).
 
-## Layout
+### Neutral
+- **Night** (night): the page canvas and the header, and `theme-color`.
+- **Night Soft** (night-soft) and **Well** (well): one step lighter for alternating bands, and one darker for command blocks sunk below the canvas.
+- **Theater** (theater): the System Window's shell and screenshot frame, and the band the window lands in below Home's coral field. 16.3:1 under ink; coral on it is 6.6:1.
+- **Theater High** (theater-high): raised controls and hovered rows on the theater: secondary buttons, the current header link, the registry's caution badge.
+- **Surface** (surface): quiet resting surfaces, such as secondary buttons and app cards.
+- **Line** (line) and **Line Strong** (line-strong): hairlines between sections, and borders on controls and frames.
+- **Ink** (ink), **Ink Soft** (ink-soft), **Ink Muted** (ink-muted): text on dark, by emphasis. Muted is the floor for running text (5.8:1 on the theater).
 
-The page uses a 12-column content grid inside a maximum 1440px shell, but the hero and key media can break to the viewport edge. Section rhythm alternates between:
+### Named Rules
+**The Dark Ink on Coral Rule.** Text, icons and focus rings on the coral field are coral ink. Never white, never coral on coral, never a gray.
 
-1. Full-bleed product theater.
-2. Anchored narrative with one dominant capture.
-3. Horizontal system maps with compact evidence.
-4. Dense but unboxed app directories.
-5. A direct quickstart and candid release note.
+**The One Field Rule.** A page has at most one coral field at a time on screen, and it never fills the first viewport by itself.
 
-Cards are reserved for distinct app entries and compact facts. Sections remain unframed. Cards never nest.
+**The Coral Means Something Rule.** Off the field, coral is an action, a selection, focus or a live agent. Decoration in coral is prohibited.
 
-### Hero Wireframe
+## 3. Typography
 
-```text
-┌──────────────────────────────────────────────────────────────┐
-│ mark  Product  Apps  Security                     GitHub     │
-│                                                              │
-│ PERSONALCLAW                                                 │
-│ One agentic OS.                                              │
-│ Your machine. Your rules.                                    │
-│ [Get PersonalClaw] [Explore the system]                       │
-│                                                              │
-│       actual dashboard capture fills the visual field         │
-│                 Home  Chat  Loops  Knowledge  Apps            │
-└──────────────────────────────────────────────────────────────┘
-```
+**Display Font:** DM Sans Variable (with DM Sans, system-ui)
+**Body Font:** DM Sans Variable
+**Label/Mono Font:** JetBrains Mono Variable, for real commands, paths and provider names only
 
-### Narrative Wireframe
+**Character:** One family, already part of PersonalClaw's product identity, with weight doing the expressive work: light, wide display type on the coral field, plain 17 px body on the theater.
 
-```text
-copy anchor  ┃  one large product capture
-             ┃  focused annotations tied to real capability
-─────────────┻────────────────────────────────────────────────
-full-width system relationship or app directory
-```
+### Hierarchy
+- **Display** (300, the display role, 0.96): the wordmark in the hero. In the hero it is also capped by its column (16cqi), because "PersonalClaw" is one word, about 6em wide, that must never break.
+- **Headline** (380, the heading role, 1.02): section headings.
+- **Title** (500, the title role, 1.15): sub-section and card titles.
+- **Body** (400, 17 px, 1.65): running text, at 68 characters or less.
+- **Label** (550, 15 px, 1.3): navigation, buttons and short labels, in sentence case.
+- **Mono** (450, 14 px, 1.6): commands and paths.
 
-## Signature
+The display and heading floors are capped by the screen's width as well as the text size (`min(3.5rem, 14vw)`, `min(2.25rem, 9vw)`), so at 200% text on a 320 px phone a heading's longest word still fits its line. Letter spacing is `0`; the display floor is no tighter than `-0.03em`.
 
-The **System Window** is the memorable element. In the hero, a segmented control swaps between verified Home, Chat, Loops, Knowledge, and Apps captures. The transition uses a brief masked dissolve and a restrained coral activity trace. The default state is already visible, keyboard controls work as tabs, and reduced motion switches instantly.
+### Named Rules
+**The Sentence Case Rule.** No all-caps eyebrows, no tracked kicker above every section, no single accented word in a headline.
 
-## Motion
+## 4. Elevation
 
-One orchestrated entrance establishes the mark, headline, CTA, and active system window. After that, motion is functional:
+The system is flat and tonal: depth comes from the step between night, theater and theater high, and from hairlines. There is one shadow that means something: the System Window's, because it is the one object that sits above two grounds at once.
 
-- 160ms control feedback.
-- 240ms tab state transitions.
-- 450-650ms media reveals only when they communicate a narrative shift.
-- Intersection Observer for one-time reveals; no raw scroll listeners.
-- Transform, opacity, and bounded mask/filter effects only.
+### Shadow Vocabulary
+- **Window on dark** (`box-shadow: 0 40px 100px rgba(0, 0, 0, 0.48)`): the System Window anywhere on the theater.
+- **Window on coral** (`box-shadow: 0 32px 80px` coral ink at 45%): the hero's window, where a black shadow would muddy the field.
 
-Every motion path has a no-motion equivalent.
+### Named Rules
+**The No Glow Rule.** No glow, no coloured blur halos, no glass cards. The window's own blurred caption is the only backdrop filter, and it sits over a capture.
 
-## Responsive Behavior
+## 5. Components
 
-- Mobile starts as a single-column composition with a compact menu and full-width media.
-- The hero remains below `100dvh` enough to reveal the next section.
-- Product captures preserve a stable 8:5 aspect ratio and may crop toward the active work area on narrow screens.
-- App categories become horizontally scrollable filter controls and a single-column directory.
-- The architecture path reflows from horizontal to vertical while preserving order.
-- All labels and CTA text stay on one line; no content depends on hover.
+### Buttons
+- **Shape:** a full pill (999 px), 48 px tall, label weight 650.
+- **Primary on dark:** coral fill, night label.
+- **Primary on coral:** coral-ink fill with a coral label (5.8:1), because a coral button would vanish on the field. Hover deepens it to night with a bright-coral label.
+- **Secondary:** a surface fill with a strong line; hover raises it to theater high.
+- **Quiet link on coral:** coral-ink text, underlined, with a leading icon: "Watch the tour".
+- **Hover / Focus:** 160 ms colour transitions and a 2 px lift. Focus is a 2 px ring offset 3 px, bright coral on dark and coral ink on the coral field.
+- No arrow is glued to a label.
 
-## Imagery
+### Navigation
+- The header is night at 86% with a blur, sticky, with Product, Apps, Security, Docs and Release, and a quiet GitHub link on the right. No primary button in it.
+- The current link sits on theater high; under forced colours it is underlined. On phones the same links live in a menu that opens and closes with focus restored.
 
-All product imagery comes from the core repository's reproducible capture pipeline. The brand mark uses its source SVG. Images are copied into the marketing repository, imported through Astro assets, and optimized into responsive formats.
+### Cards / Containers
+- Cards are only for app entries and compact facts: 8 px corners, surface fill, a line border, no shadow. Cards never nest, and sections stay unframed.
 
-No fake product UI, stock photography, hand-drawn decorative SVG, or rasterized marketing copy.
+### System Window (signature)
+- A dark frame (theater, 8 px corners, line-strong border) with a bar of window controls, a pill tab strip and a live status, over one real capture at 16:9.6.
+- Tabs switch captures in 240 ms; the selected tab is a coral pill with night text, and its view is kept in the URL (`?view=`). Arrow, Home and End move between tabs; tab labels never break, and the strip scrolls on phones.
+- In the hero it sits in the copy's right-hand seven columns on desktop and below the copy on phones, and reaches past the coral field's lower edge by `clamp(6.5rem, 13vw, 12.5rem)` into the theater.
 
-## Content Voice
+### Hero
+- The coral field holds the mark (in coral ink, from the source SVG), the wordmark, the line "One agentic OS. Your machine. Your rules.", one plain sentence, the primary action and "Watch the tour". No version label and no facts in it.
+- The theater below holds the window's lower half and the project facts (MIT licensed, no usage tracking, self-hosted) in muted ink.
 
-Use active, concrete language: "Run agents", "Pause a loop", "Install an app", "Keep state on your machine." Avoid "revolutionize", "seamless", "unleash", and other generic AI claims.
+## 6. Do's and Don'ts
 
-The site names current limitations. Pre-1.0 status appears near installation guidance, not as hero decoration.
+### Do:
+- **Do** put the proposition, a real System Window capture and the install action inside the first viewport at 1440 x 900 and 390 x 844, with the window crossing from coral into the theater.
+- **Do** set every word on coral in coral ink (5.8:1), and measure any new pair before it ships.
+- **Do** show real captures from core's capture pipeline, one dominant capture per section.
+- **Do** keep coral for actions, selection, focus and live agents once the field ends.
+- **Do** take every number and version from `releaseFacts`.
+
+### Don't:
+- **Don't** open with a full-screen coral preamble that pushes the product proof below the fold.
+- **Don't** put white or coral text on the coral field.
+- **Don't** use glow, purple or blue gradients, gradient text, all-caps eyebrows, numbered section labels, arrows glued to links, three equal cards, stat tiles, arrow chains, or a version label in the hero.
+- **Don't** fake product UI, use stock photography, hand-draw decorative SVG, or rasterize marketing copy.
+- **Don't** hide content behind an entrance animation; a paused animation must still show the page.
+- **Don't** look like a hosted chat wrapper or generic AI-tool marketing, and don't fall back to the near-black-plus-one-accent look the coral field exists to leave.
