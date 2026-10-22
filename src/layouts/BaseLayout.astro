@@ -3,6 +3,7 @@ import "@fontsource-variable/dm-sans";
 import "@fontsource-variable/jetbrains-mono";
 import dmSansLatin from "@fontsource-variable/dm-sans/files/dm-sans-latin-wght-normal.woff2?url";
 import "../styles/global.css";
+import tokensCss from "../styles/tokens.css?raw";
 import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
 import {
@@ -19,17 +20,26 @@ interface Props {
   description?: string;
   /** Set by blog post pages: emits an Article node in the JSON-LD graph. */
   article?: ArticleFacts;
+  /** Set by the 404 page: nothing there ranks, though its links may be followed. */
+  notFound?: boolean;
 }
 
 const {
   title = "PersonalClaw · Your personal agentic OS",
   description = "A self-hosted agentic operating system for chat, autonomous goals, memory, knowledge, automation, and replaceable apps.",
-  article
+  article,
+  notFound = false
 } = Astro.props;
 const canonical = new URL(Astro.url.pathname, Astro.site);
 const socialImage = new URL(SOCIAL_IMAGE_PATH, Astro.site);
 const pathname = Astro.url.pathname.replace(/\/$/, "") || "/";
 const isPreview = import.meta.env.VERCEL_ENV === "preview";
+const robots = isPreview ? "noindex, nofollow" : notFound ? "noindex, follow" : "index, follow";
+// The browser chrome takes the canvas colour from the token, since a <meta> attribute cannot
+// hold a `var(--…)`. A hard-coded hex here drifted from the canvas whenever it changed (X10 in
+// docs/site-audit.md); a token that is gone fails the build instead.
+const canvas = tokensCss.match(/--night:\s*(#[0-9a-fA-F]{3,8})\b/)?.[1];
+if (!canvas) throw new Error("BaseLayout: tokens.css defines no --night canvas colour for theme-color");
 
 // The JSON-LD graph is built by src/data/structured-data.ts, which the Starlight /docs
 // head override calls too — one builder, so the two renderers cannot publish two
@@ -49,8 +59,8 @@ const structuredData = buildStructuredData({
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={description} />
-    <meta name="theme-color" content="#0b0c0d" />
-    <meta name="robots" content={isPreview ? "noindex, nofollow" : "index, follow"} />
+    <meta name="theme-color" content={canvas} />
+    <meta name="robots" content={robots} />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="PersonalClaw" />
     <meta property="og:locale" content="en_US" />
@@ -84,6 +94,6 @@ const structuredData = buildStructuredData({
     <main id="main-content" tabindex="-1">
       <slot />
     </main>
-    <Footer />
+    <Footer pathname={pathname} />
   </body>
 </html>

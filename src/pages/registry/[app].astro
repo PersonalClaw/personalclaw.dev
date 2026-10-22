@@ -210,9 +210,13 @@ const { source } = registryListing();
     color: var(--ink);
   }
 
+  /* Ink on the ember fill measured 4.57:1 (G5 in docs/site-audit.md). The ember edge keeps the
+     danger tone (3.09:1 against the surface, over the 3:1 a component's edge needs) and the label
+     reads at 14.12:1 on the dark surface. */
   .verdict-blocked {
     border-color: var(--ember);
-    background: var(--ember);
+    border-width: 2px;
+    background: var(--surface-high);
     color: var(--ink);
   }
 

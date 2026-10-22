@@ -1,0 +1,60 @@
+---
+// Every address the site does not publish lands here, marketing paths and /docs paths alike,
+// inside the same header and footer as every other page (X8 in docs/site-audit.md). Starlight's
+// own 404 is switched off in astro.config.mjs (`disable404Route`), so this is the only one.
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout
+  title="Page not found · PersonalClaw"
+  description="Nothing is published at this address."
+  notFound
+>
+  <section class="not-found">
+    <div class="narrow">
+      <h1 class="section-title">Nothing is published here.</h1>
+      <p class="lede">
+        The address may be mistyped, or the page moved when the docs were regenerated from a
+        newer release.
+      </p>
+      <ul class="not-found-links">
+        <li><a href="/">Go to the home page</a></li>
+        <li><a href="/docs">Search the docs</a></li>
+        <li><a href="/release">See what this site publishes</a></li>
+      </ul>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .not-found {
+    padding-block: var(--section-space);
+  }
+
+  .not-found h1 {
+    max-width: 16ch;
+  }
+
+  .lede {
+    max-width: 37rem;
+    color: var(--ink-soft);
+  }
+
+  .not-found-links {
+    display: grid;
+    margin: 2rem 0 0;
+    padding: 0;
+    gap: 0.5rem;
+    list-style: none;
+  }
+
+  .not-found-links a {
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
+    color: var(--coral-bright);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.3em;
+  }
+</style>

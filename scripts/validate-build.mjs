@@ -150,7 +150,7 @@ const registryAppPaths = registryArtifactExists() ? await registryAppRoutePaths(
 const contractedHtml = new Set(
   [...allRoutePaths(), ...registryAppPaths].map((routePath) => routeOutputPath(routePath))
 );
-// Starlight emits its own 404 page; it is a real published artifact, not drift.
+// The site's 404 page (src/pages/404.astro); a real published artifact, not drift.
 contractedHtml.add("404.html");
 for (const filePath of generatedHtml) {
   if (!contractedHtml.has(filePath)) fail(`generated route ${filePath} is missing from the route contract`);
@@ -851,14 +851,16 @@ for (const route of routes) {
       fail(`footer navigation is missing header route ${href}`);
     }
   }
-  // The header's conversion CTA carries the canon too (it is the one CTA
-  // rendered on every page, so drift here multiplies across the whole site).
-  const headerCta = home$("header a.button-primary").first();
-  const headerLabel = headerCta.text().replace(/\s+/g, " ").trim();
-  if (!headerCta.length) {
-    fail("the sticky header must render the primary conversion CTA");
-  } else if (!headerLabel.startsWith(CTA_CANON)) {
-    fail(`the header CTA must carry "${CTA_CANON}" (found "${headerLabel}")`);
+  // The header holds the site's links and GitHub, and no primary button (X7 in
+  // docs/site-audit.md): the install path is each page's own primary action, and the CTA
+  // sweep above holds those to the canon. A primary button back in the chrome is the
+  // drift this catches, as is a header with no way to the source.
+  if (home$("header a.button-primary").length) {
+    fail("the header must hold no primary button: the install path is each page's own primary action");
+  }
+  const headerGithub = home$("header a.header-github");
+  if (!headerGithub.length || (headerGithub.attr("href") ?? "").replace(/\/+$/, "") !== CORE_REPO_URL) {
+    fail("the header must link GitHub, the core repository, on the right");
   }
 }
 

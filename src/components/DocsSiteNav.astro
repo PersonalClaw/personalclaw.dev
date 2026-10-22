@@ -1,0 +1,38 @@
+---
+// The docs header's site links (D5 in docs/site-audit.md): the marketing header's five links,
+// so a reader in /docs reaches the rest of the site the way every other page offers, not only
+// through the "PersonalClaw docs" title. Rendered in place of Starlight's SocialIcons, which
+// Starlight places in the header and in the phone menu's footer, followed by Starlight's own
+// icons (GitHub). Where the header has no room for the row (50 to 72rem wide, beside the
+// sidebar and search), the same links sit behind one "Site" disclosure.
+import Default from "@astrojs/starlight/components/SocialIcons.astro";
+import { currentOf } from "../data/navigation";
+
+const pathname = Astro.url.pathname.replace(/\/$/, "") || "/";
+const links = [
+  { href: "/product", label: "Product" },
+  { href: "/apps", label: "Apps" },
+  { href: "/security", label: "Security" },
+  { href: "/docs", label: "Docs" },
+  { href: "/release", label: "Release" }
+];
+---
+
+<nav class="docs-site-nav" aria-label="Site">
+  {links.map((link) => (
+    <a href={link.href} aria-current={currentOf(pathname, link.href)}>
+      {link.label}
+    </a>
+  ))}
+</nav>
+<details class="docs-site-menu">
+  <summary>Site</summary>
+  <nav aria-label="Site">
+    {links.map((link) => (
+      <a href={link.href} aria-current={currentOf(pathname, link.href)}>
+        {link.label}
+      </a>
+    ))}
+  </nav>
+</details>
+<Default />

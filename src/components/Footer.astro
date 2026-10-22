@@ -1,6 +1,23 @@
 ---
 import { GITHUB_URL, APPS_URL } from "../data/site";
 import { releaseFacts } from "../data/release";
+import { currentOf } from "../data/navigation";
+
+interface Props {
+  pathname: string;
+}
+
+const { pathname } = Astro.props;
+const links = [
+  { href: "/product", label: "Product" },
+  { href: "/compare", label: "Compare" },
+  { href: "/apps", label: "Apps" },
+  { href: "/security", label: "Security" },
+  { href: "/docs", label: "Docs" },
+  { href: "/release", label: "Release" },
+  { href: "/blog", label: "Blog" },
+  { href: "/registry", label: "Registry" }
+];
 
 const releaseState =
   releaseFacts.channel === "released" ? "verified release" : "pinned snapshot";
@@ -17,14 +34,11 @@ const releaseState =
     </div>
 
     <nav class="footer-links" aria-label="Footer navigation">
-      <a href="/product">Product</a>
-      <a href="/compare">Compare</a>
-      <a href="/apps">Apps</a>
-      <a href="/security">Security</a>
-      <a href="/docs">Docs</a>
-      <a href="/release">Release</a>
-      <a href="/blog">Blog</a>
-      <a href="/registry">Registry</a>
+      {links.map((link) => (
+        <a href={link.href} aria-current={currentOf(pathname, link.href)}>
+          {link.label}
+        </a>
+      ))}
       <a href={GITHUB_URL} target="_blank" rel="noreferrer">Source</a>
       <a href={APPS_URL} target="_blank" rel="noreferrer">App repository</a>
     </nav>

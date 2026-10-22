@@ -1,4 +1,4 @@
-import { useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 
 type View = {
   id: string;
@@ -12,13 +12,42 @@ type View = {
   height: number;
 };
 
+// The selected view lives in the URL as `?view=<id>`, so a reload, back and forward, and a
+// copied link all open the same view (H11 in docs/site-audit.md). Choosing a view replaces the
+// URL rather than adding a history entry: Back leaves the page, as it did, instead of stepping
+// through tabs. The first view is the default and leaves no parameter; a missing or unknown id
+// opens it.
+const VIEW_PARAM = "view";
+
+function viewInUrl(views: View[]): number {
+  const id = new URLSearchParams(window.location.search).get(VIEW_PARAM);
+  const index = views.findIndex((view) => view.id === id);
+  return index >= 0 ? index : 0;
+}
+
 export function SystemWindow({ views }: { views: View[] }) {
+  // The server renders the default view; the URL's is read once the island runs.
   const [activeIndex, setActiveIndex] = useState(0);
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const active = views[activeIndex];
 
-  const choose = (index: number) => {
+  useEffect(() => {
+    const follow = () => setActiveIndex(viewInUrl(views));
+    follow();
+    window.addEventListener("popstate", follow);
+    return () => window.removeEventListener("popstate", follow);
+  }, [views]);
+
+  const select = (index: number) => {
     setActiveIndex(index);
+    const url = new URL(window.location.href);
+    if (index === 0) url.searchParams.delete(VIEW_PARAM);
+    else url.searchParams.set(VIEW_PARAM, views[index].id);
+    window.history.replaceState(window.history.state, "", url);
+  };
+
+  const choose = (index: number) => {
+    select(index);
     tabRefs.current[index]?.focus();
   };
 
@@ -54,7 +83,7 @@ export function SystemWindow({ views }: { views: View[] }) {
               aria-selected={index === activeIndex}
               aria-controls="system-panel"
               tabIndex={index === activeIndex ? 0 : -1}
-              onClick={() => setActiveIndex(index)}
+              onClick={() => select(index)}
               onKeyDown={(event) => handleKeys(event, index)}
             >
               {view.label}
