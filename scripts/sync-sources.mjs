@@ -830,6 +830,12 @@ async function main() {
   console.log(
     `Generated ${path.relative(root, generatedPath)}: ${facts.status.label}, ${facts.core.versionLabel}, ${facts.apps.total} apps, ${facts.apps.capabilityCount} capabilities.`
   );
+  // Said on every sync so the switch to the Store's own list happens on a re-pin, in
+  // the open: no core release publishes a category list yet, so /apps groups the pinned
+  // manifests by provider type into the site's list (categoryOrder above).
+  console.log(
+    `Categories: the site's list of ${facts.apps.categoryCount}; the pinned core release has none.`
+  );
 }
 
 /**

@@ -1,5 +1,5 @@
 import generatedFacts from "../../.generated/release-facts.json";
-import { apps } from "./apps";
+import { apps, type DirectoryApp } from "./apps";
 
 export type ReleaseChannel = "pre-release" | "released";
 
@@ -58,20 +58,15 @@ export type ReleaseFacts = {
 };
 
 const releaseFacts = generatedFacts as ReleaseFacts;
-const publicApps = new Map(apps.map((app) => [app.slug, app.category]));
-const sourceApps = new Map(
+const publicApps = new Set(apps.map((app) => app.slug));
+const sourceCategories = new Map(
   releaseFacts.apps.manifests.map((app) => [app.name, app.category])
 );
 const drift = [
-  ...[...publicApps].flatMap(([name, category]) => {
-    const sourceCategory = sourceApps.get(name);
-    if (sourceCategory == null) return [`${name} is not in the pinned apps source`];
-    if (sourceCategory !== category) {
-      return [`${name} is ${sourceCategory} in source but ${category} on the website`];
-    }
-    return [];
-  }),
-  ...[...sourceApps.keys()]
+  ...[...publicApps]
+    .filter((name) => !sourceCategories.has(name))
+    .map((name) => `${name} is not in the pinned apps source`),
+  ...[...sourceCategories.keys()]
     .filter((name) => !publicApps.has(name))
     .map((name) => `${name} is missing from the public app directory`)
 ];
@@ -80,4 +75,11 @@ if (drift.length > 0 || publicApps.size !== releaseFacts.apps.total) {
   throw new Error(`Public app directory drifted from pinned manifests:\n${drift.join("\n")}`);
 }
 
-export { releaseFacts };
+/** Every curated entry, filed under the category its pinned manifest has, in name
+    order: the reader scans names, and a slug can sort far from its name
+    ("watched-source-github" is "GitHub Repo Watcher"). */
+const directoryApps: DirectoryApp[] = apps
+  .map((app) => ({ ...app, category: sourceCategories.get(app.slug)! }))
+  .sort((left, right) => left.name.localeCompare(right.name, "en"));
+
+export { directoryApps, releaseFacts };
