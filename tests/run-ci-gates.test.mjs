@@ -68,6 +68,7 @@ test("test:ci marks build-dependent gates skipped when build fails", () => {
     "validate:build",
     "validate:blog",
     "validate:compare",
+    "validate:security",
     "build:preview",
     "validate:preview",
     "playwright",
@@ -132,6 +133,7 @@ test("without --prebuilt, test:static builds and runs every gate in today's orde
     "validate:build",
     "validate:blog",
     "validate:compare",
+    "validate:security",
     "build:preview",
     "validate:preview",
   ]);
@@ -149,6 +151,7 @@ test("a prebuilt static run builds nothing, and still runs the registry, build a
     "validate:build",
     "validate:blog",
     "validate:compare",
+    "validate:security",
     "validate:preview",
   ]);
   assert.equal(result.rows.some((row) => row.name === "build" || row.name === "build:preview"), false);
@@ -161,7 +164,7 @@ test("a prebuilt run whose build does not verify fails, and skips what reads it"
   assert.equal(result.exitCode, 1);
   assert.equal(statuses.prebuilt, "FAIL");
   assert.equal(statuses["validate:registry"], "PASS");
-  for (const gate of ["validate:build", "validate:blog", "validate:compare", "validate:preview"]) {
+  for (const gate of ["validate:build", "validate:blog", "validate:compare", "validate:security", "validate:preview"]) {
     assert.equal(statuses[gate], "SKIP");
     assert.equal(result.executed.includes(gate), false);
   }

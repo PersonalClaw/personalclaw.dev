@@ -1,0 +1,331 @@
+{
+  "note": "What /security says about the boundary, each statement read against core at the pinned release on the date given. Boundaries are the rows of the page's table and the crossings of its two views; limits point at the /compare row or the section of core's limitations page that states each one in full; controls cite the file that enforces them, at the release tag, with a live consumer there. scripts/validate-security-render.mjs holds the page to this file and every link to the tag.",
+  "release": "v0.2.4",
+  "checked_on": "2026-10-22",
+  "views": [
+    {
+      "id": "authority",
+      "label": "Authority",
+      "summary": "Who decides what runs: the model proposes, host code checks, you answer what it asks, and what you approve runs as you.",
+      "zones": [
+        {
+          "id": "model",
+          "name": "The model",
+          "holds": "Proposes a tool call. Nothing it says is a decision."
+        },
+        {
+          "id": "gate",
+          "name": "The host gate",
+          "holds": "Deny-list, task mode and the run's grant, checked in code."
+        },
+        {
+          "id": "owner",
+          "name": "You",
+          "holds": "Answer what your approval mode sends you."
+        },
+        {
+          "id": "effect",
+          "name": "What runs",
+          "holds": "Runs with your user's reach, or in the container or VM tier you chose."
+        },
+        {
+          "id": "record",
+          "name": "The record",
+          "holds": "The security log, with an HMAC over each entry."
+        }
+      ]
+    },
+    {
+      "id": "network",
+      "label": "Network",
+      "layout": "hub",
+      "hub": "machine",
+      "summary": "Where data goes: the gateway on your machine is the hub, and each boundary is between it and one thing outside it.",
+      "zones": [
+        {
+          "id": "machine",
+          "name": "Your machine",
+          "holds": "Your state, the gateway and its local token."
+        },
+        {
+          "id": "lan",
+          "name": "Your network",
+          "holds": "Other devices, and anything else that can reach this machine."
+        },
+        {
+          "id": "app",
+          "name": "An app",
+          "holds": "Its own code and backend, installed by you. What its backend sends on its own does not pass the egress guard."
+        },
+        {
+          "id": "internet",
+          "name": "The internet",
+          "holds": "Public hosts an agent's requests may reach."
+        },
+        {
+          "id": "provider",
+          "name": "The provider you chose",
+          "holds": "Gets the model calls you configured."
+        }
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "id": "proposal-to-gate",
+      "view": "authority",
+      "name": "The model's proposal to the host gate",
+      "crossing": "Checked in code",
+      "responsibility": "A tool call is only a proposal. Host code checks the deny-list, the task mode and the run's grant before any approval is consulted, so not even the most permissive approval mode can run what a task mode refuses.",
+      "status": "partial",
+      "evidence_label": "agents/native/runtime.py, _guard_and_invoke",
+      "evidence_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.4/src/personalclaw/agents/native/runtime.py#L1948",
+      "limit": "An agent CLI meets these checks only for the calls it asks about.",
+      "limit_href": "/docs/security/limitations#1-an-agent-cli-is-held-to-the-rails-only-for-the-calls-it-asks-about"
+    },
+    {
+      "id": "gate-to-owner",
+      "view": "authority",
+      "name": "The host gate to you",
+      "crossing": "Only you answer",
+      "responsibility": "Your approval mode decides which calls wait for you, and only you answer them: an agent's tool or an app cannot approve what waits on you.",
+      "status": "partial",
+      "evidence_label": "approval_answer.py, refusal",
+      "evidence_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.4/src/personalclaw/approval_answer.py#L222",
+      "limit": "Per-tool grants bind subagents, workflow leaves and unwatched turns, not the agent you chat with.",
+      "limit_href": "/compare#tool_approval"
+    },
+    {
+      "id": "owner-to-effect",
+      "view": "authority",
+      "name": "Your decision to what runs",
+      "crossing": "Runs as you",
+      "responsibility": "An approved command runs with your user's filesystem and network reach, with the gateway's secrets left out of its environment. A container or virtual-machine tier is opt-in.",
+      "status": "partial",
+      "evidence_label": "sandbox.py, build_child_env",
+      "evidence_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.4/src/personalclaw/sandbox.py#L397",
+      "limit": "The agent's shell is screened, not fenced, from your credential files.",
+      "limit_href": "/docs/security/limitations#13-the-agents-shell-is-screened-not-fenced-from-your-credential-files"
+    },
+    {
+      "id": "effect-to-record",
+      "view": "authority",
+      "name": "What runs to the record of it",
+      "crossing": "An HMAC per entry",
+      "responsibility": "Each security event is written with an HMAC over its own record, so an entry edited in place fails the integrity check.",
+      "status": "partial",
+      "evidence_label": "sel.py, verify_integrity",
+      "evidence_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.4/src/personalclaw/sel.py#L787",
+      "limit": "A deleted entry goes unreported: the check allows gaps, because several processes write one log.",
+      "limit_href": "/compare#audit_log"
+    },
+    {
+      "id": "network-to-gateway",
+      "view": "network",
+      "name": "Your network to the gateway",
+      "crossing": "A local token",
+      "responsibility": "The gateway asks for a local token by default. The one mode without it binds to loopback, so turning auth off cannot open the gateway to your network.",
+      "status": "yes",
+      "evidence_label": "auth/modes.py, effective_bind",
+      "evidence_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.4/src/personalclaw/auth/modes.py#L150",
+      "limit": "A process running as you can answer as you.",
+      "limit_href": "/docs/security/limitations#10-a-process-running-as-you-can-answer-as-you"
+    },
+    {
+      "id": "gateway-to-app",
+      "view": "network",
+      "name": "The gateway to an app",
+      "crossing": "A scoped token",
+      "responsibility": "An app reaches the gateway with a token scoped to that app, through the gateway's own proxy, and an undeclared write is refused.",
+      "status": "partial",
+      "evidence_label": "dashboard/token_auth.py, app_session_token",
+      "evidence_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.4/src/personalclaw/dashboard/token_auth.py#L830",
+      "limit": "An app's own code runs as you, and its backend runs on the host unless its manifest names a sandbox tier.",
+      "limit_href": "/compare#app_sandbox"
+    },
+    {
+      "id": "gateway-to-internet",
+      "view": "network",
+      "name": "The gateway to the internet",
+      "crossing": "The egress guard",
+      "responsibility": "Core's fetches, the model clients and an app's SDK requests pass one guard that refuses private, loopback and link-local addresses and dials the address it checked.",
+      "status": "partial",
+      "evidence_label": "net/guard.py, evaluate",
+      "evidence_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.4/src/personalclaw/net/guard.py#L352",
+      "limit": "By default it is not a destination allow-list, and an app backend's own traffic does not pass it.",
+      "limit_href": "/compare#single_chokepoint"
+    },
+    {
+      "id": "gateway-to-provider",
+      "view": "network",
+      "name": "The gateway to the provider you chose",
+      "crossing": "Masked by shape",
+      "responsibility": "What a prompt is built from is masked before the model is handed it: a key, a token or a URL's login is found by its shape or its field's name.",
+      "status": "partial",
+      "evidence_label": "security.py, redact_for_model",
+      "evidence_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.4/src/personalclaw/security.py#L1375",
+      "limit": "A secret written as a plain word reaches the model as written, and an agent CLI's own tools are outside the mask.",
+      "limit_href": "/docs/security/limitations#11-what-reaches-a-model-is-masked-by-shape-and-an-agent-clis-own-tools-are-outside-it"
+    }
+  ],
+  "limits": [
+    {
+      "id": "default-path",
+      "statement": "Not an operating-system jail. By default an approved command runs with your user's filesystem and network reach; the container and VM tiers are opt-in.",
+      "href": "/docs/security/limitations#13-the-agents-shell-is-screened-not-fenced-from-your-credential-files",
+      "href_label": "Limitations: the shell is screened, not fenced"
+    },
+    {
+      "id": "agent-cli",
+      "statement": "An agent CLI meets the host's checks only for the calls it asks about. What its own settings let it run without asking is shown and logged after it has run.",
+      "href": "/docs/security/limitations#1-an-agent-cli-is-held-to-the-rails-only-for-the-calls-it-asks-about",
+      "href_label": "Limitations: an agent CLI's own calls"
+    },
+    {
+      "id": "app_sandbox",
+      "statement": "An app's backend is confined only when its manifest names a sandbox tier. By default it runs on the host, where its network permission is a disclosure, not a fence.",
+      "compare": "app_sandbox"
+    },
+    {
+      "id": "tool_approval",
+      "statement": "Per-tool grants hold subagents, workflow leaves, room members and unwatched turns, not the agent you chat with, and only the hand-edited ceiling file names tools.",
+      "compare": "tool_approval"
+    },
+    {
+      "id": "egress_default_deny",
+      "statement": "The egress guard protects your network, not a list of destinations: by default an agent can reach any public host.",
+      "compare": "egress_default_deny"
+    },
+    {
+      "id": "egress_allowlist_exclusive",
+      "statement": "An exclusive host list for agent work exists only through the hand-edited governance ceiling, read once at start. Without it, an Allowed hosts entry adds to the default.",
+      "compare": "egress_allowlist_exclusive"
+    },
+    {
+      "id": "audit_log",
+      "statement": "The security log catches an edited entry, not a deleted one.",
+      "compare": "audit_log"
+    },
+    {
+      "id": "dep_scan_gate",
+      "statement": "The dependency audit can fail a run, but no check has to pass before a change reaches the default branch.",
+      "compare": "dep_scan_gate"
+    }
+  ],
+  "controls": [
+    {
+      "id": "task-modes",
+      "name": "Task modes",
+      "statement": "A tool the task mode does not allow is refused before any approval is asked, so an auto-approve cannot run it.",
+      "source_label": "agents/native/runtime.py, _guard_and_invoke",
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.4/src/personalclaw/agents/native/runtime.py#L1948",
+      "retrieved": "2026-10-22"
+    },
+    {
+      "id": "approval-modes",
+      "name": "Approval modes",
+      "statement": "Your approval mode decides which tool calls wait for you. Auto-approve expires, and turning it off fires every surface's disable.",
+      "source_label": "trust_mode.py",
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.4/src/personalclaw/trust_mode.py#L36",
+      "retrieved": "2026-10-22"
+    },
+    {
+      "id": "owner-answers",
+      "name": "Only you answer",
+      "statement": "An ask that waits on you is answered by you: a request an agent's tool or an app sends cannot approve it.",
+      "source_label": "approval_answer.py, refusal",
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.4/src/personalclaw/approval_answer.py#L222",
+      "retrieved": "2026-10-22"
+    },
+    {
+      "id": "command-denylist",
+      "name": "Command deny-list",
+      "statement": "Known-destructive shell commands are refused whatever the mode or the approval. The list reads a command's text.",
+      "source_label": "shell_denylist.py, BUILTIN_DENIED_COMMAND_PATTERNS",
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.4/src/personalclaw/shell_denylist.py#L89",
+      "retrieved": "2026-10-22"
+    },
+    {
+      "id": "guarded-egress",
+      "name": "Guarded egress",
+      "statement": "Requests out are refused for private, loopback and link-local addresses and dial the address that was checked. By default it is not a destination allow-list.",
+      "source_label": "net/guard.py, evaluate",
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.4/src/personalclaw/net/guard.py#L352",
+      "retrieved": "2026-10-22"
+    },
+    {
+      "id": "fenced-content",
+      "name": "Fenced outside content",
+      "statement": "A fetched page and other outside text reach the model marked as data, not as instructions.",
+      "source_label": "security.py, fence_untrusted",
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.4/src/personalclaw/security.py#L2269",
+      "retrieved": "2026-10-22"
+    },
+    {
+      "id": "gateway-auth",
+      "name": "A token by default",
+      "statement": "The gateway asks for a local token, and the one mode without it binds to loopback only.",
+      "source_label": "auth/modes.py, effective_bind",
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.4/src/personalclaw/auth/modes.py#L150",
+      "retrieved": "2026-10-22"
+    },
+    {
+      "id": "sign-in",
+      "name": "Optional sign-in",
+      "statement": "A password, argon2id-hashed, and a second factor, for reaching the dashboard from another device. Off by default and additive: the local token keeps working, so a forgotten password cannot lock you out.",
+      "source_label": "dashboard/handlers/auth.py, the login door",
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.4/src/personalclaw/dashboard/handlers/auth.py#L196",
+      "retrieved": "2026-10-22"
+    },
+    {
+      "id": "app-tokens",
+      "name": "Scoped app tokens",
+      "statement": "An app calls the gateway with a token scoped to it, through the gateway's proxy. Its own code still runs as you, and its install review says so.",
+      "source_label": "dashboard/token_auth.py, app_session_token",
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.4/src/personalclaw/dashboard/token_auth.py#L830",
+      "retrieved": "2026-10-22"
+    },
+    {
+      "id": "scanner-gate",
+      "name": "Scanner gate",
+      "statement": "An app is scanned in quarantine before you consent to it, and a dangerous verdict cannot be overridden into an install.",
+      "source_label": "apps/app_manager.py, install",
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.4/src/personalclaw/apps/app_manager.py#L976",
+      "retrieved": "2026-10-22"
+    },
+    {
+      "id": "security-log",
+      "name": "Tamper-evident entries",
+      "statement": "Each security event carries an HMAC over its own record, so an entry edited in place is caught. A deleted entry is not.",
+      "source_label": "sel.py, verify_integrity",
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.4/src/personalclaw/sel.py#L787",
+      "retrieved": "2026-10-22"
+    }
+  ],
+  "supply_chain": [
+    {
+      "id": "quarantine",
+      "name": "Quarantine",
+      "statement": "The package is staged apart, inactive, and never follows a link out of its bundle."
+    },
+    {
+      "id": "scan",
+      "name": "Scan",
+      "statement": "The scanner reads the staged tree, which is the tree that would be installed, and gives a verdict."
+    },
+    {
+      "id": "consent",
+      "name": "Consent",
+      "statement": "You see what it declares, including what the platform does not enforce, before anything is enabled."
+    },
+    {
+      "id": "enable",
+      "name": "Enable",
+      "statement": "Only then is it installed, with access the gateway issues. A dangerous verdict ends it at the scan."
+    }
+  ],
+  "supply_chain_source": {
+    "label": "supply_chain.py, Verdict",
+    "url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.4/src/personalclaw/supply_chain.py#L57"
+  }
+}

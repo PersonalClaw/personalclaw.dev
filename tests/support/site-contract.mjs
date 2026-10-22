@@ -29,7 +29,7 @@ export const routes = [
     path: "/security",
     title: "Security \u00b7 PersonalClaw",
     description:
-      "How PersonalClaw constrains agent autonomy with host approvals, command policy, guarded egress, scoped app tokens, scanning, and tamper-evident log entries."
+      "Where PersonalClaw's boundary is, what it does not enforce, and the file that enforces each control at the pinned release."
   },
   {
     name: "release",
