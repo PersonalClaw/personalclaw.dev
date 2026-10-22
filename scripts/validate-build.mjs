@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { access, readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { load } from "cheerio";
@@ -25,6 +26,7 @@ import {
   socialImagePath
 } from "../tests/support/site-contract.mjs";
 import { BUILDERS_SNIPPET, appManifestProblems } from "../src/data/apps-snippet.mjs";
+import { runsDownloadUnseen } from "./install-commands.mjs";
 import { docsIndex } from "../src/data/docs-index.mjs";
 import { registryArtifactExists, registryListing } from "../src/data/registry.mjs";
 
@@ -601,6 +603,53 @@ for (const routePath of ["/", "/apps"]) {
 const home$ = await readHtml("/");
 if (!home$.text().includes(releaseFacts.core.versionLabel)) {
   fail("/: generated core version is missing");
+}
+
+// ── Safe installation (SITE-REDESIGN.md section 5.3, #88) ──
+// Home's install panel shows the installer's SHA-256 and its full text before the run step. Both
+// are read at build time from public/install, so they are checked here against the /install this
+// build serves: a panel that shows one file while /install serves another would ask a reader to
+// trust a checksum of nothing they downloaded. And no built page offers a command that runs a
+// download unseen (scripts/install-commands.mjs: a pipe into a shell, process or command
+// substitution, or a download chained to a run), in a copy block, a code block or a copy button:
+// the download step runs nothing, and the run step comes after the reading.
+{
+  const served = await readFile(path.join(distDir, "install"));
+  const digest = createHash("sha256").update(served).digest("hex");
+  const shownDigest = home$("[data-install-sha256]");
+  if (shownDigest.length !== 1) {
+    fail(`/: the install panel must show the installer's SHA-256 once (found ${shownDigest.length})`);
+  } else if (shownDigest.text().trim() !== digest) {
+    fail(`/: the install panel shows SHA-256 ${shownDigest.text().trim()}, but /install is ${digest}`);
+  }
+  const shownScript = home$("[data-install-script]");
+  if (shownScript.length !== 1) {
+    fail(`/: the install panel must show the installer's text once (found ${shownScript.length})`);
+  } else if (shownScript.text() !== served.toString("utf8")) {
+    fail("/: the installer text in the install panel differs from the /install this build serves");
+  }
+  for (const relativePath of generatedHtml) {
+    const $ = load(await readFile(path.join(distDir, relativePath), "utf8"));
+    const offered = [
+      ...$(".command-block code").map((_, element) => $(element).text()).get(),
+      // The installer's own text is shown to be read, not offered to be run: it installs uv the
+      // way uv documents, which is a pipe, and its header names the old one-liner.
+      ...$("pre")
+        .not(":has([data-install-script])")
+        .map((_, element) => $(element).text())
+        .get(),
+      ...$("[data-code]").map((_, element) => $(element).attr("data-code") ?? "").get()
+    ];
+    for (const text of offered) {
+      const form = runsDownloadUnseen(text);
+      if (!form) continue;
+      fail(
+        `${relativePath}: offers a command that runs a download unseen, by ${form} ` +
+          `(${text.trim().split("\n")[0].slice(0, 80)}); download, show, then run`
+      );
+      break;
+    }
+  }
 }
 
 const sitemapIndexPath = path.join(distDir, "sitemap-index.xml");

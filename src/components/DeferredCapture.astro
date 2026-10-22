@@ -1,0 +1,52 @@
+---
+// A capture below the fold that waits for the page to finish loading before it fetches. A lazy image
+// is not enough on Home: Chrome starts a lazy image well before it nears the screen (up to 2500 px on
+// a slow connection), and chapter 2's captures then share the first seconds with the System Window
+// capture that is Home's largest paint, which has the least headroom of any route. So the image ships
+// without a source and takes it after `load`, still lazy, and without script it is a plain image
+// inside <noscript>. Its width and height hold its box either way.
+import type { ImageMetadata } from "astro";
+import { getImage } from "astro:assets";
+
+interface Props {
+  src: ImageMetadata;
+  alt: string;
+  sizes: string;
+  widths?: number[];
+}
+
+const { src, alt, sizes, widths = [480, 720, 960, 1280] } = Astro.props;
+const variants = await Promise.all(
+  widths.map((width) => getImage({ src, width, format: "webp", quality: 86 }))
+);
+const srcset = variants.map((variant, index) => `${variant.src} ${widths[index]}w`).join(", ");
+const fallback = variants[Math.min(2, variants.length - 1)].src;
+---
+
+<img
+  class="deferred-capture"
+  data-deferred-srcset={srcset}
+  data-deferred-src={fallback}
+  sizes={sizes}
+  alt={alt}
+  width={src.width}
+  height={src.height}
+  loading="lazy"
+  decoding="async"
+/>
+<noscript>
+  <img srcset={srcset} src={fallback} sizes={sizes} alt={alt} width={src.width} height={src.height} loading="lazy" decoding="async" />
+</noscript>
+
+<script>
+  const release = () => {
+    for (const image of document.querySelectorAll<HTMLImageElement>("img[data-deferred-srcset]")) {
+      image.srcset = image.dataset.deferredSrcset ?? "";
+      image.src = image.dataset.deferredSrc ?? "";
+      delete image.dataset.deferredSrcset;
+      delete image.dataset.deferredSrc;
+    }
+  };
+  if (document.readyState === "complete") release();
+  else window.addEventListener("load", release, { once: true });
+</script>

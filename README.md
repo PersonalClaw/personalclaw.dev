@@ -46,7 +46,7 @@ The website should be persuasive because it is specific and checkable, not becau
 
 | Route | Purpose |
 |---|---|
-| `/` | Product thesis, system overview, ecosystem proof, security posture, and source quickstart |
+| `/` | The proposition, a real System Window and the install panel in the first viewport, then five chapters: proof and install, delegation and control, the ownership boundary, apps and security, current maturity |
 | `/product` | Guided tour of chat, autonomous goals, memory, knowledge, automation, and agent runtimes |
 | `/apps` | Searchable first-party app directory and app-platform explanation |
 | `/security` | Trust boundaries, enforced controls, supply-chain lifecycle, and known limitations |

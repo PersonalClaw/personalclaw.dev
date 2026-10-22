@@ -35,6 +35,7 @@ export const unitTests = {
     "tests/compare-row-ids.test.mjs",
     "tests/product-claims.test.mjs",
     "tests/site-audit-captures.test.mjs",
+    "tests/install-commands.test.mjs",
   ],
 };
 

@@ -1,12 +1,14 @@
 export const GITHUB_URL = "https://github.com/PersonalClaw/PersonalClaw";
 export const APPS_URL = "https://github.com/PersonalClaw/PersonalClawApps";
-// The released install path: one command via uv, on the Python the installer names
-// (src/data/installer.mjs reads it for the home page), then setup. The /install bootstrap
-// this site serves wraps the same flow and installs uv first when it's absent. The old
-// clone-and-build sequence is the CONTRIBUTOR path and lives in core's
-// CONTRIBUTING.md — not the end-user quickstart.
-export const INSTALL_COMMAND =
-  "curl -fsSL https://personalclaw.dev/install | sh";
+// The released install path, in two steps, so nothing on the site pipes a download into a shell
+// (SITE-REDESIGN.md, section 5.3): download the installer the site serves, read it and check its
+// checksum in Home's install panel, then run it. /install installs uv when it is absent, then
+// PersonalClaw on the Python src/data/installer.mjs reads from it, then offers setup. The
+// clone-and-build sequence is the CONTRIBUTOR path and lives in core's CONTRIBUTING.md.
+export const INSTALL_DOWNLOAD_COMMAND = "curl -fsSLO https://personalclaw.dev/install";
+export const INSTALL_RUN_COMMAND = "sh install";
+/** The id of Home's install panel (src/components/InstallPanel.astro), which its buttons open. */
+export const INSTALL_PANEL_ID = "install-panel";
 
 export const productViews = [
   {
@@ -32,13 +34,6 @@ export const productViews = [
     // marketed view that is not in the rail (AUD-X2).
     description:
       "Launched from within your projects, autonomous loops plan, act, and report against a goal while remaining observable and pausable."
-  },
-  {
-    id: "knowledge",
-    label: "Knowledge",
-    title: "Keep reference material distinct",
-    description:
-      "Knowledge is explicit, inspectable source material. Personal memory remains a separate system."
   },
   {
     id: "apps",

@@ -7,6 +7,7 @@
 // version onto the page in the same change. A mirror that names no PC_PYTHON fails the build
 // rather than letting the page print a version nobody checked.
 
+import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
@@ -26,4 +27,25 @@ export function installerPython() {
     );
   }
   return match[1];
+}
+
+/**
+ * The installer's exact text, as /install serves it. Home's install panel shows it in full before
+ * the run step, so what a reader reads is what `sh install` runs; scripts/validate-build.mjs holds
+ * the built page to the built /install.
+ *
+ * @returns {string}
+ */
+export function installerScript() {
+  return readFileSync(installerPath, "utf8");
+}
+
+/**
+ * The SHA-256 of the served installer, lowercase hex: what `shasum -a 256 install` prints for the
+ * downloaded file.
+ *
+ * @returns {string}
+ */
+export function installerSha256() {
+  return createHash("sha256").update(readFileSync(installerPath)).digest("hex");
 }

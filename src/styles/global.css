@@ -542,7 +542,6 @@ h3 {
   height: 7px;
   border-radius: 50%;
   background: var(--success);
-  box-shadow: 0 0 0 4px rgba(87, 201, 137, 0.12);
 }
 
 /* The tab panel holds the capture and its caption; the caption lies over the capture's corner

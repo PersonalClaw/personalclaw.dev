@@ -1,0 +1,240 @@
+---
+// The safe install path (SITE-REDESIGN.md, section 5.3): download the installer without running it,
+// check it, read it, then run it. Home's "Install PersonalClaw" buttons open this panel with the
+// popover API, which needs no script: Escape and a click outside close it, and focus goes back to
+// the button that opened it. The checksum and the script are read at build time from the file /install
+// serves, and scripts/validate-build.mjs fails a build whose panel and /install disagree.
+import { X } from "lucide-react";
+import { CopyCommand } from "./CopyCommand";
+import { installerPython, installerScript, installerSha256 } from "../data/installer.mjs";
+import { releaseFacts } from "../data/release";
+import { INSTALL_DOWNLOAD_COMMAND, INSTALL_PANEL_ID, INSTALL_RUN_COMMAND } from "../data/site";
+
+const script = installerScript();
+const sha256 = installerSha256();
+const python = installerPython();
+const { source } = releaseFacts.core;
+// Core records the same digest beside its copy of the installer, at the commit the site pins.
+const recordedDigestUrl = `${source.repositoryUrl}/blob/${source.commit}/deploy/website/install.sh.sha256`;
+// A check the reader can paste instead of comparing 64 characters by eye. It prints "install: OK".
+const checkCommand = `echo "${sha256}  install" | shasum -a 256 -c`;
+---
+
+<div
+  class="install-panel"
+  id={INSTALL_PANEL_ID}
+  popover="auto"
+  role="dialog"
+  aria-labelledby={`${INSTALL_PANEL_ID}-title`}
+  data-install-panel
+>
+  <div class="install-panel-head">
+    <h2 id={`${INSTALL_PANEL_ID}-title`} tabindex="-1" autofocus>Install PersonalClaw</h2>
+    <button
+      class="icon-button"
+      type="button"
+      popovertarget={INSTALL_PANEL_ID}
+      popovertargetaction="hide"
+      aria-label="Close"
+    >
+      <X size={19} aria-hidden="true" />
+    </button>
+  </div>
+  <ol class="install-steps">
+    <li>
+      <h3>Download the installer</h3>
+      <p>This saves a file named <code>install</code> in the current folder. It runs nothing.</p>
+      <CopyCommand command={INSTALL_DOWNLOAD_COMMAND} label="Download command" client:load />
+    </li>
+    <li>
+      <h3>Check it before it runs</h3>
+      <dl class="install-facts">
+        <div>
+          <dt>SHA-256</dt>
+          <dd>
+            <code class="install-digest" data-install-sha256>{sha256}</code>
+            <span>
+              Core records the same digest in <a href={recordedDigestUrl}>install.sh.sha256</a> at{" "}
+              {source.tag ?? source.shortCommit}.
+            </span>
+          </dd>
+        </div>
+        <div>
+          <dt>Signature</dt>
+          <dd>Not signed yet. Until core's releases sign it, the checksum is the check.</dd>
+        </div>
+        <div>
+          <dt>Platforms</dt>
+          <dd>
+            macOS and Linux. On Windows, use Docker Compose from the{" "}
+            <a href="/docs/guides/getting-started">install guide</a>.
+          </dd>
+        </div>
+        <div>
+          <dt>Python</dt>
+          <dd>{python}, which the installer fetches through <code>uv</code> if your machine has none.</dd>
+        </div>
+      </dl>
+      <CopyCommand command={checkCommand} label="Check command" client:load />
+      <p>
+        It prints <code>install: OK</code>. On Linux, <code>sha256sum -c</code> takes the same line.
+        If it prints <code>FAILED</code>, delete the file and don't run it.
+      </p>
+      <details class="install-script">
+        <summary>Read the script</summary>
+        <pre tabindex="0" aria-label="The installer script"><code data-install-script>{script}</code></pre>
+      </details>
+    </li>
+    <li>
+      <h3>Run it</h3>
+      <CopyCommand command={INSTALL_RUN_COMMAND} label="Run command" client:load />
+      <p>
+        It installs PersonalClaw and offers to run setup. The dashboard opens at{" "}
+        <code>localhost:10000</code> once the gateway starts. uv, pipx, pip and Docker Compose are in
+        the <a href="/docs/guides/getting-started">install guide</a>.
+      </p>
+      <p>
+        PersonalClaw is pre-1.0, and an update can change how your data is stored. Run{" "}
+        <code>personalclaw snapshot</code> before each one.{" "}
+        <a href="/compare#data_stability">What that means</a>
+      </p>
+    </li>
+  </ol>
+</div>
+
+<style>
+  .install-panel {
+    width: min(44rem, calc(100vw - 1.5rem));
+    max-height: min(52rem, calc(100dvh - 1.5rem));
+    margin: auto;
+    padding: clamp(1.25rem, 3vw, 2rem);
+    overflow: auto;
+    overscroll-behavior: contain;
+    border: 1px solid var(--line-strong);
+    border-radius: 8px;
+    background: var(--night-soft);
+    color: var(--ink);
+  }
+
+  /* Not modal: the page stays live behind it, so nothing pretends otherwise. The panel lifts
+     off the page with the one shadow the system keeps for raised frames. */
+  .install-panel {
+    box-shadow: 0 40px 100px color-mix(in srgb, var(--night) 80%, transparent);
+  }
+
+  .install-panel h2:focus {
+    outline: none;
+  }
+
+  .install-panel-head {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+  }
+
+  .install-panel h2 {
+    margin: 0;
+    font-size: var(--fs-title);
+    font-weight: var(--fw-title);
+    line-height: var(--lh-title);
+  }
+
+  /* A real sequence: the order is the safety. */
+  .install-steps {
+    display: grid;
+    margin: 0;
+    padding-left: 1.4rem;
+    gap: 1.6rem;
+  }
+
+  .install-steps li::marker {
+    color: var(--coral-bright);
+    font-weight: 650;
+  }
+
+  .install-steps h3 {
+    margin-bottom: 0.4rem;
+    font-size: var(--fs-label);
+    font-weight: 650;
+  }
+
+  .install-steps p,
+  .install-facts dd {
+    margin: 0 0 0.75rem;
+    color: var(--ink-soft);
+  }
+
+  .install-panel a {
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
+    color: var(--coral-bright);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+    vertical-align: middle;
+  }
+
+  .install-facts {
+    display: grid;
+    margin: 0 0 0.9rem;
+    gap: 0.6rem;
+  }
+
+  .install-facts div {
+    display: grid;
+    grid-template-columns: 6.5rem minmax(0, 1fr);
+    gap: 0.75rem;
+  }
+
+  .install-facts dt {
+    color: var(--ink-muted);
+    font-size: var(--fs-label);
+  }
+
+  .install-facts dd {
+    margin: 0;
+  }
+
+  .install-digest {
+    display: block;
+    margin-bottom: 0.3rem;
+    color: var(--ink);
+    font-family: var(--font-mono);
+    font-size: var(--fs-mono);
+    overflow-wrap: anywhere;
+  }
+
+  .install-script summary {
+    width: fit-content;
+    min-height: 44px;
+    padding-block: 0.6rem;
+    color: var(--coral-bright);
+    cursor: pointer;
+    font-weight: 650;
+  }
+
+  .install-script pre {
+    max-height: 22rem;
+    margin: 0.4rem 0 0;
+    padding: 1rem;
+    overflow: auto;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--well);
+    color: var(--ink-soft);
+    font-family: var(--font-mono);
+    font-size: var(--fs-mono);
+    line-height: var(--lh-mono);
+    white-space: pre;
+  }
+
+  @media (max-width: 560px) {
+    .install-facts div {
+      grid-template-columns: 1fr;
+      gap: 0.15rem;
+    }
+  }
+</style>
