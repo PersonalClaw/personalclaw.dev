@@ -100,6 +100,20 @@ h3 {
   outline-offset: 3px;
 }
 
+/* Code, keys and samples are set in the site's mono. Without this rule they take the
+   browser's own `monospace`, which is a different font on every machine. In CI's pinned
+   image it laid Home out one way at load and another once the first full-page capture had
+   painted it: each inline `code` changed height and a maturity line rewrapped, 31 px in all,
+   which failed the Home baseline at random. Inside a block, code takes the block's size.
+   Zero specificity, so a page's own rule for its code still wins. */
+:where(code, kbd, samp, pre) {
+  font-family: var(--font-mono);
+}
+
+:where(code, kbd, samp):where(:not(pre *)) {
+  font-size: var(--fs-mono);
+}
+
 .sr-only {
   position: absolute;
   width: 1px;
