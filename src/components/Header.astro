@@ -1,14 +1,18 @@
 ---
-import { ArrowUpRight, Menu, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
+import { GITHUB_URL } from "../data/site";
+import { currentOf } from "../data/navigation";
 
 interface Props {
   pathname: string;
 }
 
 const { pathname } = Astro.props;
+// Five links and GitHub on the right (X7 in docs/site-audit.md). Compare lives in the footer
+// and in the pages that send a reader to it; the install path is each page's own primary action,
+// not a button in the chrome.
 const links = [
   { href: "/product", label: "Product" },
-  { href: "/compare", label: "Compare" },
   { href: "/apps", label: "Apps" },
   { href: "/security", label: "Security" },
   // `/docs`, not a specific guide. This pointed at /docs/guides/getting-started for as
@@ -29,21 +33,13 @@ const links = [
 
     <nav class="desktop-nav" aria-label="Primary navigation">
       {links.map((link) => (
-        <a href={link.href} aria-current={pathname === link.href ? "page" : undefined}>
+        <a href={link.href} aria-current={currentOf(pathname, link.href)}>
           {link.label}
         </a>
       ))}
     </nav>
 
-    <a
-      class="button button-primary header-github"
-      href="https://github.com/PersonalClaw/PersonalClaw"
-      target="_blank"
-      rel="noreferrer"
-    >
-      <span>Get PersonalClaw</span>
-      <ArrowUpRight size={16} aria-hidden="true" />
-    </a>
+    <a class="header-github" href={GITHUB_URL} target="_blank" rel="noreferrer">GitHub</a>
 
     <button
       class="icon-button menu-button"
@@ -67,18 +63,11 @@ const links = [
   >
     <nav class="shell" aria-label="Mobile navigation">
       {links.map((link) => (
-        <a href={link.href} aria-current={pathname === link.href ? "page" : undefined}>
+        <a href={link.href} aria-current={currentOf(pathname, link.href)}>
           {link.label}
         </a>
       ))}
-      <a
-        href="https://github.com/PersonalClaw/PersonalClaw"
-        target="_blank"
-        rel="noreferrer"
-      >
-        <span>Get PersonalClaw</span>
-        <ArrowUpRight size={18} aria-hidden="true" />
-      </a>
+      <a href={GITHUB_URL} target="_blank" rel="noreferrer">GitHub</a>
     </nav>
   </div>
 </header>

@@ -42,6 +42,9 @@ export default defineConfig({
     react(),
     starlight({
       title: "PersonalClaw docs",
+      // The site has one 404, src/pages/404.astro, in the marketing header and footer. Starlight's
+      // own was a docs page with no way back to the rest of the site (X8 in docs/site-audit.md).
+      disable404Route: true,
       // No `tagline` here: Starlight 0.42.0 removed the option outright (withastro/starlight#3572,
       // "Removes the `tagline` configuration option, which was never used" — no replacement). It
       // had rendered nowhere on 0.41 either, so dropping it changes no pixel; the sentence it
@@ -124,7 +127,13 @@ export default defineConfig({
       components: {
         // Adds the per-page JSON-LD graph, built by the SAME module BaseLayout uses so
         // the two renderers cannot publish two different shapes. See the file's header.
-        Head: "./src/components/DocsHead.astro"
+        Head: "./src/components/DocsHead.astro",
+        // Each page names the release it was generated from (D2 in docs/site-audit.md).
+        PageTitle: "./src/components/DocsPageTitle.astro",
+        // The page's own content before "On this page" in reading and focus order (D6).
+        TwoColumnContent: "./src/components/DocsTwoColumnContent.astro",
+        // The site's links in the docs header and the phone menu (D5).
+        SocialIcons: "./src/components/DocsSiteNav.astro"
       },
       // No `editLink.baseUrl`: Starlight would append each page's path in this repo's
       // collection, which core does not have. Each page names its own "Edit page"

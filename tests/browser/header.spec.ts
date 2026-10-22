@@ -110,14 +110,14 @@ for (const route of qualityRoutes) {
         `the header row ${at}`
       ).toEqual([]);
 
-      // The menu carries what the full row would have: every link, the button's included.
+      // The menu carries what the full row would have: every link, GitHub's included.
       const button = page.locator("[data-menu-button]");
       await button.click();
       await expect(button).toHaveAttribute("aria-expanded", "true");
       await page
         .locator("[data-mobile-menu]")
         .evaluate((menu) => Promise.all(menu.getAnimations().map((animation) => animation.finished)));
-      await expect(page.locator("[data-mobile-menu] a").last()).toHaveText("Get PersonalClaw");
+      await expect(page.locator("[data-mobile-menu] a").last()).toHaveText("GitHub");
       expect.soft(await problemsOf(page, "[data-mobile-menu] a"), `the open menu ${at}`).toEqual([]);
       await page.keyboard.press("Escape");
       await expect(button).toHaveAttribute("aria-expanded", "false");

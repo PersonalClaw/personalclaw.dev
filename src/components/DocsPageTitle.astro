@@ -1,0 +1,25 @@
+---
+// Starlight's page title, then the release the page was generated from (D2 in
+// docs/site-audit.md). Every page under /docs is core's text, synced from the tagged source this
+// site publishes (scripts/sync-docs.mjs), so the label and the link come from the same release
+// facts the footer and /release read: a page can never name a release the site does not pin.
+import Default from "@astrojs/starlight/components/PageTitle.astro";
+import { releaseFacts } from "../data/release";
+
+const { versionLabel, source } = releaseFacts.core;
+const released = releaseFacts.channel === "released";
+---
+
+<Default />
+{
+  released ? (
+    <p class="docs-release">
+      Generated from <a href="/release">PersonalClaw {versionLabel}</a>, the release this site publishes.
+    </p>
+  ) : (
+    <p class="docs-release">
+      Generated from <a href="/release">PersonalClaw at {source.shortCommit}</a>, the pinned snapshot
+      this site publishes.
+    </p>
+  )
+}

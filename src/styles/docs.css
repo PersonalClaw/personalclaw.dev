@@ -4,10 +4,12 @@
  * different product than personalclaw.dev — so this maps Starlight's accent and gray
  * scales onto the same tokens the marketing pages use (src/styles/tokens.css).
  *
- * Deliberately limited to COLOR. Starlight's layout, type scale, focus rings and
- * contrast relationships are its own accessibility work; overriding those would mean
- * re-earning what it already guarantees. The site's a11y gate (axe on every route,
- * including these) is what holds this honest.
+ * Mostly COLOR. Starlight's layout, type scale, focus rings and contrast relationships are
+ * its own accessibility work, left as they are, except where the site audit found its chrome
+ * short of the site's own bar: 44 px targets and a visible current page (D4), headings that
+ * reflow (D7), and the release line and site links the docs overrides add (D2, D5). Those
+ * rules are at the end of this file. The site's a11y gate (axe on every route, including
+ * these) is what holds this honest.
  */
 
 /* This file reaches the browser through Starlight's `customCss`, NOT through
@@ -86,4 +88,129 @@
 .sl-markdown-content table:focus-visible {
   outline: 2px solid var(--sl-color-accent-high);
   outline-offset: 2px;
+}
+
+/* D2: the release each page was generated from, under its title (DocsPageTitle.astro). */
+.docs-release {
+  margin-top: 0.5rem;
+  color: var(--sl-color-gray-3);
+  font-size: var(--sl-text-sm);
+}
+
+.docs-release a {
+  color: var(--sl-color-text-accent);
+}
+
+/* D5: the site's links in the docs header and the phone menu (DocsSiteNav.astro). */
+.docs-site-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.docs-site-nav a,
+.docs-site-menu nav a,
+.docs-site-menu summary {
+  display: inline-flex;
+  min-height: 44px;
+  padding-inline: 0.6rem;
+  align-items: center;
+  border-radius: 0.25rem;
+  color: var(--sl-color-gray-2);
+  font-size: var(--sl-text-sm);
+  text-decoration: none;
+}
+
+.docs-site-nav a:hover,
+.docs-site-menu nav a:hover,
+.docs-site-menu summary:hover {
+  color: var(--sl-color-white);
+}
+
+.docs-site-nav a[aria-current],
+.docs-site-menu nav a[aria-current] {
+  color: var(--sl-color-white);
+  text-decoration: underline;
+  text-underline-offset: 0.3em;
+}
+
+.docs-site-menu {
+  display: none;
+  position: relative;
+}
+
+.docs-site-menu summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+.docs-site-menu summary::-webkit-details-marker {
+  display: none;
+}
+
+.docs-site-menu[open] nav {
+  display: grid;
+  position: absolute;
+  z-index: 10;
+  top: 100%;
+  right: 0;
+  min-width: 10rem;
+  padding: 0.25rem;
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 0.5rem;
+  background: var(--sl-color-black);
+}
+
+/* Beside the sidebar and search there is room for one control, not the row. */
+@media (min-width: 50rem) and (max-width: 71.99rem) {
+  .right-group .docs-site-nav {
+    display: none;
+  }
+
+  .right-group .docs-site-menu {
+    display: block;
+  }
+}
+
+.mobile-preferences .docs-site-nav {
+  width: 100%;
+}
+
+/* D4: every control in Starlight's chrome is at least 44 px, like the rest of the site. */
+.sl-skip-link,
+site-search > button,
+.sl-menu-button,
+.social-icons > a,
+.sidebar-content a,
+.sidebar-content summary {
+  min-height: 44px;
+}
+
+site-search > button,
+.sl-menu-button,
+.social-icons > a {
+  min-width: 44px;
+  justify-content: center;
+  align-items: center;
+}
+
+.sl-skip-link,
+.sidebar-content a,
+.sidebar-content summary {
+  display: flex;
+  align-items: center;
+}
+
+/* D4: forced colors drop the accent fill that marks the sidebar's current page. */
+@media (forced-colors: active) {
+  .sidebar-content a[aria-current="page"] {
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
+    text-decoration: underline;
+  }
+}
+
+/* D7: a long heading wraps, its anchor link with it, instead of running past the edge. */
+.sl-markdown-content .sl-heading-wrapper {
+  overflow-wrap: anywhere;
 }

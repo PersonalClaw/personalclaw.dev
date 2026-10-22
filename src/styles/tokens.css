@@ -30,8 +30,8 @@
      tokens.css is the single home for the scale, so a heading is sized by role
      rather than by a clamp re-derived on each page. Values are transcribed exactly
      from DESIGN.md (validate-design-tokens.mjs checks src/ spends this vocabulary). */
-  --fs-display: clamp(3.5rem, 10vw, 6rem);
-  --fs-heading: clamp(2.25rem, 5vw, 4.5rem);
+  --fs-display: clamp(min(3.5rem, 14vw), 10vw, 6rem);
+  --fs-heading: clamp(min(2.25rem, 9vw), 5vw, 4.5rem);
   --fs-title: clamp(1.4rem, 2.5vw, 2rem);
   --fs-body: 1.0625rem;
   --fs-label: 0.9375rem;

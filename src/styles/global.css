@@ -17,16 +17,20 @@ body {
   min-width: 320px;
   margin: 0;
   overflow-x: hidden;
-  background:
-    linear-gradient(rgba(255, 107, 91, 0.025) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 107, 91, 0.02) 1px, transparent 1px),
-    var(--night);
-  background-size: 72px 72px;
+  /* A plain canvas. The coral grid that was drawn here was coral spent as decoration, which
+     DESIGN.md keeps for selection, focus, the primary action and live activity, and it left
+     axe unable to judge the contrast of the text over it (X6 in docs/site-audit.md). */
+  background: var(--night);
   color: var(--ink);
   font-family: var(--font-sans);
   font-size: 1rem;
   line-height: 1.6;
   letter-spacing: 0;
+  /* A word wider than its line breaks instead of pushing its box past the screen, and a grid
+     or flex child can then shrink to the space it is given: what lets every route reflow at
+     200% text on a 320 px phone (X2, tests/browser/reflow.spec.ts). A word that fits its line
+     is never broken. */
+  overflow-wrap: anywhere;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -183,6 +187,7 @@ h3 {
   font-size: 1.08rem;
 }
 
+/* Sentence case, like every label on the site: no all-caps eyebrows (X3 in docs/site-audit.md). */
 .kicker {
   display: flex;
   gap: 0.75rem;
@@ -191,7 +196,6 @@ h3 {
   color: var(--coral-bright);
   font-size: 0.78rem;
   font-weight: 650;
-  text-transform: uppercase;
 }
 
 .kicker::before {
@@ -306,18 +310,33 @@ h3 {
   align-items: center;
   border-radius: 999px;
   color: var(--ink-soft);
-  font-size: 0.95rem;
+  font-size: var(--fs-label);
   font-weight: 550;
 }
 
 .desktop-nav a:hover,
-.desktop-nav a[aria-current="page"] {
+.desktop-nav a[aria-current] {
   background: var(--surface-high);
   color: var(--ink);
 }
 
+/* GitHub on the right is a quiet link like the others, not a primary button: the install
+   path is each page's own primary action (X7 in docs/site-audit.md). */
 .header-github {
+  display: inline-flex;
+  min-height: 44px;
+  padding: 0.5rem 0.85rem;
+  align-items: center;
   justify-self: end;
+  border-radius: 999px;
+  color: var(--ink-soft);
+  font-size: var(--fs-label);
+  font-weight: 550;
+}
+
+.header-github:hover {
+  background: var(--surface-high);
+  color: var(--ink);
 }
 
 .menu-button,
@@ -374,6 +393,24 @@ h3 {
 
 .footer-links a:hover {
   color: var(--coral-bright);
+}
+
+.footer-links a[aria-current] {
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.3em;
+}
+
+/* Forced colors drop the background that marks the header's current page, so it would look
+   like every other link (X5 in docs/site-audit.md). An underline survives the system palette. */
+@media (forced-colors: active) {
+  .desktop-nav a[aria-current],
+  .mobile-menu a[aria-current] {
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 0.3em;
+  }
 }
 
 .footer-meta {
@@ -471,6 +508,18 @@ h3 {
 .system-tabs button[aria-selected="true"] {
   background: var(--coral);
   color: var(--night);
+}
+
+/* Forced colors drop the coral fill, which left the selected tab looking like the others
+   (H10 in docs/site-audit.md). A system-coloured outline and underline survive the palette. */
+@media (forced-colors: active) {
+  .system-tabs button[aria-selected="true"] {
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 0.25em;
+  }
 }
 
 .window-status {
@@ -716,7 +765,6 @@ h3 {
   color: var(--coral-bright);
   font-family: var(--font-mono);
   font-size: 0.72rem;
-  text-transform: uppercase;
 }
 
 .app-card h2 {
@@ -814,8 +862,9 @@ h3 {
   }
 }
 
-/* The header's full row (the brand, six links and the button, with the links centred)
-   needs about 62rem: 995 px at default text, measured. Below that the header is the menu.
+/* The header's full row needed about 62rem with six links and the button (995 px at default
+   text, measured); five links and GitHub need less, so 64rem still holds the row whole. Below
+   that the header is the menu.
    A viewport breakpoint held the row down to 721 px, and from there to 851 px the button
    ran off the right edge, and at 200% text off every desktop window (X1 in
    docs/site-audit.md). A query on the header's own width in rem moves with the text. */
@@ -849,8 +898,8 @@ h3 {
       border-width 160ms ease;
   }
 
-  /* Room for every link, the button's included, at any text size; a short window
-     scrolls the menu rather than cutting its last links off. */
+  /* Room for every link, GitHub's included, at any text size; a short window scrolls the
+     menu rather than cutting its last links off. */
   .mobile-menu.is-open {
     max-height: calc(100dvh - 72px);
     overflow-y: auto;

@@ -22,12 +22,12 @@ colors:
 typography:
   display:
     fontFamily: "DM Sans Variable, DM Sans, system-ui, sans-serif"
-    fontSize: "clamp(3.5rem, 10vw, 6rem)"
+    fontSize: "clamp(min(3.5rem, 14vw), 10vw, 6rem)"
     fontWeight: 300
     lineHeight: 0.96
   heading:
     fontFamily: "DM Sans Variable, DM Sans, system-ui, sans-serif"
-    fontSize: "clamp(2.25rem, 5vw, 4.5rem)"
+    fontSize: "clamp(min(2.25rem, 9vw), 5vw, 4.5rem)"
     fontWeight: 380
     lineHeight: 1.02
   title:
@@ -104,7 +104,7 @@ Neutrals stay close to true gray with a slight red tint for cohesion. There are 
 
 DM Sans remains because it is already embedded in PersonalClaw's product identity. Marketing scale comes from its variable weight and wide display range rather than adding a fashionable second family. JetBrains Mono is limited to real commands, paths, provider names, and architecture labels.
 
-Display copy uses lighter fractional weights and solid color. Body copy stays at 17px with a maximum measure of 68 characters. Letter spacing is `0`; the display floor is no tighter than `-0.03em`.
+Display copy uses lighter fractional weights and solid color. The display and heading floors are capped by the screen's width as well as the text size (`min(3.5rem, 14vw)`, `min(2.25rem, 9vw)`), so at 200% text on a 320 px phone a heading's longest word still fits its line; a word that cannot fit breaks rather than running off the edge. Body copy stays at 17px with a maximum measure of 68 characters. Letter spacing is `0`; the display floor is no tighter than `-0.03em`.
 
 ## Layout
 
