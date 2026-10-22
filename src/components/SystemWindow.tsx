@@ -97,23 +97,25 @@ export function SystemWindow({ views }: { views: View[] }) {
       </div>
 
       <div
-        className="system-frame"
+        className="system-panel"
         id="system-panel"
         role="tabpanel"
         aria-labelledby={`tab-${active.id}`}
       >
-        <img
-          key={active.id}
-          className="system-image is-active"
-          src={active.src}
-          srcSet={active.srcSet}
-          sizes={active.sizes}
-          width={active.width}
-          height={active.height}
-          alt={`${active.label} view in the PersonalClaw dashboard`}
-          loading="eager"
-          fetchPriority={activeIndex === 0 ? "high" : "auto"}
-        />
+        <div className="system-frame">
+          <img
+            key={active.id}
+            className="system-image is-active"
+            src={active.src}
+            srcSet={active.srcSet}
+            sizes={active.sizes}
+            width={active.width}
+            height={active.height}
+            alt={`${active.label} view in the PersonalClaw dashboard`}
+            loading="eager"
+            fetchPriority={activeIndex === 0 ? "high" : "auto"}
+          />
+        </div>
         <div className="system-caption">
           <p>{active.title}</p>
           <span>{active.description}</span>

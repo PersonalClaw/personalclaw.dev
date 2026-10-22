@@ -11,6 +11,9 @@ const FIRST_VIEWPORTS = [
   { name: "phone", width: 390, height: 844 }
 ];
 
+/** Below this width the System Window's caption moves under the capture instead of over it. */
+const PHONE_CAPTION_BELOW = 640;
+
 /** How much of the window's real capture must be on screen, of its height. */
 const CAPTURE_SHOWN = 0.5;
 
@@ -93,5 +96,21 @@ for (const size of FIRST_VIEWPORTS) {
     expect(coral.bottom, "the coral field ends inside the first viewport").toBeLessThan(size.height);
     expect(frame.top, "the window starts on the coral field").toBeLessThan(coral.bottom);
     expect(frame.bottom, "the window reaches past the coral into the dark theater").toBeGreaterThan(coral.bottom);
+
+    // Every view's tab is whole on screen: none is clipped at the strip's edge.
+    const strip = await box(systemWindow.locator(".system-tabs"));
+    const tabs = systemWindow.getByRole("tab");
+    for (let index = 0; index < (await tabs.count()); index += 1) {
+      const tab = await box(tabs.nth(index));
+      const label = await tabs.nth(index).textContent();
+      expect(tab.left, `the ${label} tab starts inside the strip`).toBeGreaterThanOrEqual(strip.left - 0.5);
+      expect(tab.right, `the ${label} tab ends inside the strip`).toBeLessThanOrEqual(strip.right + 0.5);
+    }
+
+    // On a phone the caption sits under the capture, so the product itself stays in view.
+    if (size.width < PHONE_CAPTION_BELOW) {
+      const caption = await box(systemWindow.locator(".system-caption"));
+      expect(caption.top, "the caption starts below the capture").toBeGreaterThanOrEqual(shot.bottom - 0.5);
+    }
   });
 }
