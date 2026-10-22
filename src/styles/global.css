@@ -545,6 +545,12 @@ h3 {
   box-shadow: 0 0 0 4px rgba(87, 201, 137, 0.12);
 }
 
+/* The tab panel holds the capture and its caption; the caption lies over the capture's corner
+   until a phone has no corner to spare (below). */
+.system-panel {
+  position: relative;
+}
+
 .system-frame {
   position: relative;
   overflow: hidden;
@@ -988,9 +994,13 @@ h3 {
     overflow-x: auto;
   }
 
+  /* The tabs share the strip's width, so every view is in sight at 390 px; the strip still
+     scrolls if larger text makes them wider than it. */
   .system-tabs button {
-    min-width: 72px;
+    flex: 1 0 auto;
+    min-width: 44px;
     min-height: 44px;
+    padding-inline: 0.5rem;
   }
 
   .window-status {
@@ -1040,6 +1050,23 @@ h3 {
 
   .app-card {
     min-height: 260px;
+  }
+}
+
+/* On a phone the caption sits under the capture instead of over most of it. */
+@media (max-width: 639px) {
+  .system-caption {
+    position: static;
+    width: auto;
+    border: 0;
+    border-top: 1px solid var(--line);
+    border-radius: 0;
+    background: var(--theater);
+    backdrop-filter: none;
+  }
+
+  .system-caption p {
+    margin: 0;
   }
 }
 
