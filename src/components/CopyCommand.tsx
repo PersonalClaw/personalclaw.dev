@@ -1,8 +1,10 @@
 import { Check, Copy } from "lucide-react";
 import { useEffect, useState } from "react";
 
-export function CopyCommand({ command }: { command: string }) {
+/** A command in a well with a copy button. `label` names the command ("Download command"). */
+export function CopyCommand({ command, label = "Install command" }: { command: string; label?: string }) {
   const [copied, setCopied] = useState(false);
+  const lowered = label.charAt(0).toLowerCase() + label.slice(1);
 
   useEffect(() => {
     if (!copied) return;
@@ -17,7 +19,7 @@ export function CopyCommand({ command }: { command: string }) {
 
   return (
     <div className="command-block">
-      <code tabIndex={0} aria-label="Install command">
+      <code tabIndex={0} aria-label={label}>
         {command.split("\n").map((line) => (
           <span className="command-line" key={line}>
             <span className="prompt" aria-hidden="true">$</span> {line}
@@ -28,12 +30,12 @@ export function CopyCommand({ command }: { command: string }) {
         className="icon-button copy-button"
         type="button"
         onClick={copy}
-        aria-label={copied ? "Install command copied" : "Copy install command"}
+        aria-label={copied ? `${label} copied` : `Copy ${lowered}`}
       >
         {copied ? <Check size={19} aria-hidden="true" /> : <Copy size={19} aria-hidden="true" />}
       </button>
       <span className="sr-only" role="status" aria-live="polite">
-        {copied ? "Install command copied" : ""}
+        {copied ? `${label} copied` : ""}
       </span>
     </div>
   );

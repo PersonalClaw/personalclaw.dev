@@ -54,6 +54,7 @@ rounded:
   control: "999px"
   surface: "8px"
   media: "8px"
+  key: "4px"
 spacing:
   xs: "0.25rem"
   sm: "0.5rem"
@@ -105,7 +106,7 @@ The scene behind the theater is a technical owner at a personal desk after dark,
 The system rejects what PRODUCT.md rejects: the hosted-chat wrapper look, generic AI-tool marketing, glow and purple or blue gradients, fake product UI, and beige-paper calm. It also rejects the near-black-plus-one-accent cluster that most AI tools land in; the coral field is how this site leaves it without leaving the brand.
 
 **Key Characteristics:**
-- One coral field per page at most: the hero, the final call to action, a brand moment. Everywhere else coral marks only actions and live agent states.
+- At most one coral field on screen at a time: the hero, the final call to action, a brand moment. Everywhere else coral marks only actions and live agent states.
 - The System Window is the one signature. It crosses from coral into the theater in the first viewport at 1440 x 900 and at 390 x 844, and a browser test holds it there (`tests/browser/first-viewport.spec.ts`).
 - No full-screen brand preamble: the coral field ends inside the first viewport, so the product proof is never a scroll away.
 - A 12-column grid in a 1440 px shell; captures may bleed full width; prose stays at 68 characters or less, and features alternate capture and text.
@@ -183,6 +184,7 @@ The system is flat and tonal: depth comes from the step between night, theater a
 - **Primary on coral:** coral-ink fill with a coral label (5.8:1), because a coral button would vanish on the field. Hover deepens it to night with a bright-coral label.
 - **Secondary:** a surface fill with a strong line; hover raises it to theater high.
 - **Quiet link on coral:** coral-ink text, underlined, with a leading icon: "Watch the tour".
+- **Keycaps:** a key named in copy (`⌘`, `Enter`) sits in a small cap with 4 px corners, a strong line and theater high, in mono.
 - **Hover / Focus:** 160 ms colour transitions and a 2 px lift. Focus is a 2 px ring offset 3 px, bright coral on dark and coral ink on the coral field.
 - No arrow is glued to a label.
 
@@ -199,8 +201,13 @@ The system is flat and tonal: depth comes from the step between night, theater a
 - In the hero it sits in the copy's right-hand seven columns on desktop and below the copy on phones, and reaches past the coral field's lower edge by `clamp(6.5rem, 13vw, 12.5rem)` into the theater.
 
 ### Hero
-- The coral field holds the mark (in coral ink, from the source SVG), the wordmark, the line "One agentic OS. Your machine. Your rules.", one plain sentence, the primary action and "Watch the tour". No version label and no facts in it.
-- The theater below holds the window's lower half and the project facts (MIT licensed, no usage tracking, self-hosted) in muted ink.
+- The coral field holds the mark (in coral ink, from the source SVG), the wordmark, the line "One agentic OS. Your machine. Your rules.", one plain sentence, the primary action "Install PersonalClaw" (it opens the install panel) and "Watch the tour". No version label and no facts in it.
+- The window's lower half lands on the theater, where Home's first chapter, the trust rows, begins beside it. Trust facts never sit in the hero as bare chips: each is a row with its evidence and the release it was checked at.
+
+### Install panel
+- A native popover, not a modal: Escape and a click outside close it, focus starts on its heading and returns to the button that opened it, and it opens with no script.
+- Three numbered steps, the one numbered list on Home because the order is the safety: download (runs nothing), check (the SHA-256, a pasteable check, the signature state, platforms, the Python, and the whole script behind "Read the script"), then run, with the pre-1.0 snapshot line.
+- Night soft, 8 px corners, a strong line and the raised-frame shadow; every command in a well with its copy button.
 
 ## 6. Do's and Don'ts
 

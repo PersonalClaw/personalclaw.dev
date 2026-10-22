@@ -122,7 +122,7 @@ test("every declared local and keyless app renders its derived chip, once", asyn
   runtime.assertClean();
 });
 
-test("copy command writes the complete install command", async ({
+test("copy command writes the complete download command", async ({
   page,
   context,
   baseURL
@@ -132,14 +132,16 @@ test("copy command writes the complete install command", async ({
     origin: baseURL
   });
   await openPage(page, "/");
+  await page.locator(".home-hero").getByRole("button", { name: "Install PersonalClaw" }).click();
 
-  const copy = page.locator(".copy-button");
-  await expect(copy).toHaveAccessibleName("Copy install command");
+  // The download step only downloads: nothing on Home copies a pipe into a shell.
+  const copy = page.locator("#install-panel .copy-button").first();
+  await expect(copy).toHaveAccessibleName("Copy download command");
   await copy.click();
-  await expect(copy).toHaveAccessibleName("Install command copied");
-  await expect(page.getByRole("status")).toHaveText("Install command copied");
+  await expect(copy).toHaveAccessibleName("Download command copied");
+  await expect(page.getByRole("status").filter({ hasText: "copied" })).toHaveText("Download command copied");
   const clipboard = await page.evaluate(() => navigator.clipboard.readText());
-  expect(clipboard).toBe("curl -fsSL https://personalclaw.dev/install | sh");
+  expect(clipboard).toBe("curl -fsSLO https://personalclaw.dev/install");
   runtime.assertClean();
 });
 

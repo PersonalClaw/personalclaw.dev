@@ -26,7 +26,7 @@ The personal AI agent platform you fully own: one local gateway, observable auto
 
 ## Conversion & proof
 
-- Primary CTA: **Get PersonalClaw**, linking to the public GitHub repository and installation path.
+- Primary CTA: **Install PersonalClaw**, which opens Home's install panel: download the installer without running it, check its checksum and read it, then run it. A page without the panel links **Get PersonalClaw** to the public GitHub repository.
 - Secondary CTA: **Watch the tour**, the guided product tour at `/product#tour`, before visitors commit.
 - The line to remember: **One agentic OS. Your machine. Your rules.**
 - Belief ladder:
