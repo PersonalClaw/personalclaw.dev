@@ -15,7 +15,18 @@ refresh — executable by the main agent or a subagent with these instructions.
 |---|---|
 | `screenshots.manifest.json` | The contract: every shot → the real-world scenario to seed, the app view to capture, the exact image spec, and the site placements + copy it drives. |
 | `screenshots.schema.json` | JSON Schema the manifest validates against (`npm run validate:marketing-manifest`). |
-| `../scripts/validate-marketing-manifest.mjs` | Enforces manifest↔repo consistency (every shipping shot's asset exists; no orphan `src/assets/*.png`; placement files real). Runs inside `test:static` → the pre-push gate. |
+| `../scripts/validate-marketing-manifest.mjs` | Enforces manifest↔repo consistency (every shipping shot's asset exists; no orphan `src/assets/*.png`; placement files real; every shipping video's output, poster and captions exist and its output fits its byte budget; no orphan `public/media/` file). Runs inside `test:static` → the pre-push gate. |
+| `../src/components/LoopVideo.astro` and `loop-video.mjs` | The one loop player: a `videos` entry by id, its poster first, a visible play and pause, paused offscreen and while the page is hidden, and only the poster under reduced motion or data saver. `tests/browser/loop-video.spec.ts` holds it. |
+
+**Videos** (#94) are the manifest's `videos` list. Each entry names what it is made from
+(`composition`, `sources`), the core release its captures show (`capturedAt`), its box (`width`,
+`height`), its files under `public/media/` (`output`, `poster`, `captions`), its byte budget, its
+autoplay policy and its no-media fallback, and where it plays. The policy is `none` (no byte
+before its play control) or `idle-hint` (it may start once the page is idle, and only while
+reduced motion and data saver are both off). No route loads a video byte while it loads
+(Lighthouse's `media` budget is zero). Rendering compositions with Hyperframes (`render:videos`)
+is not built yet: it waits on the Hyperframes install the brief leaves to the maintainer
+(`.agents/skills/README.md`).
 
 **Key rule:** every **shipping** shot is **re-captured every release** — there is no
 "still current, skip it" state. Even a small UI shift changes a shot, so the whole

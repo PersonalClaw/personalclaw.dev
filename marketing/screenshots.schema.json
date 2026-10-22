@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://personalclaw.dev/marketing/screenshots.schema.json",
-  "title": "PersonalClaw marketing screenshot + content manifest",
+  "title": "PersonalClaw marketing screenshot, video and content manifest",
   "description": "The single source of truth binding each marketing screenshot to the real-world scenario it must depict, the app view it is captured from, the exact image spec, and the site placements + copy it drives. Update this FIRST for a release, then let it drive the re-capture + content refresh (see marketing/README.md).",
   "type": "object",
   "required": ["schemaVersion", "capture", "shots"],
@@ -41,6 +41,11 @@
       "type": "array",
       "minItems": 1,
       "items": { "$ref": "#/$defs/shot" }
+    },
+    "videos": {
+      "type": "array",
+      "description": "Every video the site plays (#94): what it is made from, the release it shows, where it plays and the rules it plays by. scripts/validate-marketing-manifest.mjs holds each shipping entry's files and budget, and src/components/loop-video.mjs plays a loop by its autoplay policy.",
+      "items": { "$ref": "#/$defs/video" }
     }
   },
   "$defs": {
@@ -112,8 +117,17 @@
         },
         "kind": {
           "type": "string",
-          "enum": ["hero-system-window", "product-image", "index-image"],
-          "description": "Rendering mechanism: the tabbed hero (getImage) vs an Astro <Image> on a page."
+          "enum": [
+            "hero-system-window",
+            "product-image",
+            "index-image",
+            "hero-loop",
+            "feature-loop",
+            "product-tour",
+            "release-page",
+            "social-frame"
+          ],
+          "description": "Rendering mechanism: for a shot, the tabbed hero (getImage) or an Astro <Image> on a page; for a video, the hero loop in the System Window, a feature loop beside its section, the product tour, the release page or a social frame."
         },
         "caption": {
           "type": "string",
@@ -123,6 +137,103 @@
           "type": "string",
           "description": "The alt text at the call site."
         }
+      }
+    },
+    "video": {
+      "type": "object",
+      "required": [
+        "id",
+        "kind",
+        "sources",
+        "capturedAt",
+        "durationSeconds",
+        "width",
+        "height",
+        "output",
+        "poster",
+        "captions",
+        "budgetBytes",
+        "autoplay",
+        "fallback",
+        "placements",
+        "status"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+        "kind": {
+          "type": "string",
+          "enum": ["loop", "narrative"],
+          "description": "A loop is short, silent and muted, and repeats. A narrative video plays once and carries captions."
+        },
+        "composition": {
+          "type": ["string", "null"],
+          "pattern": "^marketing/compositions/[a-z0-9-]+/index\\.html$",
+          "description": "The Hyperframes composition it is rendered from, or null for a raw recording made before the pipeline existed."
+        },
+        "sources": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+          "description": "The ids of the shots or recorded clips it is made from. Empty only for a raw recording."
+        },
+        "capturedAt": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+(?:[-+][0-9A-Za-z.-]+)?$",
+          "description": "The core release its captures show."
+        },
+        "durationSeconds": { "type": "number", "exclusiveMinimum": 0 },
+        "width": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "The video's box, so the poster, the first frame and a failed load take the same space."
+        },
+        "height": { "type": "integer", "minimum": 1 },
+        "output": { "type": "string", "pattern": "^public/media/[a-z0-9-]+\\.(mp4|webm)$" },
+        "poster": {
+          "type": "string",
+          "pattern": "^public/media/[a-z0-9-]+\\.(webp|png|jpg)$",
+          "description": "A real, release-pinned frame: shown first, and alone under reduced motion or data saver."
+        },
+        "captions": {
+          "type": ["string", "null"],
+          "pattern": "^public/media/[a-z0-9-]+\\.vtt$",
+          "description": "Required for a narrative video; null for a silent loop."
+        },
+        "chapters": {
+          "enum": ["captions", null],
+          "description": "'captions' when its chapters are read from the captions track (src/data/tour.mjs); null for none."
+        },
+        "budgetBytes": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "The most the output may weigh, in bytes."
+        },
+        "autoplay": {
+          "type": "string",
+          "enum": ["none", "idle-hint"],
+          "description": "none: no byte loads before an explicit play. idle-hint: once the page is idle it may start, muted, and only while reduced motion and data saver are both off."
+        },
+        "fallback": {
+          "type": "string",
+          "minLength": 1,
+          "description": "What a reader keeps when the video fails or is off: the poster, and the text beside it."
+        },
+        "audio": {
+          "type": "array",
+          "description": "Every audio asset it uses, with its source and licence.",
+          "items": {
+            "type": "object",
+            "required": ["file", "source", "licence"],
+            "additionalProperties": false,
+            "properties": {
+              "file": { "type": "string", "minLength": 1 },
+              "source": { "type": "string", "minLength": 1 },
+              "licence": { "type": "string", "minLength": 1 }
+            }
+          }
+        },
+        "placements": { "type": "array", "items": { "$ref": "#/$defs/placement" } },
+        "status": { "type": "string", "enum": ["shipping", "new-needs-placement", "retired"] }
       }
     }
   }
