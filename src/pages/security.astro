@@ -1,607 +1,844 @@
 ---
-import {
-  Activity,
-  ArrowRight,
-  Ban,
-  Box,
-  Check,
-  CircleAlert,
-  Eye,
-  Fingerprint,
-  KeyRound,
-  LockKeyhole,
-  Network,
-  ScanSearch,
-  ShieldCheck,
-  Terminal
-} from "lucide-react";
 import BaseLayout from "../layouts/BaseLayout.astro";
+import { BoundaryViews } from "../components/BoundaryViews";
 import { releaseFacts } from "../data/release";
+import security from "../data/security.json";
+import capabilities from "../data/capabilities.json";
 
 /*
- * THE "GUARDED EGRESS" CARD IS DELIBERATELY NARROW NOW. It used to say network access passes
- * through allow and deny host policy instead of ambient fetch, which overclaimed twice — and
- * the launch post had already cut both halves as unpublishable:
+ * EVERY CLAIM ON THIS PAGE IS A ROW IN src/data/security.json, read against core at the pinned
+ * release, and scripts/validate-security-render.mjs holds the page to it: each control links the
+ * file that enforces it at the tag, the boundary table has one row per boundary in its five
+ * columns, and the known limits come before the controls and name the release they were read at.
  *
- *   - The exclusive "only these hosts" stance is not the default. v0.1.3 had none at all;
- *     v0.2.0 adds `allow_only`, so a run whose egress tier the operator ceiling sets to
- *     `listed` (or `registry`) reaches only those hosts. A run with no tier set gets the
- *     default `all` profile, which blocks address classes rather than listing destinations,
- *     so the card says "by default" and names the switch instead of promising a fence.
- *   - It is not the whole machine. It is a real chokepoint for core's own fetch surfaces,
- *     where the range checks and address pinning apply, but an app backend is a separate
- *     process with its own network stack and its traffic never passes this guard.
+ * THE CLAIMS THAT WERE NARROWED, and why, so they are not widened again:
  *
- * What survives is what the code actually does: block the loopback, private and link-local
- * classes, pin the resolved address so the connection dials what was checked, and hold a run
- * to listed hosts only when its tier says so. The
- * `egress_default_deny`, `single_chokepoint` and `egress_allowlist_exclusive` rows on
- * /compare carry the same three findings with their sources.
+ *   - Guarded egress. It used to say network access passes through allow and deny host policy
+ *     instead of ambient fetch, which overclaimed twice. The exclusive "only these hosts" stance
+ *     is not the default: a run reaches only listed hosts when the governance ceiling sets its
+ *     egress tier, and the default profile blocks address classes rather than listing
+ *     destinations. And it is not the whole machine: an app backend is a separate process with
+ *     its own network stack, and its traffic never passes the guard. The `egress_default_deny`,
+ *     `single_chokepoint` and `egress_allowlist_exclusive` rows on /compare carry the findings.
+ *   - The security log. It said "HMAC-linked security events make alteration visible". Each
+ *     entry carries an HMAC over its own record, so an entry edited in place fails
+ *     `verify_integrity` in `sel.py`; the same function tolerates breaks in the chain on purpose,
+ *     since several processes append to one log, so a deleted entry goes unreported (S1 in
+ *     docs/site-audit.md, the /compare `audit_log` row).
+ *   - Optional sign-in. The threat model cites nothing for it, so its row cites the login door
+ *     itself, `dashboard/handlers/auth.py`, which says it never becomes the only way in.
+ *   - The dependency audit. It is no longer report-only, but nothing requires it to pass before a
+ *     change reaches the default branch (the `dep_scan_gate` row).
  *
- * THE LOG CARD SAYS WHAT THE VERIFIER CATCHES, AND WHAT IT DOES NOT. It said "HMAC-linked
- * security events make alteration visible", and the decision path ended "Security event is
- * linked". At the pinned release each entry carries an HMAC over its own record, so an entry
- * edited in place fails `verify_integrity` in `sel.py`. The same function
- * tolerates breaks in the `prev_hash` chain on purpose, since the gateway, channel and MCP
- * processes append to one log without coordinating, so an entry removed from the file goes
- * unreported. The card says both, and the /compare `audit_log` row carries the finding with
- * its source.
+ * The arrow chain and the numbered 01 to 07 grid are gone (S3, S4): the boundary is drawn in two
+ * views of zones and the boundaries between them, as live text, and the controls are rows, not a
+ * sequence. Authority is a line, because it is one: a proposal is checked, then answered, then run,
+ * then recorded. Network is a hub on the gateway and must stay one: drawn as a line, the egress
+ * guard sat between an app and the internet, which says an app's backend traffic passes the guard,
+ * and it never does (scripts/security-page.mjs refuses a network view drawn as a line). The threat model and the limitations page are linked in-site, since both are part of
+ * the /docs corpus generated from the pin; SECURITY.md is not in that corpus, so it is pinned to
+ * the release commit. scripts/validate-source-pins.mjs fails the build on a branch-pinned link.
  */
 
-// The threat model and the limitations page are LINKED IN-SITE, not to GitHub. Both are
-// part of the synchronized /docs corpus, which is generated from the pinned release — so
-// an in-site link is the only one guaranteed to show the reader the version this page
-// describes. The previous `blob/main` links pointed at core's development branch: a
-// security document read there can describe controls the released build does not have,
-// which is exactly the failure /compare exists to prevent. SECURITY.md is not in the docs
-// corpus (it is a repository-root file), so it is pinned to the release commit instead.
-// scripts/validate-source-pins.mjs fails the build if a branch-pinned source link returns.
 const securityPolicyUrl =
   `${releaseFacts.core.source.repositoryUrl}/blob/${releaseFacts.core.source.commit}/SECURITY.md`;
+
+const statusLabels = Object.fromEntries(
+  Object.entries(capabilities.verdicts).map(([id, verdict]) => [id, verdict.label])
+);
+
+const checkedOn = new Date(`${security.checked_on}T12:00:00Z`).toLocaleDateString("en-US", {
+  year: "numeric",
+  month: "long",
+  day: "numeric",
+  timeZone: "UTC"
+});
+
+// Each limit's link names where it goes, so no two links share a name and a destination differs.
+const compareClaims = Object.fromEntries(capabilities.rows.map((row) => [row.id, row.claim]));
+const compareVerdicts = Object.fromEntries(capabilities.rows.map((row) => [row.id, row.verdict]));
+const limitSource = (limit: { compare?: string; href?: string; href_label?: string }) =>
+  limit.compare
+    ? {
+        href: `/compare#${limit.compare}`,
+        label: `On Compare, ${statusLabels[compareVerdicts[limit.compare]].toLowerCase()}: “${compareClaims[limit.compare].replace(/\.$/, "")}”`
+      }
+    : { href: limit.href ?? "/docs/security/limitations", label: limit.href_label ?? "The limitations page" };
+
+// A citation is a file and, after a comma, the symbol in it. The symbol gets its own line, and the
+// path breaks only after a slash, never inside a name. The comma stays in the text, so the link's
+// name is the citation as the data states it.
+const citation = (label: string) => {
+  const [path, ...symbol] = label.split(", ");
+  return { path: path.split(/(?<=\/)/), symbol: symbol.join(", ") };
+};
+
+// The verdicts the boundaries carry, defined where the map shows them.
+const verdictMeanings: Record<string, string> = Object.fromEntries(
+  Object.entries(capabilities.verdicts).map(([id, verdict]) => [id, verdict.meaning])
+);
+const usedVerdicts = Object.keys(verdictMeanings).filter((id) =>
+  security.boundaries.some((boundary) => boundary.status === id)
+);
+
+const viewLabel = Object.fromEntries(security.views.map((view) => [view.id, view.label]));
 ---
 
 <BaseLayout
   title="Security · PersonalClaw"
-  description="How PersonalClaw constrains agent autonomy with host approvals, command policy, guarded egress, scoped app tokens, scanning, and tamper-evident log entries."
+  description="Where PersonalClaw's boundary is, what it does not enforce, and the file that enforces each control at the pinned release."
 >
   <section class="security-hero">
-    <div class="shell">
-      <div class="hero-layout">
-        <div>
-          <p class="kicker">Security model</p>
-          <h1 class="display">The model proposes. The host decides.</h1>
-        </div>
-        <div class="hero-copy">
-          <p>
-            PersonalClaw assumes agents will request powerful actions. It keeps
-            enforceable policy in deterministic host code, outside the model and
-            outside spawned agent runtimes.
-          </p>
-          <p>
-            That boundary is an approval and policy gate, plus credential paths
-            hidden from spawned agents &mdash; not an operating-system jail. By
-            default an approved command still runs with your user&rsquo;s
-            filesystem and network reach. A container or virtual-machine tier
-            (Docker, or the Lima Sandbox app) can hold a terminal session, an agent
-            CLI run or an app&rsquo;s backend instead. It is opt-in, and nothing
-            here claims it for the default path.
-          </p>
-          <a class="button button-primary" href="#controls">
-            Inspect the controls <ArrowRight size={18} aria-hidden="true" />
-          </a>
-        </div>
-      </div>
-
-      <div class="trust-boundary" aria-label="PersonalClaw trust boundary">
-        <div class="zone zone-user">
-          <span>Owner</span>
-          <Fingerprint size={28} aria-hidden="true" />
-          <strong>You approve the boundary</strong>
-        </div>
-        <span class="boundary-arrow" aria-hidden="true">→</span>
-        <div class="zone zone-host">
-          <span>Trusted host</span>
-          <ShieldCheck size={28} aria-hidden="true" />
-          <strong>Gateway · policy · state</strong>
-          <small>Deterministic enforcement</small>
-        </div>
-        <span class="boundary-arrow" aria-hidden="true">→</span>
-        <div class="zone zone-agent">
-          <span>Untrusted requests</span>
-          <Terminal size={28} aria-hidden="true" />
-          <strong>Models · tools · apps</strong>
-          <small>Gated by host policy</small>
-        </div>
+    <div class="shell hero-layout">
+      <h1 class="display"><span>The model proposes.</span> <span>The host decides.</span></h1>
+      <div class="hero-copy">
+        <p>
+          Host code, outside the model, answers what an agent asks. It is an approval gate, not an
+          operating-system jail.
+        </p>
+        <a class="button button-primary" href="#limits">Read what it does not enforce</a>
       </div>
     </div>
   </section>
 
-  <section class="section controls section-rule" id="controls">
+  <section class="section boundary section-rule" id="boundary" aria-labelledby="boundary-title">
     <div class="shell">
       <div class="section-head">
-        <div>
-          <p class="kicker">Defense in depth</p>
-          <h2>Controls that do not depend on good prompting.</h2>
-        </div>
+        <h2 id="boundary-title">Where the boundary is</h2>
         <p>
-          Each layer addresses a different path from agent intent to host
-          effect. No single toggle carries the whole security story.
+          Two ways to read one boundary: who decides what runs, and where your data goes. Each
+          label opens its row in the table under the map.
         </p>
       </div>
 
-      <div class="control-grid">
-        <article>
-          <span>01</span>
-          <ShieldCheck size={25} aria-hidden="true" />
-          <h3>Approval modes</h3>
-          <p>Host policy determines when tool calls execute, pause for consent, or are rejected.</p>
-        </article>
-        <article>
-          <span>02</span>
-          <Ban size={25} aria-hidden="true" />
-          <h3>Command denylist</h3>
-          <p>Known-destructive shell patterns are blocked even when a model asks confidently.</p>
-        </article>
-        <article>
-          <span>03</span>
-          <Network size={25} aria-hidden="true" />
-          <h3>Guarded egress</h3>
-          <p>
-            Core fetch surfaces, model providers and an app&rsquo;s SDK requests
-            route through one policy check that blocks LAN, loopback and link-local
-            targets and pins the resolved address. By default it is not a
-            destination allow-list; a run reaches only the hosts you list when the
-            operator ceiling sets its egress tier to listed.
-          </p>
-        </article>
-        <article>
-          <span>04</span>
-          <KeyRound size={25} aria-hidden="true" />
-          <h3>Scoped app tokens</h3>
-          <p>Apps call the gateway with bounded tokens. An app&rsquo;s own code still runs as you, and its install review says so.</p>
-        </article>
-        <article>
-          <span>05</span>
-          <ScanSearch size={25} aria-hidden="true" />
-          <h3>Scanner gate</h3>
-          <p>Apps enter quarantine first. A dangerous verdict cannot be overridden into activation.</p>
-        </article>
-        <article>
-          <span>06</span>
-          <Activity size={25} aria-hidden="true" />
-          <h3>Tamper-evident entries</h3>
-          <p>
-            Each security event carries an HMAC over its own record, so the
-            integrity check catches an entry edited in place. It does not catch a
-            deleted entry: the check allows gaps in the chain, because several
-            processes write to one log.
-          </p>
-        </article>
-        <article>
-          <span>07</span>
-          <Fingerprint size={25} aria-hidden="true" />
-          <h3>Optional sign-in</h3>
-          <p>
-            Password and 2FA for reaching the dashboard from outside your
-            network. Off by default, and additive &mdash; the local token stays
-            available, so a misconfigured login cannot lock you out.
-          </p>
-        </article>
+      <BoundaryViews
+        client:load
+        views={security.views}
+        crossings={security.boundaries.map(({ id, view, crossing, status }) => ({ id, view, crossing, status }))}
+        statusLabels={statusLabels}
+      />
+
+      <dl class="verdict-key">
+        {usedVerdicts.map((id) => (
+          <div>
+            <dt>{statusLabels[id]}</dt>
+            <dd>{verdictMeanings[id]}</dd>
+          </div>
+        ))}
+      </dl>
+
+      <div class="boundary-table" role="region" aria-labelledby="boundary-table-caption" tabindex="0">
+        <table data-boundaries>
+          <caption id="boundary-table-caption">Every boundary, with its evidence and its known limit</caption>
+          <thead>
+            <tr>
+              <th scope="col">Boundary</th>
+              <th scope="col">Responsibility</th>
+              <th scope="col">Enforcement</th>
+              <th scope="col">Evidence</th>
+              <th scope="col">Known limit</th>
+            </tr>
+          </thead>
+          <tbody>
+            {security.boundaries.map((boundary) => {
+              const cite = citation(boundary.evidence_label);
+              return (
+              <tr id={`boundary-${boundary.id}`} data-boundary={boundary.id} data-view={boundary.view}>
+                <th scope="row">
+                  {boundary.name}
+                  <span class="boundary-view">{viewLabel[boundary.view]}</span>
+                </th>
+                <td data-label="Responsibility">{boundary.responsibility}</td>
+                <td data-label="Enforcement">{statusLabels[boundary.status] ?? boundary.status}</td>
+                <td data-label="Evidence">
+                  <a href={boundary.evidence_url}>
+                    <code><span class="cite-path">{cite.path.map((part) => <Fragment>{part}<wbr /></Fragment>)}{cite.symbol && ","}</span>{cite.symbol && <span class="cite-symbol"> {cite.symbol}</span>}</code>
+                  </a>
+                </td>
+                <td data-label="Known limit"><a href={boundary.limit_href}>{boundary.limit}</a></td>
+              </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
     </div>
   </section>
 
-  <section class="section request-path">
-    <div class="shell">
-      <div class="path-heading">
-        <div>
-          <p class="kicker">A tool request</p>
-          <h2 class="section-title">Every tool request crosses the gate.</h2>
-        </div>
+  <section class="section limits" id="limits" aria-labelledby="limits-title">
+    <div class="shell limits-layout">
+      <div class="limits-intro">
+        <h2 id="limits-title" class="section-title">What it does not enforce</h2>
         <p>
-          The decision path stays explicit for native chat and autonomous loops.
-          An ACP coding agent meets it for every call it asks about; a call it
-          runs without asking is shown and logged as ungated once it has run.
+          Read against {security.release}, the last release we verified, on {checkedOn}. Each
+          one links where it is stated in full.
+        </p>
+        <a class="button button-secondary" href="/docs/security/limitations">Read every limitation</a>
+      </div>
+      <ul class="limit-list" role="list">
+        {security.limits.map((limit) => {
+          const source = limitSource(limit);
+          return (
+            <li data-limit={limit.id}>
+              <p>{limit.statement}</p>
+              <a href={source.href}>{source.label}</a>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  </section>
+
+  <section class="section controls section-rule" id="controls" aria-labelledby="controls-title">
+    <div class="shell">
+      <div class="section-head">
+        <h2 id="controls-title">The controls, and the code that enforces each</h2>
+        <p>
+          Each links the file that enforces it at {security.release}. A control is listed only
+          if that code has a live caller at the tag; a setting nothing reads is not a control.
         </p>
       </div>
+      <ul class="control-rows" role="list">
+        {security.controls.map((control) => {
+          const cite = citation(control.source_label);
+          return (
+          <li data-control={control.id}>
+            <h3>{control.name}</h3>
+            <div>
+              <p>{control.statement}</p>
+              <a href={control.source_url}>
+                <code><span class="cite-path">{cite.path.map((part) => <Fragment>{part}<wbr /></Fragment>)}{cite.symbol && ","}</span>{cite.symbol && <span class="cite-symbol"> {cite.symbol}</span>}</code>
+              </a>
+            </div>
+          </li>
+          );
+        })}
+      </ul>
+    </div>
+  </section>
 
-      <ol class="decision-path">
-        <li>
-          <span>Request</span>
-          <Terminal size={22} aria-hidden="true" />
-          <strong>Agent asks to use a tool</strong>
-        </li>
-        <li>
-          <span>Policy</span>
-          <LockKeyhole size={22} aria-hidden="true" />
-          <strong>Host evaluates mode and rules</strong>
-        </li>
-        <li>
-          <span>Consent</span>
-          <Eye size={22} aria-hidden="true" />
-          <strong>Owner reviews when required</strong>
-        </li>
-        <li>
-          <span>Effect</span>
-          <Check size={22} aria-hidden="true" />
-          <strong>Bounded action executes</strong>
-        </li>
-        <li>
-          <span>Record</span>
-          <Activity size={22} aria-hidden="true" />
-          <strong>Security event is recorded</strong>
-        </li>
+  <section class="section supply section-rule" aria-labelledby="supply-title">
+    <div class="shell supply-layout">
+      <div class="supply-intro">
+        <h2 id="supply-title" class="section-title">An app is code, not a collectible.</h2>
+        <p>
+          Installing one is a staged trust decision. The package stays apart until it is
+          scanned and you have consented to what it declares.
+        </p>
+        <a href={security.supply_chain_source.url}><code>{security.supply_chain_source.label}</code></a>
+      </div>
+      <ol class="supply-steps" role="list">
+        {security.supply_chain.map((step) => (
+          <li>
+            <strong>{step.name}</strong>
+            <span>{step.statement}</span>
+          </li>
+        ))}
       </ol>
     </div>
   </section>
 
-  <section class="section app-security section-rule">
-    <div class="shell app-security-grid">
-      <div class="app-title">
-        <p class="kicker">Supply chain</p>
-        <h2 class="section-title">An app is code, not a collectible.</h2>
-        <p>
-          PersonalClaw treats installation as a staged trust decision. The
-          package stays separate until inspection and consent are complete.
-        </p>
-      </div>
-      <div class="app-lifecycle">
-        <article>
-          <Box size={22} aria-hidden="true" />
-          <div><strong>Quarantine</strong><span>Inactive package boundary</span></div>
-        </article>
-        <article>
-          <ScanSearch size={22} aria-hidden="true" />
-          <div><strong>Scan</strong><span>Risk verdict and static checks</span></div>
-        </article>
-        <article>
-          <Eye size={22} aria-hidden="true" />
-          <div><strong>Consent</strong><span>Declared capabilities shown to owner</span></div>
-        </article>
-        <article>
-          <KeyRound size={22} aria-hidden="true" />
-          <div><strong>Scoped enablement</strong><span>Gateway-issued access</span></div>
-        </article>
-      </div>
-    </div>
-  </section>
-
-  <section class="section honesty">
+  <section class="section report section-rule" aria-labelledby="report-title">
     <div class="narrow">
-      <CircleAlert size={34} aria-hidden="true" />
-      <p class="kicker">Clear limits</p>
-      <h2 class="section-title">Security claims should name their boundary.</h2>
+      <h2 id="report-title" class="section-title">Report a vulnerability</h2>
       <p>
-        PersonalClaw publishes a full threat model — five trust boundaries, an
-        OWASP Agentic Top-10 mapping where every enforced claim cites the module
-        that enforces it, and an honest statement of what is deliberately out of
-        scope. The limitations it can't yet enforce as hard technical boundaries
-        are documented in the code's own words, not softened. It is a pre-1.0
-        project, so breaking changes and security hardening continue. Review the
-        threat model before relying on it for sensitive, irreplaceable workflows.
+        Core's security policy says how to report one privately and what to expect back. The
+        threat model behind this page names each trust boundary and maps the OWASP agentic risks
+        to the code that answers them.
       </p>
-      <div class="honesty-links">
-        <a class="button button-secondary" href="/docs/security/threat-model">
-          Read the threat model <ArrowRight size={18} aria-hidden="true" />
+      <div class="report-links">
+        <a class="button button-primary" href={securityPolicyUrl} target="_blank" rel="noreferrer">
+          Read the security policy
         </a>
-        <a class="button button-secondary" href="/docs/security/limitations">
-          Known limitations <ArrowRight size={18} aria-hidden="true" />
-        </a>
-        <a
-          class="button button-secondary"
-          href={securityPolicyUrl}
-          target="_blank"
-          rel="noreferrer"
-        >
-          Report a vulnerability <ArrowRight size={18} aria-hidden="true" />
-        </a>
+        <a class="button button-secondary" href="/docs/security/threat-model">Read the threat model</a>
       </div>
     </div>
   </section>
 </BaseLayout>
 
 <style>
+  /* The hero is short on purpose: the boundary itself is the first thing to read, so the map's
+     views start inside the first viewport at 1440 by 900. */
   .security-hero {
-    padding: clamp(5rem, 10vw, 9rem) 0 clamp(4rem, 8vw, 7rem);
-    overflow: hidden;
+    padding: clamp(3rem, 5vw, 4.5rem) 0 clamp(1.5rem, 3vw, 2.5rem);
   }
 
   .hero-layout {
     display: grid;
-    grid-template-columns: 1.25fr 0.75fr;
-    gap: clamp(3rem, 9vw, 9rem);
-    align-items: end;
+    gap: 1.5rem;
   }
 
   h1 {
-    max-width: 11ch;
     margin: 0;
+  }
+
+  /* Each sentence on its own line, so the break never falls inside one. */
+  h1 span {
+    display: block;
+  }
+
+  .hero-copy {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem 2rem;
+    align-items: center;
   }
 
   .hero-copy > p {
-    color: var(--ink-soft);
-    font-size: 1.14rem;
-  }
-
-  .trust-boundary {
-    display: grid;
-    margin-top: clamp(4rem, 9vw, 8rem);
-    grid-template-columns: 0.75fr auto 1.3fr auto 0.95fr;
-    align-items: stretch;
-    border-block: 1px solid var(--line-strong);
-  }
-
-  .zone {
-    display: flex;
-    min-height: 230px;
-    padding: 1.5rem;
-    flex-direction: column;
-  }
-
-  .zone > span {
-    color: var(--ink-muted);
-    font-family: var(--font-mono);
-    font-size: 0.72rem;
-  }
-
-  .zone svg {
-    margin: auto 0 1.25rem;
-    color: var(--coral);
-  }
-
-  .zone strong {
-    font-size: 1.08rem;
-  }
-
-  .zone small {
-    margin-top: 0.25rem;
-    color: var(--ink-muted);
-  }
-
-  .zone-host {
-    border-inline: 1px solid rgba(255, 107, 91, 0.34);
-    background: rgba(255, 107, 91, 0.08);
-  }
-
-  .boundary-arrow {
-    display: grid;
-    width: 54px;
-    place-items: center;
-    color: var(--coral);
-  }
-
-  .controls {
-    background: var(--night-soft);
-  }
-
-  .control-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    border-top: 1px solid var(--line);
-    border-left: 1px solid var(--line);
-  }
-
-  .control-grid article {
-    position: relative;
-    min-height: 290px;
-    padding: 1.6rem;
-    border-right: 1px solid var(--line);
-    border-bottom: 1px solid var(--line);
-  }
-
-  .control-grid article > span {
-    position: absolute;
-    top: 1.25rem;
-    right: 1.25rem;
-    color: var(--ink-muted);
-    font-family: var(--font-mono);
-    font-size: 0.72rem;
-  }
-
-  .control-grid svg {
-    margin: 4rem 0 3rem;
-    color: var(--coral);
-  }
-
-  .control-grid h3 {
-    margin-bottom: 0.5rem;
-    font-size: 1.28rem;
-  }
-
-  .control-grid p {
+    max-width: 46ch;
     margin: 0;
     color: var(--ink-soft);
+    font-size: var(--fs-body);
   }
 
-  .path-heading {
+  .boundary {
+    padding-top: clamp(1.5rem, 3vw, 2.5rem);
+  }
+
+  .boundary .section-head {
+    margin-bottom: 2rem;
+  }
+
+  /* The map's key, under it: what each verdict on a label (and in the Enforcement column) means. */
+  .verdict-key {
     display: grid;
-    margin-bottom: 4rem;
-    grid-template-columns: 1.2fr 0.8fr;
-    gap: 4rem;
-    align-items: end;
-  }
-
-  .path-heading h2,
-  .app-title h2,
-  .honesty h2 {
-    max-width: 12ch;
-    margin: 0;
-  }
-
-  .path-heading > p {
-    margin: 0;
+    max-width: 68ch;
+    margin: 1.5rem 0 0;
+    gap: 0.35rem;
     color: var(--ink-soft);
+    font-size: var(--fs-label);
   }
 
-  .decision-path {
-    display: grid;
-    padding: 0;
-    grid-template-columns: repeat(5, 1fr);
-    border-block: 1px solid var(--line);
-    list-style: none;
-  }
-
-  .decision-path li {
-    display: flex;
-    min-height: 220px;
-    padding: 1.25rem;
-    flex-direction: column;
-    border-right: 1px solid var(--line);
-  }
-
-  .decision-path li:last-child {
-    border-right: 0;
-  }
-
-  .decision-path span {
-    color: var(--ink-muted);
-    font-family: var(--font-mono);
-    font-size: 0.72rem;
-  }
-
-  .decision-path svg {
-    margin: auto 0 1rem;
-    color: var(--coral);
-  }
-
-  .decision-path strong {
-    font-size: 0.95rem;
+  .verdict-key dt {
+    display: inline;
+    color: var(--ink);
     font-weight: 600;
   }
 
-  .app-security {
-    background: var(--night-soft);
+  .verdict-key dt::after {
+    content: ": ";
   }
 
-  .app-security-grid {
-    display: grid;
-    grid-template-columns: 0.75fr 1.25fr;
-    gap: clamp(3rem, 10vw, 10rem);
-    align-items: center;
+  .verdict-key dd {
+    display: inline;
+    margin: 0;
   }
 
-  .app-title h2 {
-    margin-bottom: 1.5rem;
+  /* A section's heading sits over its sentence, not beside it: the sentence reads as the
+     heading's lead, and the table and map under it get the full width to start from. */
+  .section-head {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1rem;
+    align-items: start;
   }
 
-  .app-title > p:not(.kicker) {
+  .section-head h2 {
+    max-width: 22ch;
+  }
+
+  /* The two views. The tabs are the System Window's: a pill strip, the selected one coral. */
+  /* A label never breaks: at 200% text on a phone the strip scrolls instead, as the System
+     Window's does. */
+  :global(.boundary-tabs) {
+    display: inline-flex;
+    max-width: 100%;
+    overflow-x: auto;
+    padding: 3px;
+    gap: 2px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--night);
+  }
+
+  :global(.boundary-tabs button) {
+    flex: none;
+    min-width: 96px;
+    min-height: 44px;
+    padding: 0.35rem 1rem;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--ink-muted);
+    cursor: pointer;
+    font-size: var(--fs-label);
+    font-weight: 650;
+    white-space: nowrap;
+  }
+
+  :global(.boundary-tabs button[aria-selected="true"]) {
+    background: var(--coral);
+    color: var(--night);
+  }
+
+  @media (forced-colors: active) {
+    :global(.boundary-tabs button[aria-selected="true"]) {
+      outline: 2px solid Highlight;
+      outline-offset: -2px;
+      text-decoration: underline;
+      text-decoration-thickness: 2px;
+      text-underline-offset: 0.25em;
+    }
+  }
+
+  :global(.boundary-summary) {
+    max-width: 68ch;
+    margin: 1rem 0 1.5rem;
     color: var(--ink-soft);
   }
 
-  .app-lifecycle {
+  /* The map: zones in a row, and between two zones the boundary itself, a line with its label.
+     No arrows: the line is where one side's trust ends, not a step in a flow. */
+  :global(.boundary-map) {
+    display: grid;
+    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-flow: column;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  :global(.boundary-zone) {
+    display: grid;
+    align-content: start;
+    gap: 0.5rem;
+    padding: 1.25rem 1rem;
     border-top: 1px solid var(--line-strong);
   }
 
-  .app-lifecycle article {
-    display: grid;
-    min-height: 96px;
-    padding-block: 1rem;
-    grid-template-columns: 54px 1fr;
-    align-items: center;
-    border-bottom: 1px solid var(--line-strong);
+  /* A zone's name never breaks inside a word: at the narrowest column it wraps between words. */
+  :global(.boundary-zone strong) {
+    font-size: clamp(1.1rem, 1.6vw, 1.4rem);
+    font-weight: var(--fw-title);
+    line-height: var(--lh-title);
+    overflow-wrap: normal;
+    word-break: normal;
   }
 
-  .app-lifecycle svg {
-    color: var(--coral);
-  }
-
-  .app-lifecycle div {
-    display: grid;
-    gap: 0.2rem;
-  }
-
-  .app-lifecycle span {
-    color: var(--ink-muted);
-    font-size: 0.87rem;
-  }
-
-  .honesty {
-    text-align: center;
-  }
-
-  .honesty > div > svg {
-    margin: 0 auto 1.6rem;
-    color: var(--amber);
-  }
-
-  .honesty .kicker {
-    justify-content: center;
-  }
-
-  .honesty h2 {
-    margin-inline: auto;
-  }
-
-  .honesty > div > p:not(.kicker) {
-    max-width: 48rem;
-    margin: 1.7rem auto 2rem;
+  :global(.boundary-zone span) {
     color: var(--ink-soft);
-    font-size: 1.06rem;
+    font-size: var(--fs-label);
   }
 
-  .honesty-links {
+  :global(.boundary-crossing) {
+    position: relative;
+    display: grid;
+    width: 8.5rem;
+    justify-items: center;
+  }
+
+  :global(.boundary-line) {
+    position: absolute;
+    inset: 0 auto 0 50%;
+    border-left: 2px dashed var(--line-strong);
+  }
+
+  /* A label is the link to its boundary's row in the table: ink, not coral, until it is the
+     thing being pointed at. */
+  :global(.boundary-label) {
+    position: relative;
+    display: grid;
+    align-self: start;
+    margin-top: 1.25rem;
+    padding: 0.5rem 0.65rem;
+    gap: 0.15rem;
+    border: 1px solid var(--line-strong);
+    border-radius: 8px;
+    background: var(--night);
+    color: var(--ink);
+    text-align: center;
+    text-decoration: none;
+  }
+
+  :global(.boundary-label:hover) {
+    border-color: var(--coral-bright);
+  }
+
+  :global(.boundary-label strong) {
+    font-size: var(--fs-label);
+    font-weight: 600;
+    line-height: var(--lh-label);
+  }
+
+  :global(.boundary-label span) {
+    color: var(--ink-muted);
+    font-size: var(--fs-mono);
+  }
+
+  :global(.boundary-crossing[data-status="yes"] .boundary-label span) {
+    color: var(--success);
+  }
+
+  /* The Network view: the gateway's zone, and a spoke for each boundary between it and one thing
+     outside it, its line running from the gateway's edge to that zone. */
+  :global(.boundary-hub) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2.6fr);
+  }
+
+  :global(.boundary-hub .boundary-hub-zone) {
+    padding: 1.25rem 1.25rem;
+    border-right: 1px solid var(--line-strong);
+    border-radius: 8px 0 0 8px;
+    background: var(--night-soft);
+  }
+
+  :global(.boundary-spokes) {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  :global(.boundary-spoke) {
+    display: grid;
+    grid-template-columns: 11rem minmax(0, 1fr);
+    border-top: 1px solid var(--line-strong);
+  }
+
+  :global(.boundary-spoke .boundary-zone) {
+    padding: 1rem;
+    border-top: 0;
+  }
+
+  :global(.boundary-spoke .boundary-crossing) {
+    width: auto;
+    align-items: center;
+  }
+
+  :global(.boundary-spoke .boundary-line) {
+    inset: 50% 0 auto 0;
+    border-top: 2px dashed var(--line-strong);
+    border-left: 0;
+  }
+
+  /* Every spoke's label one width, so the four read as one column of boundaries. */
+  :global(.boundary-spoke .boundary-label) {
+    width: 8.5rem;
+    margin: 0;
+    align-self: center;
+  }
+
+  .boundary-table {
+    margin-top: clamp(2.5rem, 5vw, 4rem);
+    overflow-x: auto;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+  }
+
+  table {
+    width: 100%;
+    min-width: 64rem;
+    border-collapse: collapse;
+    font-size: var(--fs-label);
+  }
+
+  caption {
+    padding: 1rem 1.25rem;
+    color: var(--ink-soft);
+    font-weight: 600;
+    text-align: left;
+  }
+
+  th,
+  td {
+    padding: 1rem 1.25rem;
+    border-top: 1px solid var(--line);
+    overflow-wrap: normal;
+    word-break: normal;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  thead th {
+    color: var(--ink-muted);
+    font-size: var(--fs-label);
+    font-weight: 600;
+  }
+
+  tbody th {
+    width: 16%;
+    font-weight: 600;
+  }
+
+  /* Wide enough for the longest cited name on one line, so a path breaks only at its slashes. */
+  thead th:nth-child(4) {
+    width: 12rem;
+  }
+
+  .boundary-view {
+    display: block;
+    margin-top: 0.25rem;
+    color: var(--ink-muted);
+    font-size: var(--fs-mono);
+    font-weight: 500;
+  }
+
+  /* A cited path breaks after a slash (the page puts a break opportunity there) and its symbol
+     takes the next line; one longer than its line, at 200% text on a phone, breaks where it must
+     rather than overflow. */
+  td code,
+  .control-rows code,
+  .supply-intro code {
+    font-family: var(--font-mono);
+    font-size: var(--fs-mono);
+    overflow-wrap: anywhere;
+  }
+
+  /* In the table's own column a name never breaks inside itself: the anywhere rule would let the
+     column shrink to a few characters. Stacked on a phone, the cell is the full width again. */
+  td code {
+    overflow-wrap: normal;
+  }
+
+  .cite-path,
+  .cite-symbol {
+    display: block;
+  }
+
+  /* Each of these links stands on its own line, so each is a 44 px target. */
+  td a,
+  .limit-list a,
+  .control-rows a,
+  .supply-intro a {
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
+    color: var(--coral-bright);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+
+  .limits {
+    background: var(--night-soft);
+  }
+
+  .limits-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+    gap: clamp(2rem, 6vw, 6rem);
+    align-items: start;
+  }
+
+  /* The intro stays in sight beside the list it introduces, so the release it was read at does. */
+  .limits-intro {
+    position: sticky;
+    top: 6rem;
+  }
+
+  .limits-intro p {
+    max-width: 38ch;
+    color: var(--ink-soft);
+  }
+
+  .limit-list {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .limit-list li {
+    display: grid;
+    gap: 0.4rem;
+    padding: 1.1rem 0;
+    border-top: 1px solid var(--line);
+  }
+
+  .limit-list p {
+    max-width: 68ch;
+    margin: 0;
+  }
+
+  .limit-list a {
+    width: fit-content;
+    font-size: var(--fs-label);
+  }
+
+  .control-rows {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .control-rows li {
+    display: grid;
+    grid-template-columns: minmax(0, 0.35fr) minmax(0, 1fr);
+    gap: 2rem;
+    padding: 1.5rem 0;
+    border-top: 1px solid var(--line);
+  }
+
+  .control-rows h3 {
+    margin: 0;
+    font-size: var(--fs-title);
+    font-weight: var(--fw-title);
+    line-height: var(--lh-title);
+  }
+
+  .control-rows p {
+    max-width: 68ch;
+    margin: 0 0 0.5rem;
+    color: var(--ink-soft);
+  }
+
+  .supply-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+    gap: clamp(2rem, 6vw, 6rem);
+    align-items: start;
+  }
+
+  .supply-intro p {
+    max-width: 40ch;
+    color: var(--ink-soft);
+  }
+
+  .supply-steps {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    counter-reset: step;
+    list-style: none;
+  }
+
+  .supply-steps li {
+    display: grid;
+    grid-template-columns: 2.5rem minmax(0, 1fr);
+    column-gap: 1rem;
+    padding: 1.1rem 0;
+    border-top: 1px solid var(--line);
+    counter-increment: step;
+  }
+
+  .supply-steps li::before {
+    grid-row: span 2;
+    color: var(--ink-muted);
+    font-family: var(--font-mono);
+    content: counter(step);
+  }
+
+  .supply-steps strong {
+    font-weight: 600;
+  }
+
+  .supply-steps span {
+    color: var(--ink-soft);
+  }
+
+  .report p {
+    color: var(--ink-soft);
+  }
+
+  .report-links {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.85rem;
-    justify-content: center;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+  }
+
+  @media (max-width: 1100px) {
+    :global(.boundary-map) {
+      grid-auto-flow: row;
+      grid-auto-columns: auto;
+    }
+
+    :global(.boundary-zone) {
+      padding-inline: 0;
+    }
+
+    :global(.boundary-crossing) {
+      width: auto;
+      min-height: 4.5rem;
+      justify-items: start;
+      align-items: center;
+    }
+
+    :global(.boundary-line) {
+      inset: 50% 0 auto 0;
+      border-top: 2px dashed var(--line-strong);
+      border-left: 0;
+    }
+
+    :global(.boundary-label) {
+      margin: 0;
+      text-align: left;
+    }
+  }
+
+  /* On a phone the table keeps its semantics and reads row by row: each cell under its column's
+     name, so nothing scrolls sideways. */
+  @media (max-width: 760px) {
+    table {
+      min-width: 0;
+    }
+
+    thead {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+
+    tbody tr {
+      display: grid;
+      padding: 1rem 1.25rem;
+      gap: 0.75rem;
+      border-top: 1px solid var(--line);
+    }
+
+    tbody th,
+    tbody td {
+      display: grid;
+      width: auto;
+      padding: 0;
+      gap: 0.2rem;
+      border: 0;
+    }
+
+    td code {
+      overflow-wrap: anywhere;
+    }
+
+    tbody td::before {
+      color: var(--ink-muted);
+      font-size: var(--fs-mono);
+      font-weight: 600;
+      content: attr(data-label);
+    }
+
+    :global(.boundary-hub),
+    :global(.boundary-spoke) {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    :global(.boundary-hub .boundary-hub-zone) {
+      border-right: 0;
+      border-radius: 8px 8px 0 0;
+    }
+
+    :global(.boundary-spoke .boundary-zone) {
+      padding: 0 0 1.25rem;
+    }
   }
 
   @media (max-width: 900px) {
     .hero-layout,
-    .path-heading,
-    .app-security-grid {
+    .limits-layout,
+    .supply-layout {
       grid-template-columns: 1fr;
     }
 
-    .trust-boundary {
-      grid-template-columns: 1fr 1fr 1fr;
+    .limits-intro {
+      position: static;
     }
 
-    .boundary-arrow {
-      display: none;
-    }
-
-    .zone-host {
-      border-left: 1px solid rgba(255, 107, 91, 0.34);
-      border-right: 1px solid rgba(255, 107, 91, 0.34);
-    }
-
-    .control-grid {
-      grid-template-columns: 1fr 1fr;
-    }
-
-    .decision-path {
-      grid-template-columns: repeat(3, 1fr);
-    }
-
-    .decision-path li {
-      border-bottom: 1px solid var(--line);
-    }
-  }
-
-  @media (max-width: 620px) {
-    .trust-boundary,
-    .control-grid,
-    .decision-path {
+    .control-rows li {
       grid-template-columns: 1fr;
-    }
-
-    .zone {
-      min-height: 180px;
-      border-bottom: 1px solid var(--line);
-    }
-
-    .zone-host {
-      border-inline: 0;
-    }
-
-    .control-grid article {
-      min-height: 260px;
-    }
-
-    .decision-path li {
-      min-height: 150px;
-      border-right: 0;
+      gap: 0.5rem;
     }
   }
 </style>

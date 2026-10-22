@@ -40,6 +40,7 @@ export const unitTests = {
     "tests/github-api.test.mjs",
     "tests/install-commands.test.mjs",
     "tests/tour-chapters.test.mjs",
+    "tests/security-page.test.mjs",
   ],
 };
 
@@ -123,6 +124,11 @@ const buildConsumers = [
     name: "validate:compare",
     command: "npm",
     args: ["run", "validate:compare"],
+  },
+  {
+    name: "validate:security",
+    command: "npm",
+    args: ["run", "validate:security"],
   },
 ];
 
