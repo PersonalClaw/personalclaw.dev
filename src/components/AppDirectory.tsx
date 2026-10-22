@@ -1,17 +1,26 @@
-import { ArrowUpRight, Search, X } from "lucide-react";
-import { useEffect, useId, useMemo, useState } from "react";
+import { ChevronDown, Search, X } from "lucide-react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { appFacts } from "../data/apps";
-import type { App, AppCategory } from "../data/apps";
+import type { DirectoryApp, DirectoryCategory } from "../data/apps";
 
-type Category = "All" | AppCategory;
+const ALL = "All";
+
+function appCount(count: number) {
+  return `${count} ${count === 1 ? "app" : "apps"}`;
+}
 
 export function AppDirectory({
   apps,
   categories,
   treeBase
 }: {
-  apps: App[];
-  categories: Category[];
+  apps: DirectoryApp[];
+  /**
+   * The categories in the release sync's order, each with the number of pinned manifests
+   * filed under it. Passed in for the same reason as `treeBase`: the counts live in the
+   * generated release facts, which this client island must not import.
+   */
+  categories: DirectoryCategory[];
   /**
    * The pinned-commit tree URL every card links into, ending in a slash. Passed in from
    * src/pages/apps.astro rather than built here, because the pin lives in the generated
@@ -24,21 +33,32 @@ export function AppDirectory({
    */
   treeBase: string;
 }) {
-  const [category, setCategory] = useState<Category>("All");
+  const [category, setCategory] = useState(ALL);
   const [query, setQuery] = useState("");
+  // A `?category=` the catalog has no category for, kept to say so rather than quietly
+  // showing every app under a filter the reader thinks is on.
+  const [unknownCategory, setUnknownCategory] = useState<string | null>(null);
   const [initialized, setInitialized] = useState(false);
   const searchId = useId();
+  const selectId = useId();
+  const directory = useRef<HTMLDivElement>(null);
+
+  const options = useMemo(
+    () => [{ name: ALL, apps: apps.length }, ...categories],
+    [apps.length, categories]
+  );
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const queryParam = params.get("q") ?? "";
     const categoryParam = params.get("category");
     const validCategory = categories.find(
-      (item) => item.toLowerCase() === categoryParam?.toLowerCase()
+      (item) => item.name.toLowerCase() === categoryParam?.toLowerCase()
     );
 
     setQuery(queryParam);
-    setCategory(validCategory ?? "All");
+    setCategory(validCategory?.name ?? ALL);
+    setUnknownCategory(categoryParam && !validCategory ? categoryParam : null);
     setInitialized(true);
   }, [categories]);
 
@@ -47,7 +67,7 @@ export function AppDirectory({
 
     const url = new URL(window.location.href);
     query ? url.searchParams.set("q", query) : url.searchParams.delete("q");
-    category === "All"
+    category === ALL
       ? url.searchParams.delete("category")
       : url.searchParams.set("category", category.toLowerCase());
     window.history.replaceState({}, "", url);
@@ -56,7 +76,7 @@ export function AppDirectory({
   const filtered = useMemo(() => {
     const normalized = query.trim().toLowerCase();
     return apps.filter((app) => {
-      const inCategory = category === "All" || app.category === category;
+      const inCategory = category === ALL || app.category === category;
       const matchesQuery =
         !normalized ||
         // The derived facts are searchable text too. They used to reach this haystack
@@ -69,8 +89,45 @@ export function AppDirectory({
     });
   }, [apps, category, query]);
 
+  // The search bar and the rail stay on screen while the grid scrolls under them, so a
+  // filter can shrink the grid to one row from far down the page, leaving the reader
+  // past the end of their results. Bring the results' top back into view first.
+  function keepResultsInView() {
+    const element = directory.current;
+    if (element && element.getBoundingClientRect().top < 0) {
+      element.scrollIntoView({ block: "start" });
+    }
+  }
+
+  function choose(next: string) {
+    keepResultsInView();
+    setCategory(next);
+    setUnknownCategory(null);
+  }
+
+  function search(next: string) {
+    keepResultsInView();
+    setQuery(next);
+  }
+
+  // The build fails before it ships an empty catalog (src/data/release.ts), so this is
+  // the island's own guard: a directory with nothing in it says where the apps are
+  // instead of offering a search over nothing.
+  if (apps.length === 0) {
+    return (
+      <div className="app-directory">
+        <div className="directory-notice">
+          <p>The app catalog is not available in this build.</p>
+          <a className="text-link" href={treeBase} target="_blank" rel="noreferrer">
+            Browse the apps at the pinned commit
+          </a>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="app-directory">
+    <div className="app-directory" ref={directory}>
       <div className="directory-tools">
         <div className="search-field">
           <label className="sr-only" htmlFor={searchId}>
@@ -85,97 +142,117 @@ export function AppDirectory({
             placeholder="Search apps…"
             autoComplete="off"
             spellCheck={false}
-            onChange={(event) => setQuery(event.target.value)}
+            onChange={(event) => search(event.target.value)}
           />
           {query && (
             <button
               className="search-clear"
               type="button"
               aria-label="Clear search"
-              onClick={() => setQuery("")}
+              onClick={() => search("")}
             >
               <X size={18} aria-hidden="true" />
             </button>
           )}
         </div>
 
-        <div className="filter-scroll" role="group" aria-label="Filter apps by category">
-          {categories.map((item) => (
-            <button
-              key={item}
-              type="button"
-              className={item === category ? "is-active" : ""}
-              aria-pressed={item === category}
-              onClick={() => setCategory(item)}
+        {/* Narrow screens: one native control instead of a row of fifteen buttons that
+            scrolls sideways. CSS shows this or the button group, never both. */}
+        <div className="category-select">
+          <label htmlFor={selectId}>Category</label>
+          <div className="select-field">
+            <select
+              id={selectId}
+              name="app-category"
+              value={category}
+              onChange={(event) => choose(event.target.value)}
             >
-              {item}
-            </button>
-          ))}
+              {options.map((item) => (
+                <option key={item.name} value={item.name}>
+                  {item.name} ({item.apps})
+                </option>
+              ))}
+            </select>
+            <ChevronDown size={18} aria-hidden="true" />
+          </div>
         </div>
       </div>
 
-      <p className="result-count" aria-live="polite">
-        {filtered.length} {filtered.length === 1 ? "app" : "apps"}
-      </p>
-
-      {filtered.length > 0 ? (
-        <div className="app-grid">
-          {filtered.map((app) => (
-            <a
-              key={app.slug}
-              className="app-card"
-              href={`${treeBase}${app.slug}`}
-              target="_blank"
-              rel="noreferrer"
+      <div className="directory-body">
+        <div className="category-rail" role="group" aria-label="Filter apps by category">
+          {options.map((item) => (
+            <button
+              key={item.name}
+              type="button"
+              aria-pressed={item.name === category}
+              onClick={() => choose(item.name)}
             >
-              <div className="app-card-head">
-                <span className="app-category">{app.category}</span>
-                <ArrowUpRight size={18} aria-hidden="true" />
-              </div>
-              <h2>{app.name}</h2>
-              <p>{app.description}</p>
-              <ul aria-label={`${app.name} characteristics`}>
-                {/* Declared facts lead, and are budgeted separately from `tags` on
-                    purpose: a badge must never be the reason a real capability tag gets
-                    sliced off. */}
-                {appFacts(app).map((fact) => (
-                  <li key={fact} className="app-fact">
-                    {fact}
-                  </li>
-                ))}
-                {/* 🔴 THIS USED TO BE `tags.slice(0, 4)`, and the comment right above it already said why
-                    that was wrong: "a badge must never be the reason a real capability tag gets sliced
-                    off." The cap it kept did the slicing anyway — on exactly one app. Censused across all
-                    39: `openrouter-models` is the only one with five tags, so the cap's entire effect was
-                    to drop its `Video`, silently, while `app.tags.join(" ")` above puts Video in the
-                    SEARCH haystack. A user could find this app by searching "video" and then not see why.
-                    Uncapped, the widest card in the catalogue is 5 pills — the same card — so removing the
-                    slice adds one pill to one card and changes nothing else. The bound did not disappear:
-                    it moved to a build-time assertion in tests/browser/interactions.spec.ts, so a future
-                    app with more tags than a card can show fails the gate instead of losing a capability
-                    without saying so. */}
-                {app.tags.map((tag) => (
-                  <li key={tag}>{tag}</li>
-                ))}
-              </ul>
-            </a>
+              <span>{item.name}</span>{" "}
+              <span className="category-count">
+                {item.apps}
+                <span className="sr-only"> {item.apps === 1 ? "app" : "apps"}</span>
+              </span>
+            </button>
           ))}
         </div>
-      ) : (
-        <div className="empty-state">
-          <p>No apps match those filters.</p>
-          <button
-            className="text-button"
-            type="button"
-            onClick={() => {
-              setQuery("");
-              setCategory("All");
-            }}
-          >
-            Reset filters
-          </button>
+
+        <div className="directory-results">
+          {unknownCategory && (
+            <p className="directory-notice directory-error" role="status">
+              There is no “{unknownCategory}” category. Showing every category.
+            </p>
+          )}
+
+          <p className="result-count" aria-live="polite">
+            {appCount(filtered.length)}
+          </p>
+
+          {filtered.length > 0 ? (
+            <div className="app-grid">
+              {filtered.map((app) => (
+                <article key={app.slug} className="app-card">
+                  <h2>
+                    <a href={`${treeBase}${app.slug}`} target="_blank" rel="noreferrer">
+                      {app.name}
+                    </a>
+                  </h2>
+                  <p className="app-category">{app.category}</p>
+                  <p className="app-description">{app.description}</p>
+                  {/* Declared facts lead, and are budgeted separately from `tags` on
+                      purpose: a badge must never be the reason a real capability tag
+                      gets sliced off. Text, not a list: a list per card put 69 lists
+                      and their counts in front of a screen reader. The bound on how
+                      many a card carries lives in tests/browser/interactions.spec.ts. */}
+                  <p className="app-traits">
+                    {[
+                      ...appFacts(app).map((fact) => (
+                        <span key={fact} className="app-fact">
+                          {fact}
+                        </span>
+                      )),
+                      ...app.tags.map((tag) => <span key={tag}>{tag}</span>)
+                    ].flatMap((trait, index) => (index === 0 ? [trait] : [" ", trait]))}
+                  </p>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <div className="empty-state">
+              <p>No apps match those filters.</p>
+              <button
+                className="text-button"
+                type="button"
+                onClick={() => {
+                  search("");
+                  choose(ALL);
+                }}
+              >
+                Reset filters
+              </button>
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }

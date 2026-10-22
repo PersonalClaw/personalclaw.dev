@@ -60,10 +60,18 @@ test("app search and category filters work by keyboard", async ({ page }) => {
   await expect(page.locator(".app-card")).toHaveCount(1);
   await expect(page).toHaveURL(/q=vLLM/);
 
-  const models = page.getByRole("button", { name: "Models", exact: true });
-  await tabTo(page, models);
-  await page.keyboard.press("Enter");
-  await expect(models).toHaveAttribute("aria-pressed", "true");
+  // A select at 960 px and below, the rail's buttons above it.
+  if ((page.viewportSize()?.width ?? 1440) <= 960) {
+    const category = page.getByLabel("Category", { exact: true });
+    await tabTo(page, category);
+    await page.keyboard.type("Models");
+    await expect(category).toHaveValue("Models");
+  } else {
+    const models = page.getByRole("button", { name: /^Models \d+ apps$/ });
+    await tabTo(page, models);
+    await page.keyboard.press("Enter");
+    await expect(models).toHaveAttribute("aria-pressed", "true");
+  }
   await expect(page).toHaveURL(/category=models/);
 });
 

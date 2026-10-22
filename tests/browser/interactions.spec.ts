@@ -1,6 +1,60 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { appFactLabels, appFacts, apps } from "../../src/data/apps";
 import { monitorRuntime, openPage, settlePage } from "./support";
+
+// The directory filters from a rail of buttons on wide screens and from one select at
+// 960 px and below, where a row of fifteen buttons used to scroll sideways.
+function isNarrow(page: Page) {
+  return (page.viewportSize()?.width ?? 1440) <= 960;
+}
+
+function categoryButton(page: Page, name: string) {
+  return page
+    .getByRole("group", { name: "Filter apps by category" })
+    .getByRole("button", { name: new RegExp(`^${name} \\d+ apps?$`) });
+}
+
+async function chooseCategory(page: Page, name: string) {
+  if (isNarrow(page)) {
+    await page.getByLabel("Category", { exact: true }).selectOption(name);
+  } else {
+    await categoryButton(page, name).click();
+  }
+}
+
+async function expectCategory(page: Page, name: string) {
+  if (isNarrow(page)) {
+    await expect(page.getByLabel("Category", { exact: true })).toHaveValue(name);
+  } else {
+    await expect(categoryButton(page, name)).toHaveAttribute("aria-pressed", "true");
+  }
+}
+
+/** Each category the control offers, with the count it shows beside the name. */
+async function shownCategories(page: Page) {
+  if (isNarrow(page)) {
+    const labels = await page.locator(".category-select option").allTextContents();
+    return labels.map((label) => {
+      const [, name, count] = /^(.+) \((\d+)\)$/.exec(label)!;
+      return { name, count: Number(count) };
+    });
+  }
+  const buttons = page.getByRole("group", { name: "Filter apps by category" }).getByRole("button");
+  const shown = [];
+  for (const button of await buttons.all()) {
+    shown.push({
+      name: (await button.locator("span").first().textContent())!,
+      count: Number.parseInt((await button.locator(".category-count").textContent())!, 10)
+    });
+  }
+  return shown;
+}
+
+function appCard(page: Page, name: string) {
+  return page
+    .locator(".app-card")
+    .filter({ has: page.getByRole("heading", { name, exact: true }) });
+}
 
 test("system window exposes one coherent selected view", async ({ page, baseURL }) => {
   const runtime = monitorRuntime(page, baseURL!);
@@ -26,25 +80,81 @@ test("app directory preserves deep-linked filters and can recover from no result
   await openPage(page, "/apps?q=vLLM&category=models");
 
   const search = page.getByRole("searchbox", { name: "Search first-party apps" });
-  const models = page.getByRole("button", { name: "Models", exact: true });
   await expect(search).toHaveValue("vLLM");
-  await expect(models).toHaveAttribute("aria-pressed", "true");
+  await expectCategory(page, "Models");
   await expect(page.locator(".app-card")).toHaveCount(1);
   await expect(page.locator(".app-card").getByRole("heading")).toHaveText("vLLM");
   await expect(page).toHaveURL(/q=vLLM&category=models$/);
 
-  await page.getByRole("button", { name: "Search", exact: true }).click();
+  await chooseCategory(page, "Search");
   await expect(page.getByText("No apps match those filters.")).toBeVisible();
   await page.getByRole("button", { name: "Reset filters" }).click();
   await expect(search).toHaveValue("");
-  await expect(page.getByRole("button", { name: "All", exact: true })).toHaveAttribute(
-    "aria-pressed",
-    "true"
-  );
+  await expectCategory(page, "All");
   // Exact on purpose: a directory entry disappearing should fail, not be tolerated.
   // Tracks the first-party app count of the pinned release (69 at v0.2.2).
   await expect(page.locator(".app-card")).toHaveCount(69);
   await expect(page).toHaveURL("/apps");
+  runtime.assertClean();
+});
+
+// Every count beside a category comes from the pinned manifests (the release sync counts
+// them), so a count can only disagree with the directory if the two read different
+// sources. Each category's filter must show exactly the number it claims.
+test("each category's count is the number of apps its filter shows", async ({
+  page,
+  baseURL
+}) => {
+  const runtime = monitorRuntime(page, baseURL!);
+  await openPage(page, "/apps");
+
+  const shown = await shownCategories(page);
+  expect(shown[0].name).toBe("All");
+  expect(shown.length).toBeGreaterThan(1);
+  // Every app sits in exactly one category.
+  expect(shown.slice(1).reduce((sum, { count }) => sum + count, 0)).toBe(shown[0].count);
+
+  for (const { name, count } of shown) {
+    await chooseCategory(page, name);
+    await expect(page.locator(".app-card"), `the ${name} filter`).toHaveCount(count);
+    await expect(page.locator(".result-count")).toHaveText(
+      `${count} ${count === 1 ? "app" : "apps"}`
+    );
+  }
+  runtime.assertClean();
+});
+
+// The filters stay on screen while the grid scrolls under them, so a filter chosen from
+// far down the page used to leave the reader past the end of a one-card result.
+test("a filter chosen far down the grid brings its results into view", async ({
+  page,
+  baseURL
+}) => {
+  const runtime = monitorRuntime(page, baseURL!);
+  await openPage(page, "/apps");
+
+  await page.locator(".app-card").nth(60).scrollIntoViewIfNeeded();
+  await chooseCategory(page, "Skills");
+  await expect(page.locator(".app-card")).toHaveCount(1);
+  await expect(page.locator(".app-card")).toBeInViewport();
+  runtime.assertClean();
+});
+
+test("an unknown category in the URL says so and shows every category", async ({
+  page,
+  baseURL
+}) => {
+  const runtime = monitorRuntime(page, baseURL!);
+  await openPage(page, "/apps?category=spreadsheets");
+
+  const notice = page.getByRole("status");
+  await expect(notice).toHaveText("There is no “spreadsheets” category. Showing every category.");
+  await expectCategory(page, "All");
+  await expect(page.locator(".app-card")).toHaveCount(apps.length);
+  await expect(page).toHaveURL("/apps");
+
+  await chooseCategory(page, "Speech");
+  await expect(notice).toHaveCount(0);
   runtime.assertClean();
 });
 
@@ -67,17 +177,14 @@ test("every declared local and keyless app renders its derived chip, once", asyn
   }
 
   for (const app of apps) {
-    // Exact: an accessible name otherwise matches as a substring, and "Companion
-    // characteristics" is inside "Menu Bar Companion characteristics".
-    const characteristics = page.getByRole("list", {
-      name: `${app.name} characteristics`,
-      exact: true
-    });
-    await expect(characteristics.getByRole("listitem")).toHaveText([
-      ...appFacts(app),
-      ...app.tags
-    ]);
+    // Exact: a name otherwise matches as a substring, and "Companion" is inside "Menu
+    // Bar Companion".
+    const card = appCard(page, app.name);
+    await expect(card.locator(".app-traits > span")).toHaveText([...appFacts(app), ...app.tags]);
+    // The card's one link is named by the app alone, not by everything on the card.
+    await expect(card.getByRole("link")).toHaveAccessibleName(app.name);
   }
+  await expect(page.locator(".app-directory").getByRole("list")).toHaveCount(0);
 
   // ── The pill budget, which used to be a silent runtime slice ──────────────────────────
   //
@@ -105,13 +212,13 @@ test("every declared local and keyless app renders its derived chip, once", asyn
   // The two Diarization cards are the sharpest case: they differ (only ONNX is keyless)
   // but their tags were the same two words in a different order, so the cards read as
   // identical. The chips are what makes the difference visible.
+  await expect(appCard(page, "Diarization (ONNX)").locator(".app-traits > span")).toHaveText([
+    "Local",
+    "Keyless",
+    "Diarization"
+  ]);
   await expect(
-    page.getByRole("list", { name: "Diarization (ONNX) characteristics" }).getByRole("listitem")
-  ).toHaveText(["Local", "Keyless", "Diarization"]);
-  await expect(
-    page
-      .getByRole("list", { name: "Diarization (pyannote) characteristics" })
-      .getByRole("listitem")
+    appCard(page, "Diarization (pyannote)").locator(".app-traits > span")
   ).toHaveText(["Local", "Diarization"]);
 
   // Searching a fact now reaches the field rather than the copy of it in `tags`.

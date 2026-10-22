@@ -600,6 +600,36 @@ for (const routePath of ["/", "/apps"]) {
     fail(`${routePath}: generated app count is missing`);
   }
 }
+// The hero's summary, word for word: text around expressions across lines in Astro lost
+// its spaces once ("ofPersonalClaw/PersonalClawApps", "in14").
+{
+  const appsPin = releaseFacts.apps.source.tag ?? releaseFacts.apps.source.shortCommit;
+  const summary =
+    `It lists the ${releaseFacts.apps.total} first-party apps of ` +
+    `${releaseFacts.apps.source.repository} ${appsPin}, in ` +
+    `${releaseFacts.apps.categoryCount} categories.`;
+  const hero$ = await readHtml("/apps");
+  const paragraphs = hero$(".intro-copy p").map((_, p) => hero$(p).text().trim()).get();
+  if (!paragraphs.includes(summary)) {
+    fail(`/apps: the hero does not read "${summary}"`);
+  }
+}
+// The category control offers the sync's categories, in its order, each with the count
+// of pinned manifests filed under it: a typed count or a category the manifests don't
+// have fails here.
+{
+  const apps$ = await readHtml("/apps");
+  const offered = apps$(".category-select option")
+    .map((_, option) => apps$(option).text())
+    .get();
+  const expected = [
+    `All (${releaseFacts.apps.total})`,
+    ...releaseFacts.apps.categories.map(({ name, apps }) => `${name} (${apps})`)
+  ];
+  if (JSON.stringify(offered) !== JSON.stringify(expected)) {
+    fail(`/apps: the category control offers ${JSON.stringify(offered)}, not ${JSON.stringify(expected)}`);
+  }
+}
 const home$ = await readHtml("/");
 if (!home$.text().includes(releaseFacts.core.versionLabel)) {
   fail("/: generated core version is missing");
