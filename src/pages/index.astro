@@ -7,7 +7,8 @@ import InstallPanel from "../components/InstallPanel.astro";
 import SystemWindow from "../components/SystemWindow.astro";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { BUILDERS_SNIPPET } from "../data/apps-snippet.mjs";
-import { capabilityMatrix, ledgerRow } from "../data/capabilities.mjs";
+import { capabilityMatrix } from "../data/capabilities.mjs";
+import { homeQuestions } from "../data/faq.mjs";
 import { releaseFacts } from "../data/release";
 import { INSTALL_PANEL_ID } from "../data/site";
 import { trustRows } from "../data/trust.mjs";
@@ -23,12 +24,10 @@ const appsBlob = `${releaseFacts.apps.source.repositoryUrl}/blob/${releaseFacts.
 const trust = trustRows(core);
 
 // The FAQ answers in the /compare rows' own words where a row exists, so an answer cannot say more
-// than the row the matrix checked at the pin.
+// than the row the matrix checked at the pin. The questions are data (src/data/faq.mjs), so the
+// FAQPage in the structured data publishes exactly these answers.
 const matrix = capabilityMatrix();
-// Refuses a row not verified at the pin, or one that doesn't list Home among its surfaces.
-const row = (id: string) => ledgerRow(id, "home", matrix);
-const models = releaseFacts.apps.categories.find((category) => category.name === "Models");
-if (!models) throw new Error("src/pages/index.astro: the pinned apps have no Models category");
+const questions = homeQuestions({ matrix, categories: releaseFacts.apps.categories });
 
 // What lives under ~/.personalclaw, by core's own inventory (src/personalclaw/durability/inventory.py
 // at the pin): its seven domains, each with stores it lists. A snapshot is exactly these domains.
@@ -268,52 +267,26 @@ const latest = core.changelog.latest;
       </div>
       <div class="faq" id="faq">
         <h3>Questions</h3>
-        <details>
-          <summary>Does it phone home?</summary>
-          <p>{row("telemetry").statement}</p>
-          <p>{row("disable_update_check").statement}</p>
-          <p><a href="/compare#telemetry">The telemetry row</a> and <a href="/compare#disable_update_check">the update check row</a></p>
-        </details>
-        <details>
-          <summary>What runs locally?</summary>
-          <p>
-            The gateway, the dashboard and everything under <code>~/.personalclaw</code>.{" "}
-            {row("local_models").statement}
-          </p>
-          <p><a href="/compare#local_models">The local models row</a></p>
-        </details>
-        <details>
-          <summary>Which models work?</summary>
-          <p>
-            Any model a Models app connects, hosted or on your own machine. {models.apps} Models
-            apps ship at this release.
-          </p>
-          <p><a href="/apps?category=models">The Models apps</a></p>
-        </details>
-        <details>
-          <summary>Do I need Docker?</summary>
-          <p>
-            No. The installer uses <code>uv</code> and brings its own Python. Docker Compose is one
-            of the other ways to run it.
-          </p>
-          <p><a href="/docs/guides/getting-started">The install guide</a></p>
-        </details>
-        <details>
-          <summary>What breaks between 0.x versions?</summary>
-          <p>{row("data_stability").statement}</p>
-          <p>{row("backup_export").statement}</p>
-          <p><a href="/compare#data_stability">The data stability row</a> and <a href="/compare#backup_export">the backup row</a></p>
-        </details>
-        <details>
-          <summary>How do approvals work?</summary>
-          <p>
-            A tool that needs your say waits for it: Allow or Deny on the approval, or{" "}
-            <kbd>Cmd</kbd> <kbd>Enter</kbd> (<kbd>Ctrl</kbd> <kbd>Enter</kbd> off a Mac) on the one that
-            has keyboard focus, and the riskiest
-            actions ask once more.
-          </p>
-          <p><a href="/security">The security model</a></p>
-        </details>
+        {questions.map((question) => (
+          <details data-faq={question.id}>
+            <summary>{question.question}</summary>
+            {question.answer.map((paragraph) => (
+              <p data-faq-answer>
+                {paragraph.map((segment) =>
+                  typeof segment === "string" ? segment : "code" in segment ? <code>{segment.code}</code> : <kbd>{segment.kbd}</kbd>
+                )}
+              </p>
+            ))}
+            <p>
+              {question.links.map((link, index) => (
+                <>
+                  {index > 0 && " and "}
+                  <a href={link.href}>{link.label}</a>
+                </>
+              ))}
+            </p>
+          </details>
+        ))}
       </div>
     </div>
   </section>

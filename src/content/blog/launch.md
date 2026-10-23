@@ -31,10 +31,10 @@ one sourced row per claim.
 - [`LICENSE`](https://github.com/PersonalClaw/PersonalClaw/blob/v0.1.3/LICENSE) — MIT
 - [`pyproject.toml`](https://github.com/PersonalClaw/PersonalClaw/blob/v0.1.3/pyproject.toml) — `version = "0.1.3"`, `requires-python = ">=3.12"`
 
-## Receipt 1: the core does not know your provider's name
+## Receipt 1: vendor integrations live outside the core
 
-Vendor-specific logic lives in removable app bundles, and the core stays
-provider-agnostic. The boundary and its deliberate in-core exceptions are written down,
+Vendor integrations live in removable app bundles, not in the core. The boundary and its
+deliberate in-core exceptions are written down,
 including a case study of moving one integration out of core — which is more useful than
 the rule itself.
 
@@ -64,8 +64,8 @@ block the loopback, private, link-local, multicast and reserved ranges, and pin 
 validated addresses so the connection dials exactly what was checked. An unresolvable host
 fails closed.
 
-Now the part a launch post is tempted to overstate. **The default posture is
-deny-by-default about private address ranges, not about destinations.** The `STRICT`
+Now the part a launch post is tempted to overstate. **The default posture
+denies private address ranges, not destinations.** The `STRICT`
 profile is the normal agent posture, and it reaches every public host; what it blocks is
 the LAN, loopback and metadata-address class of target. In this release there is no "only
 these hosts" stance at all: the tier resolver returns `STRICT` for both `all` and
@@ -253,8 +253,8 @@ The first kind is a claim that is not true in any version, and never was.
 - **"All network access goes through one guarded chokepoint."** Cut. It is a real
   chokepoint for core's fetch surfaces, and an app backend is a separate process with its
   own network stack.
-- **"Egress is deny-by-default."** Cut as written. It is deny-by-default about private,
-  loopback and link-local ranges; the default profile reaches any public host.
+- **"Egress is deny-by-default."** Cut as written. It denies private, loopback and
+  link-local ranges by default; the default profile reaches any public host.
 - **"The registry egress tier reaches package registries only."** Cut. The operator's
   allow-list is unioned onto the tier preset, and one match serves both the private-range
   waiver and the allow-list, so any operator entry widens the tier.

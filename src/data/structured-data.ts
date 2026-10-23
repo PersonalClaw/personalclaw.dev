@@ -17,6 +17,8 @@
 // platform claims, so neither does the graph.
 
 import { GITHUB_URL } from "./site";
+import { capabilityMatrix } from "./capabilities.mjs";
+import { answerText, homeQuestions } from "./faq.mjs";
 import { releaseFacts } from "./release";
 import { SOCIAL_IMAGE_PATH } from "./social-card";
 
@@ -87,9 +89,10 @@ type Node = Record<string, unknown>;
  * Build the schema.org `@graph` for one route.
  *
  * Shape, uniform across every tier so one contract can check all of them:
- * `WebSite` + `Organization` + `WebPage`, plus `SoftwareApplication` on the home page
- * only, `BreadcrumbList` on every non-root route that has a trail worth publishing, and
- * `Article` on a blog post.
+ * `WebSite` + `Organization` + `WebPage`, plus `SoftwareApplication` and `FAQPage` on the
+ * home page only (the FAQPage from src/data/faq.mjs, the list Home's questions render from),
+ * `BreadcrumbList` on every non-root route that has a trail worth publishing, and `Article` on
+ * a blog post.
  */
 export function buildStructuredData({
   site,
@@ -150,6 +153,19 @@ export function buildStructuredData({
       downloadUrl: GITHUB_URL,
       sameAs: [GITHUB_URL],
       publisher: { "@id": orgId }
+    });
+    graph.push({
+      "@type": "FAQPage",
+      "@id": absolute("/#faq"),
+      url: absolute("/#faq"),
+      isPartOf: { "@id": canonical },
+      mainEntity: homeQuestions({ matrix: capabilityMatrix(), categories: releaseFacts.apps.categories }).map(
+        (question) => ({
+          "@type": "Question",
+          name: question.question,
+          acceptedAnswer: { "@type": "Answer", text: answerText(question) }
+        })
+      )
     });
   }
 

@@ -277,6 +277,12 @@ const sboms = release?.assets.filter((asset) => asset.sbom) ?? [];
           PersonalClawApps commit. The website build fails if its public
           directory drifts from those names or categories.
         </p>
+        <a
+          class="text-link"
+          href={`${releaseFacts.apps.source.repositoryUrl}/tree/${releaseFacts.apps.source.commit}/`}
+        >
+          The app manifests at the pinned commit
+        </a>
       </div>
 
       <ul class="category-list" aria-label="Apps by category">

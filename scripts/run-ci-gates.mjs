@@ -45,6 +45,8 @@ export const unitTests = {
     "tests/release-assets.test.mjs",
     "tests/ledger.test.mjs",
     "tests/blog-feed.test.mjs",
+    "tests/ledger-claims.test.mjs",
+    "tests/social-card.test.mjs",
   ],
 };
 

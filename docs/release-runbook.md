@@ -171,3 +171,17 @@ To follow it, set `data.registry.commit` to the registry's current commit and ru
 `npm run test:prepush`. Nothing else changes: no `package.json` bump, no
 `channel` change. What `/registry` shows is still decided by the pinned core
 release (see `scripts/sync-registry.mjs`).
+
+## Reach, from public numbers only
+
+The site measures nothing about its readers: no analytics, no cookies, no third-party script
+(SITE-REDESIGN.md, section 4). How far a release reaches is read once per release, from numbers
+anyone can read, and written into the release PR's description:
+
+- the GitHub repository's stars and forks, and each release asset's download count
+  (`gh release view <tag> --json assets --jq '.assets[] | "\(.name) \(.downloadCount)"'`);
+- the package index's public download counts for the release, where the release ships there;
+- the registry's listings count at its pinned commit (`/registry` shows it).
+
+Write the numbers and the date read, beside the previous release's. A number that needs a
+visitor's data to compute is not one this site collects.

@@ -53,7 +53,14 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { load } from "cheerio";
 import { declaredRowIdProblems, renderedRowIdProblems } from "./compare-row-ids.mjs";
-import { compareCitations, productClaimProblems } from "./product-claims.mjs";
+import {
+  compareCitations,
+  faqParityProblems,
+  headClaimProblems,
+  pageClaimProblems,
+  pinnedEvidencePrefixes,
+  productClaimProblems
+} from "./product-claims.mjs";
 import { currentRows, ledgerProblems } from "./ledger.mjs";
 
 const repositoryRoot = dirname(dirname(fileURLToPath(import.meta.url)));
@@ -282,6 +289,56 @@ if (!existsSync(productPath)) {
   productCitations = compareCitations(html);
 }
 
+// ---------------------------------------------------------------------------
+// Every hand-authored page, held to the ledger (#98). A section that talks about a row's
+// subject links its evidence, the row or a file at the pinned release; no block, description
+// or structured-data string states a `partial` or `no` row's claim as if it held; and Home's
+// FAQPage says exactly what its visible questions say. validate:build owns whether each route
+// is published; a route missing here is skipped, so a fixture build of two pages still runs.
+// ---------------------------------------------------------------------------
+const HAND_AUTHORED = [
+  "/",
+  "/product",
+  "/apps",
+  "/security",
+  "/release",
+  "/compare",
+  "/blog",
+  "/blog/launch",
+  "/registry"
+];
+const appsPin = existsSync(sourcesPath)
+  ? JSON.parse(readFileSync(sourcesPath, "utf8")).sources?.apps
+  : undefined;
+const evidence = [
+  ...pinnedEvidencePrefixes(data.release ?? {}),
+  ...(appsPin
+    ? pinnedEvidencePrefixes({
+        repo: `https://github.com/${appsPin.repository}`,
+        version: appsPin.tag ?? appsPin.commit,
+        commit: appsPin.commit
+      })
+    : [])
+];
+let pagesHeld = 0;
+for (const route of HAND_AUTHORED) {
+  const file = join(distDirectory, ...route.split("/").filter(Boolean), "index.html");
+  if (!existsSync(file)) continue;
+  const html = readFileSync(file, "utf8");
+  pagesHeld += 1;
+  // A post's claims were checked against the release it names (`verifiedAgainst`), so a file
+  // at that release is its evidence too (#93).
+  const verifiedAgainst = load(html)("[data-verified-against]").attr("data-verified-against");
+  const pageEvidence = verifiedAgainst
+    ? [...evidence, ...pinnedEvidencePrefixes({ repo: data.release?.repo ?? "", version: verifiedAgainst, commit: verifiedAgainst })]
+    : evidence;
+  for (const problem of headClaimProblems(html, rows, { route })) fail(problem);
+  if (route !== "/product" && route !== "/compare") {
+    for (const problem of pageClaimProblems(html, rows, { route, evidence: pageEvidence })) fail(problem);
+  }
+  if (route === "/") for (const problem of faqParityProblems(html)) fail(problem);
+}
+
 if (!/^\d{4}-\d{2}-\d{2}$/.test(data.checked_on ?? "")) {
   fail("src/data/capabilities.json has no ISO checked_on date");
 }
@@ -299,6 +356,8 @@ if (failures.length > 0) {
       `${declaredCounts.partial} narrower than stated, ${declaredCounts.no} not in this ` +
       `release. The page still publishes its own failures. /product cites ` +
       `${productCitations.length} ${productCitations.length === 1 ? "row" : "rows"} ` +
-      `(${productCitations.join(", ")}) for the claims it makes about them.`
+      `(${productCitations.join(", ")}) for the claims it makes about them. ${pagesHeld} ` +
+      `hand-authored page(s) link evidence for every claim the ledger covers, and say no more ` +
+      `than it in their descriptions and structured data.`
   );
 }

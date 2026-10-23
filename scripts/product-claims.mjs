@@ -113,6 +113,40 @@ function citedRow(href) {
   return decodeURIComponent(url.hash.slice(1));
 }
 
+/** Whether `href` is release-pinned evidence: it starts with one of the `evidence` prefixes. */
+function isPinnedEvidence(href, evidence) {
+  return typeof href === "string" && evidence.some((prefix) => href.startsWith(prefix));
+}
+
+/** Whether a link in `scope` points at release-pinned evidence. */
+function evidenceIn(page, scope, evidence) {
+  if (evidence.length === 0) return false;
+  return page(scope)
+    .find("a[href]")
+    .toArray()
+    .some((link) => isPinnedEvidence(page(link).attr("href"), evidence));
+}
+
+/**
+ * The prefixes of release-pinned evidence for a release: its files at the tag or the commit,
+ * its release page and its release assets.
+ *
+ * @param {{ repo: string, version: string, commit: string }} release
+ * @returns {string[]}
+ */
+export function pinnedEvidencePrefixes({ repo, version, commit }) {
+  const base = repo.replace(/\/$/, "");
+  return [
+    `${base}/blob/${version}/`,
+    `${base}/blob/${commit}/`,
+    `${base}/tree/${version}/`,
+    `${base}/tree/${commit}/`,
+    `${base}/releases/tag/${version}`,
+    `${base}/releases/download/${version}/`,
+    `${base}/commit/${commit}`
+  ];
+}
+
 /** The rows each link in `scope` cites. */
 function citationsIn(page, scope) {
   return page(scope)
@@ -120,6 +154,13 @@ function citationsIn(page, scope) {
     .toArray()
     .map((link) => citedRow(page(link).attr("href")))
     .filter((row) => row !== null);
+}
+
+/** A block's text without what it quotes: `<q>` and the words between quotation marks. */
+function assertedText(page, block) {
+  const copy = page(block).clone();
+  copy.find("q").remove();
+  return copy.text().replace(/“[^”]*”/g, " ").replace(/"[^"]*"/g, " ");
 }
 
 /** Every text node under `node` that a reader sees. */
@@ -173,29 +214,34 @@ export function staleClaimTopics(rows, topics = CLAIM_TOPICS) {
 }
 
 /**
- * What is wrong with the claims on the built /product page, held to the /compare rows.
+ * What is wrong with the claims on one built page, held to the /compare rows (#98): every
+ * section that talks about a row's subject links its evidence, either the row
+ * (/compare#<row>) or a file at the pinned release (`evidence`, `pinnedEvidencePrefixes`),
+ * and no block states a `partial` or `no` row's claim as if it held. `requireCitation` asks
+ * that the page cite at least one row.
  *
  * @param {string} html the page the build wrote
  * @param {Array<{ id: string, verdict: string, claim: string }>} rows the /compare data's rows
- * @param {{ topics?: Readonly<Record<string, readonly string[]>>,
- *           shortForms?: Readonly<Record<string, readonly string[]>> }} [options]
+ * @param {{ route: string, evidence?: readonly string[], requireCitation?: boolean,
+ *           topics?: Readonly<Record<string, readonly string[]>>,
+ *           shortForms?: Readonly<Record<string, readonly string[]>> }} options
  * @returns {string[]}
  */
-export function productClaimProblems(
+export function pageClaimProblems(
   html,
   rows,
-  { topics = CLAIM_TOPICS, shortForms = LEAD_SHORT_FORMS } = {}
+  { route, evidence = [], requireCitation = false, topics = CLAIM_TOPICS, shortForms = LEAD_SHORT_FORMS }
 ) {
   const page = load(html);
   const main = page("main").first();
-  if (main.length === 0) return ["/product has no <main> to read claims from"];
+  if (main.length === 0) return [`${route} has no <main> to read claims from`];
 
   const ids = new Set(rows.map((row) => row.id));
   const problems = [];
 
   const cited = [...new Set(citationsIn(page, main))];
   for (const row of cited) {
-    if (!ids.has(row)) problems.push(`/product cites /compare#${row}, which is no row on /compare`);
+    if (!ids.has(row)) problems.push(`${route} cites /compare#${row}, which is no row on /compare`);
   }
 
   // The blocks the page's words sit in, in document order, each once.
@@ -210,30 +256,161 @@ export function productClaimProblems(
     const text = fold(page(block).text());
     const scope = page(block).closest("section, article").get(0) ?? block;
     const citesHere = new Set(citationsIn(page, scope));
+    const pinnedHere = evidenceIn(page, scope, evidence);
     for (const [row, words] of Object.entries(topics)) {
-      if (citesHere.has(row)) continue;
+      if (citesHere.has(row) || pinnedHere) continue;
       const word = words.find((candidate) => mentions(text, candidate));
       if (word !== undefined) {
+        const or = evidence.length > 0 ? " or linking its file at the pinned release" : "";
         problems.push(
-          `/product mentions "${word}" without citing /compare#${row} in its section: ` +
+          `${route} mentions "${word}" without citing /compare#${row}${or} in its section: ` +
             `"${excerpt(page(block).text())}"`
         );
       }
     }
   }
 
+  // A claim a page quotes in order to narrow it is a mention, not an assertion: the words a
+  // block quotes, or a claim inside the card that names its row and links to it (Home's trust
+  // cards, /security's limits, a post's verification callout).
   for (const block of blocks) {
-    for (const finding of leadOverclaims(page(block).text(), rows, shortForms)) {
+    const card = page(block).closest("[data-trust-row], [data-limit], [data-blog-claim]");
+    const named = card.attr("data-trust-row") ?? card.attr("data-limit") ?? card.attr("data-blog-claim");
+    const narrowed = named !== undefined && citationsIn(page, card.get(0)).includes(named);
+    for (const finding of leadOverclaims(assertedText(page, block), rows, shortForms)) {
+      if (narrowed && finding.row === named) continue;
       problems.push(
-        `/product says "${finding.phrase}", which /compare row \`${finding.row}\` ` +
+        `${route} says "${finding.phrase}", which /compare row \`${finding.row}\` ` +
           `(${finding.verdict}) says does not hold as stated ("${finding.claim}"). State the ` +
           `row's narrower truth instead: "${excerpt(page(block).text())}"`
       );
     }
   }
 
-  problems.push(...staleClaimTopics(rows, topics));
+  if (requireCitation && cited.length === 0) {
+    problems.push(`${route} cites no /compare row, so nothing on it is held to one`);
+  }
+  return problems;
+}
 
-  if (cited.length === 0) problems.push("/product cites no /compare row, so nothing on it is held to one");
+/**
+ * What is wrong with the claims on the built /product page, held to the /compare rows.
+ *
+ * @param {string} html the page the build wrote
+ * @param {Array<{ id: string, verdict: string, claim: string }>} rows the /compare data's rows
+ * @param {{ topics?: Readonly<Record<string, readonly string[]>>,
+ *           shortForms?: Readonly<Record<string, readonly string[]>> }} [options]
+ * @returns {string[]}
+ */
+export function productClaimProblems(
+  html,
+  rows,
+  { topics = CLAIM_TOPICS, shortForms = LEAD_SHORT_FORMS } = {}
+) {
+  return [
+    ...pageClaimProblems(html, rows, { route: "/product", requireCitation: true, topics, shortForms }),
+    ...staleClaimTopics(rows, topics)
+  ];
+}
+
+/** Every string a page's JSON-LD says about the product: descriptions, questions, answers. */
+function structuredClaims(page) {
+  const found = [];
+  const walk = (value, key = "") => {
+    if (typeof value === "string") {
+      if (["description", "text", "name"].includes(key)) found.push({ key, value });
+    } else if (Array.isArray(value)) {
+      for (const item of value) walk(item, key);
+    } else if (value && typeof value === "object") {
+      for (const [k, v] of Object.entries(value)) walk(v, k);
+    }
+  };
+  for (const script of page('script[type="application/ld+json"]').toArray()) {
+    try {
+      walk(JSON.parse(page(script).text()));
+    } catch {
+      // validate:build owns "exactly one parseable graph per page".
+    }
+  }
+  return found;
+}
+
+/**
+ * What a page tells search engines and assistants that is broader than the ledger (#98): its
+ * meta and Open Graph descriptions, and every description, question and answer in its
+ * structured data, held to the /compare rows as the llms.txt lead is (`leadOverclaims`).
+ *
+ * @param {string} html
+ * @param {Array<{ id: string, verdict: string, claim: string }>} rows
+ * @param {{ route: string, shortForms?: Readonly<Record<string, readonly string[]>> }} options
+ * @returns {string[]}
+ */
+export function headClaimProblems(html, rows, { route, shortForms = LEAD_SHORT_FORMS }) {
+  const page = load(html);
+  const said = [
+    { where: "its description", value: page('meta[name="description"]').attr("content") ?? "" },
+    { where: "its Open Graph description", value: page('meta[property="og:description"]').attr("content") ?? "" },
+    ...structuredClaims(page).map(({ key, value }) => ({ where: `its structured data (${key})`, value }))
+  ];
+  const problems = [];
+  for (const { where, value } of said) {
+    for (const finding of leadOverclaims(value, rows, shortForms)) {
+      problems.push(
+        `${route} says "${finding.phrase}" in ${where}, which /compare row \`${finding.row}\` ` +
+          `(${finding.verdict}) says does not hold as stated ("${finding.claim}"): "${excerpt(value)}"`
+      );
+    }
+  }
+  return problems;
+}
+
+/**
+ * Whether Home's FAQPage says exactly what its visible questions say (#98): the same
+ * questions, in order, each with the text of its answer paragraphs.
+ *
+ * @param {string} html the built Home page
+ * @returns {string[]}
+ */
+export function faqParityProblems(html) {
+  const page = load(html);
+  const squash = (text) => String(text).replace(/\s+/g, " ").trim();
+  const visible = page("details[data-faq]")
+    .toArray()
+    .map((details) => ({
+      name: squash(page(details).find("summary").first().text()),
+      text: squash(
+        page(details)
+          .find("p[data-faq-answer]")
+          .toArray()
+          .map((p) => squash(page(p).text()))
+          .join(" ")
+      )
+    }));
+  let published = null;
+  for (const script of page('script[type="application/ld+json"]').toArray()) {
+    try {
+      const graph = JSON.parse(page(script).text())["@graph"] ?? [];
+      const faq = graph.find((node) => node?.["@type"] === "FAQPage");
+      if (faq) published = (faq.mainEntity ?? []).map((q) => ({ name: squash(q.name), text: squash(q.acceptedAnswer?.text) }));
+    } catch {
+      // validate:build owns parseability.
+    }
+  }
+  if (visible.length === 0) return ["/ shows no questions (details[data-faq]) for its FAQPage to publish"];
+  if (published === null) return ["/ shows questions but its structured data has no FAQPage"];
+  const problems = [];
+  const count = Math.max(visible.length, published.length);
+  for (let i = 0; i < count; i++) {
+    const shown = visible[i];
+    const told = published[i];
+    if (!shown || !told) {
+      problems.push(`/ shows ${visible.length} question(s) and its FAQPage publishes ${published.length}`);
+      break;
+    }
+    if (shown.name !== told.name) problems.push(`/ asks "${shown.name}" where its FAQPage asks "${told.name}"`);
+    else if (shown.text !== told.text) {
+      problems.push(`/ answers "${shown.name}" differently from its FAQPage: "${excerpt(shown.text)}" vs "${excerpt(told.text)}"`);
+    }
+  }
   return problems;
 }
