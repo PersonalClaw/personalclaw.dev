@@ -76,6 +76,9 @@ const SHOTS = [
     // photographs an empty "What do you want to accomplish?" prompt.
     hash: process.env.LOOP_ID ? `#/loops/${process.env.LOOP_ID}` : "#/loops",
     settle: 3000,
+    // The cockpit opens on the loop's working log. The deliverable the manifest asks for (the
+    // report) is a tab beside it, named after the artifact, so LOOP_TAB names it per instance.
+    clickText: process.env.LOOP_TAB,
   },
   { id: "triggers", hash: "#/triggers", settle: 2400 },
   // The Store is a tab of the Capabilities destination (0.2.4), still the Apps page's store view;
@@ -84,7 +87,14 @@ const SHOTS = [
   { id: "apps", hash: "#/apps?view=store", settle: 6000 },
   { id: "agents", hash: "#/agents", settle: 2600 },
   // Memory left Settings for Library's Memory tab in 0.2.4; `#/settings/memory` now redirects.
-  { id: "memory", hash: "#/memory", settle: 2600 },
+  {
+    id: "memory",
+    hash: "#/memory",
+    settle: 2600,
+    // The studio opens with nothing inspected. MEMORY_PICK names an entry to select, so the shot
+    // shows one memory with its neighbourhood lit in the graph.
+    clickText: process.env.MEMORY_PICK,
+  },
 ];
 
 const wanted = only.length ? SHOTS.filter((s) => only.includes(s.id)) : SHOTS;
@@ -161,6 +171,16 @@ for (const shot of wanted) {
     .waitFor({ state: "hidden", timeout: 20000 })
     .catch(() => problems.push("status line: still connecting to the gateway"));
 
+  if (shot.clickText) {
+    const target = page.getByText(shot.clickText, { exact: false }).first();
+    try {
+      await target.click({ timeout: 10000 });
+      await page.waitForTimeout(1200);
+    } catch {
+      problems.push(`click: never found ${JSON.stringify(shot.clickText)}`);
+    }
+  }
+
   if (shot.scrollToEnd) {
     // The same inner-pane rule as scrollToText below: scroll every scrollable pane to its
     // end, since the window itself does not scroll.
@@ -204,11 +224,36 @@ for (const shot of wanted) {
     await page.waitForTimeout(800);
   }
 
+  // A public shot shows no host path and nothing of the capturing instance's own setup. A home
+  // directory path is refused by pattern; anything instance-specific (an account name, a model
+  // provider the site must not show) comes in through CAPTURE_FORBID as a regex, so it is never
+  // written into this file. Only text inside the viewport counts, since that is all the PNG holds.
+  const leaks = await page.evaluate((forbid) => {
+    const patterns = [/\/(Users|home)\/[^\s/]+/];
+    if (forbid) patterns.push(new RegExp(forbid, "i"));
+    const hits = patterns.map(() => 0);
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+      const text = node.textContent ?? "";
+      const matched = patterns.map((pattern) => pattern.test(text));
+      if (!matched.some(Boolean) || !node.parentElement?.checkVisibility()) continue;
+      const range = document.createRange();
+      range.selectNodeContents(node);
+      const inView = [...range.getClientRects()].some(
+        (rect) => rect.bottom > 0 && rect.right > 0 && rect.top < innerHeight && rect.left < innerWidth
+      );
+      if (inView) matched.forEach((hit, index) => (hits[index] += hit ? 1 : 0));
+    }
+    return hits;
+  }, process.env.CAPTURE_FORBID ?? "");
+  if (leaks[0]) problems.push(`leak: a home-directory path is visible (${leaks[0]} text run(s))`);
+  if (leaks[1]) problems.push(`leak: CAPTURE_FORBID matches visible text (${leaks[1]} text run(s))`);
+
   const file = join(outDir, `${shot.id}.png`);
   await page.screenshot({ path: file, fullPage: false });
 
   const fresh = problems.slice(before);
-  const note = fresh.length ? `  ⚠ ${fresh.length} console error(s)` : "";
+  const note = fresh.length ? `  ⚠ ${fresh.join("; ")}` : "";
   console.log(`captured ${shot.id.padEnd(20)} ${WIDTH}x${HEIGHT}  ${shot.hash}${note}`);
   if (fresh.length) failures += 1;
 }
@@ -218,8 +263,8 @@ await browser.close();
 console.log(`\n${wanted.length} shot(s) → marketing/.captures/`);
 if (failures) {
   console.log(
-    `${failures} view(s) logged console errors — inspect those before promoting them, ` +
-      `a screenshot of a broken surface is worse than no screenshot.`
+    `${failures} view(s) logged console errors or a leak — inspect those before promoting ` +
+      `them: a screenshot of a broken surface, or of the capturing machine, is worse than none.`
   );
 }
 console.log("Review each PNG, then promote deliberately into src/assets/.");

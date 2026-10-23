@@ -15,8 +15,24 @@ interface Props {
   label: string;
 }
 
+/** A `videos` entry, as marketing/screenshots.schema.json declares it. */
+interface VideoEntry {
+  id: string;
+  kind: string;
+  status: string;
+  output: string;
+  poster: string;
+  width: number;
+  height: number;
+  autoplay: string;
+  fallback: string;
+}
+
 const { id, label } = Astro.props;
-const entry = (manifest.videos ?? []).find((video) => video.id === id);
+// Typed here rather than inferred from the JSON: a manifest that declares no video yet infers
+// `never[]`, which would type every field below as missing.
+const videos: VideoEntry[] = manifest.videos ?? [];
+const entry = videos.find((video) => video.id === id);
 if (!entry) throw new Error(`no video "${id}" in marketing/screenshots.manifest.json`);
 if (entry.kind !== "loop") throw new Error(`video "${id}" is a ${entry.kind} video, not a loop`);
 if (entry.status !== "shipping") throw new Error(`video "${id}" is ${entry.status}, not shipping`);

@@ -1,15 +1,16 @@
 import { expect, test, type Page, type Request } from "@playwright/test";
 import { monitorRuntime, openPage, settlePage } from "./support";
 
-// /product (#90): the tour first, poster-first, with its chapter kept in the URL, then one
-// section per capability, each with one dominant capture in a box that does not move.
+// /product (#90): the tour first, a still per chapter with the chapter kept in the URL, then
+// one section per capability, each with one dominant capture in a box that does not move.
 //
-// "No video byte before an explicit play" (SITE-REDESIGN.md, section 5.6) is measured by
-// recording every request the page makes: a request for the tour's video file, or for any
-// other video, before play fails the test. Data saver has no Playwright emulation, so it is
-// stubbed as `navigator.connection.saveData = true` before the page's scripts run.
+// The recorded tour came off the page at the 0.2.6 re-pin (src/data/tour.mjs), so the page plays
+// no video at all: every request it makes is recorded, and one for a video file fails the test.
+// Data saver has no Playwright emulation, so it is stubbed as
+// `navigator.connection.saveData = true` before the page's scripts run.
 
 const CAPABILITIES = ["chat", "loops", "memory", "knowledge", "automation", "agents"];
+const CHAPTERS = ["home", "chat", "approval", "loops", "knowledge"];
 const VIDEO = /\.(mp4|webm|mov|m4v)(\?|$)/i;
 
 function videoRequests(page: Page): Request[] {
@@ -34,14 +35,18 @@ async function saveData(page: Page) {
 const chapter = (page: Page, name: string) =>
   page.getByRole("list", { name: "Tour chapters" }).getByRole("button", { name: new RegExp(`^${name}`) });
 
-async function expectPoster(page: Page) {
-  const video = page.locator("#tour video");
-  await expect(video).toHaveAttribute("preload", "none");
-  await expect(video).toHaveAttribute("poster", /personalclaw-tour-poster\.webp$/);
-  expect(await video.evaluate((v: HTMLVideoElement) => v.paused && v.readyState === 0)).toBe(true);
+/** The one still the tour shows, by its chapter id, after the image has decoded. */
+async function expectStill(page: Page, id: string) {
+  const shown = page.locator("#tour [data-still]:not([hidden])");
+  await expect(shown).toHaveCount(1);
+  await expect(shown).toHaveAttribute("data-still", id);
+  const image = shown.locator("img");
+  await expect(image).toHaveAttribute("alt", /.{40,}/);
+  await image.evaluate((img: HTMLImageElement) => img.decode());
+  expect(await image.evaluate((img: HTMLImageElement) => img.naturalWidth), `${id}'s still shows`).toBeGreaterThan(0);
 }
 
-test.describe("the tour asks for no video before play", () => {
+test.describe("the tour shows one still per chapter and plays no video", () => {
   for (const [name, setup] of [
     ["by default", async () => {}],
     ["with reduced motion", async (page: Page) => page.emulateMedia({ reducedMotion: "reduce" })],
@@ -52,13 +57,15 @@ test.describe("the tour asks for no video before play", () => {
       const runtime = monitorRuntime(page, baseURL!);
       const videos = videoRequests(page);
       await openPage(page, "/product");
-      await expectPoster(page);
+      await expect(page.locator("#tour video")).toHaveCount(0);
+      await expect(page.locator("#tour [data-still]")).toHaveCount(CHAPTERS.length);
+      await expectStill(page, "home");
       await openPage(page, "/product?chapter=knowledge#tour");
-      await expect(chapter(page, "Knowledge searched locally")).toHaveAttribute("aria-pressed", "true");
-      await expectPoster(page);
+      await expect(chapter(page, "Knowledge, tagged and searchable")).toHaveAttribute("aria-pressed", "true");
+      await expectStill(page, "knowledge");
       await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
       await settlePage(page);
-      expect(videos.map((r) => r.url()), "video requested before play").toEqual([]);
+      expect(videos.map((r) => r.url()), "a video was requested").toEqual([]);
       runtime.assertClean();
     });
   }
@@ -69,17 +76,19 @@ test("the chosen chapter is in the URL and comes back on reload, back and forwar
   baseURL
 }) => {
   const runtime = monitorRuntime(page, baseURL!);
-  const videos = videoRequests(page);
   await openPage(page, "/product");
-  const loops = chapter(page, "A goal loop and its findings");
-  await expect(chapter(page, "The gateway's own dashboard")).toHaveAttribute("aria-pressed", "true");
+  const loops = chapter(page, "A goal loop and its report");
+  const home = chapter(page, "Home, and what waits on you");
+  await expect(home).toHaveAttribute("aria-pressed", "true");
 
   await loops.click();
   await expect(loops).toHaveAttribute("aria-pressed", "true");
   await expect(page).toHaveURL(/\/product\?chapter=loops$/);
+  await expectStill(page, "loops");
 
   await page.reload();
   await expect(loops).toHaveAttribute("aria-pressed", "true");
+  await expectStill(page, "loops");
 
   await openPage(page, "/apps");
   await page.goBack();
@@ -90,39 +99,31 @@ test("the chosen chapter is in the URL and comes back on reload, back and forwar
   await expect(page).toHaveURL(/\/apps$/);
   await page.goBack();
   await expect(loops).toHaveAttribute("aria-pressed", "true");
-  await expect(chapter(page, "The gateway's own dashboard")).toHaveAttribute("aria-pressed", "false");
+  await expect(home).toHaveAttribute("aria-pressed", "false");
+  await expectStill(page, "loops");
 
-  expect(videos.map((r) => r.url()), "video requested before play").toEqual([]);
+  await home.click();
+  await expect(page).toHaveURL(/\/product$/);
+  await expectStill(page, "home");
   runtime.assertClean();
 });
 
-test("a chapter choice adds no history entry, and the first play starts at it", async ({
-  page,
-  baseURL
-}) => {
+test("a chapter choice adds no history entry", async ({ page, baseURL }) => {
   const runtime = monitorRuntime(page, baseURL!);
   await openPage(page, "/");
   await openPage(page, "/product");
-  await chapter(page, "Chat with a model on this machine").click();
-  const approval = chapter(page, "The approval it stops on");
+  await chapter(page, "A chat stopped at its approval").click();
+  const approval = chapter(page, "Every approval in one inbox");
   await approval.click();
   await expect(page).toHaveURL(/\?chapter=approval$/);
+  await expect(approval).toHaveAttribute("aria-controls", "tour-approval");
 
   await page.goBack();
   await expect(page).toHaveURL(/\/$/);
   await page.goForward();
   await expect(page).toHaveURL(/\/product\?chapter=approval$/);
   await expect(approval).toHaveAttribute("aria-pressed", "true");
-
-  // The seek waits for the first explicit play. Playing the file itself is not measured here
-  // (the test browser has no H.264 decoder); the page's play handler is, through the event a
-  // press of the video's own play control dispatches.
-  const start = Number(await approval.getAttribute("data-start"));
-  expect(start).toBeGreaterThan(0);
-  const video = page.locator("#tour video");
-  expect(await video.evaluate((v: HTMLVideoElement) => v.currentTime)).toBe(0);
-  await video.evaluate((v: HTMLVideoElement) => v.dispatchEvent(new Event("play")));
-  expect(await video.evaluate((v: HTMLVideoElement) => v.currentTime)).toBe(start);
+  await expectStill(page, "approval");
   runtime.assertClean();
 });
 
