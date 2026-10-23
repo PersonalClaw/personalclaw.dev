@@ -620,6 +620,12 @@ const describes =
     align-items: end;
   }
 
+  /* The text column sits at the top of the row, so the h1 lines up with the clip's top rather than
+     sinking to the row's foot beside it; the clip keeps its own alignment. */
+  .release-heading {
+    align-self: start;
+  }
+
   /* The heading scale /compare's h1 uses: this is a proof page, and its proof is below. */
   h1 {
     max-width: 18ch;
