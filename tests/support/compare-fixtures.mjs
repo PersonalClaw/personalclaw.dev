@@ -38,12 +38,36 @@ const TONE = { yes: "verdict-yes", partial: "verdict-partial", no: "verdict-no" 
 const VERDICTS = ["yes", "partial", "no"];
 
 /**
+ * A known limit as src/pages/compare.astro lists it, in #98's settled form: "Not re-checked for
+ * <pinned release>:", then the statement the row was last verified with, then that statement's
+ * evidence link.
+ */
+export const knownLimit = (row, tag) =>
+  `<li id="${escapeHtml(row.id)}" data-capability-limit="${escapeHtml(row.id)}">` +
+  `<p><strong>Not re-checked for ${escapeHtml(tag)}:</strong> ${escapeHtml(row.statement)}</p>` +
+  `<a href="${escapeHtml(row.source_url)}">${escapeHtml(row.source_label)} at ` +
+  `${escapeHtml(row.verified_release)}</a></li>`;
+
+/**
+ * A known limit as the page listed it before that form: its claim and "last verified at
+ * <release>", without its statement.
+ */
+export const claimOnlyLimit = (row) =>
+  `<li id="${escapeHtml(row.id)}" data-capability-limit="${escapeHtml(row.id)}">` +
+  `<h3>${escapeHtml(row.claim)}</h3><a href="${escapeHtml(row.source_url)}">` +
+  `${escapeHtml(row.source_label)} last verified at ${escapeHtml(row.verified_release)}</a></li>`;
+
+/**
  * A /compare page with everything validate-compare-render reads, rendered from `data` in the
  * page's group order. `rowId(row, position)` is a row's id attribute, null for none; `extra`
  * is markup added after the groups. A row not verified at the pinned release is listed as a
- * known limit, as the page lists it, unless `staleAsCurrent` plants it among the current rows.
+ * known limit, as `limit(row, tag)` renders it (the page's form by default), unless
+ * `staleAsCurrent` plants it among the current rows.
  */
-export function comparePage(data, { rowId = (row) => row.id, extra = "", staleAsCurrent = false } = {}) {
+export function comparePage(
+  data,
+  { rowId = (row) => row.id, extra = "", staleAsCurrent = false, limit = knownLimit } = {}
+) {
   const tag = pinnedTag();
   const shownAsCurrent = (row) => staleAsCurrent || row.verified_release === tag;
   const counts = { yes: 0, partial: 0, no: 0 };
@@ -72,14 +96,7 @@ export function comparePage(data, { rowId = (row) => row.id, extra = "", staleAs
       `<ul>${rows.join("")}</ul></section>`
     );
   });
-  const limits = data.rows
-    .filter((row) => !shownAsCurrent(row))
-    .map(
-      (row) =>
-        `<li id="${escapeHtml(row.id)}" data-capability-limit="${escapeHtml(row.id)}">` +
-        `<h3>${escapeHtml(row.claim)}</h3><a href="${escapeHtml(row.source_url)}">` +
-        `${escapeHtml(row.source_label)} last verified at ${escapeHtml(row.verified_release)}</a></li>`
-    );
+  const limits = data.rows.filter((row) => !shownAsCurrent(row)).map((row) => limit(row, tag));
   return [
     '<!doctype html><html lang="en"><body><main id="main-content">',
     "<section><h1>What it does</h1><p data-support>Every row names the file it was checked against.</p></section>",

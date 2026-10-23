@@ -121,18 +121,23 @@ const notClean = counts.partial + counts.no;
         <section class="group" aria-labelledby="not-rechecked" data-capability-limits>
           <h2 id="not-rechecked">Not checked again at <span translate="no">{release.version}</span></h2>
           <p class="group-blurb">
-            These were last verified at an earlier release. Until each is read again at this one,
-            the page names the claim and when it was checked, and says nothing about whether it
-            still holds.
+            These were last verified at an earlier release. Each shows the wording and the evidence
+            from that check, and none is a claim about this release until it is read again.
           </p>
           <ul class="rows">
+            {/* #98's settled form: "Not re-checked for <pinned release>:", then the statement the
+                row was last verified with, then that statement's evidence link, so the old wording
+                never reads as current (scripts/validate-compare-render.mjs holds it). */}
             {knownLimits.map((row) => (
               <li class="row" id={row.id} data-capability-limit={row.id}>
-                <h3>{row.claim}</h3>
+                <p class="statement">
+                  <strong>Not re-checked for <span translate="no">{release.version}</span>:</strong>{" "}
+                  {row.statement}
+                </p>
                 <a class="source" href={row.sourceUrl} target="_blank" rel="noreferrer">
                   <span translate="no">{row.sourceLabel}</span>{" "}
                   <span class="source-at">
-                    last verified at <span translate="no">{row.verifiedRelease}</span>
+                    at <span translate="no">{row.verifiedRelease}</span>
                   </span>
                 </a>
               </li>
