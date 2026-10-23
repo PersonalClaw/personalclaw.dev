@@ -18,10 +18,14 @@ const snippetPin = releaseFacts.apps.source.tag ?? releaseFacts.apps.source.shor
 
 // One string, not text around expressions across lines: Astro drops the line break next
 // to an expression, which glued "of" to the repository name. validate-build checks it.
+// The hero carries the counts and no version label (DESIGN.md's hard rules): the release the
+// directory is read at is the first fact below it.
 const appsSummary =
-  `It lists the ${releaseFacts.apps.total} first-party apps of ` +
-  `${releaseFacts.apps.source.repository} ${snippetPin}, in ` +
+  `It lists the ${releaseFacts.apps.total} first-party apps in ` +
   `${releaseFacts.apps.categoryCount} categories.`;
+const directorySource =
+  `Every app below is from ${releaseFacts.apps.source.repository} ${snippetPin}, ` +
+  "the apps release this site pins.";
 
 // Trailing slash: AppDirectory appends the slug directly.
 const appTreeBase = `${releaseFacts.apps.source.repositoryUrl}/tree/${releaseFacts.apps.source.commit}/`;
@@ -58,6 +62,7 @@ const appTreeBase = `${releaseFacts.apps.source.repositoryUrl}/tree/${releaseFac
 
   <section class="directory-section section-rule">
     <div class="shell">
+      <p class="directory-source" data-directory-source>{directorySource}</p>
       <AppDirectory
         apps={directoryApps}
         categories={releaseFacts.apps.categories}
@@ -178,6 +183,13 @@ const appTreeBase = `${releaseFacts.apps.source.repositoryUrl}/tree/${releaseFac
 
   .directory-section {
     padding: 0 0 clamp(6rem, 10vw, 9rem);
+  }
+
+  .directory-source {
+    max-width: 68ch;
+    margin: 0 0 1.25rem;
+    color: var(--ink-muted);
+    font-size: var(--fs-label);
   }
 
   .install-path {

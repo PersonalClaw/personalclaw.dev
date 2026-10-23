@@ -36,6 +36,7 @@ import { fixtureAppNames, fixtureLeaks } from "./fixture-leaks.mjs";
 import { frameFor } from "../src/data/section-frame.mjs";
 import { pngSize, socialImageProblems, videoProblems } from "./social-image-check.mjs";
 import { FRAMES_MAP, FRAMES_STAMP, currentSpecs, staleFrames } from "./social-frames.mjs";
+import { versionLabels } from "./version-labels.mjs";
 
 const root = process.cwd();
 const distDir = path.resolve(root, process.env.DIST_DIR ?? "dist");
@@ -710,17 +711,25 @@ for (const routePath of ["/", "/apps"]) {
   }
 }
 // The hero's summary, word for word: text around expressions across lines in Astro lost
-// its spaces once ("ofPersonalClaw/PersonalClawApps", "in14").
+// its spaces once ("ofPersonalClaw/PersonalClawApps", "in14"). The hero carries no version
+// label (DESIGN.md's hard rules, #91): the pin the directory is read at is the first fact
+// below it, and a version anywhere in the hero fails.
 {
   const appsPin = releaseFacts.apps.source.tag ?? releaseFacts.apps.source.shortCommit;
   const summary =
-    `It lists the ${releaseFacts.apps.total} first-party apps of ` +
-    `${releaseFacts.apps.source.repository} ${appsPin}, in ` +
+    `It lists the ${releaseFacts.apps.total} first-party apps in ` +
     `${releaseFacts.apps.categoryCount} categories.`;
-  const hero$ = await readHtml("/apps");
-  const paragraphs = hero$(".intro-copy p").map((_, p) => hero$(p).text().trim()).get();
+  const apps$ = await readHtml("/apps");
+  const paragraphs = apps$(".apps-hero .intro-copy p").map((_, p) => apps$(p).text().trim()).get();
   if (!paragraphs.includes(summary)) {
     fail(`/apps: the hero does not read "${summary}"`);
+  }
+  for (const problem of versionLabels(apps$(".apps-hero").text(), [appsPin, releaseFacts.core.versionLabel])) {
+    fail(`/apps: the hero carries a version label, ${problem}`);
+  }
+  const source = `Every app below is from ${releaseFacts.apps.source.repository} ${appsPin}, the apps release this site pins.`;
+  if (apps$("[data-directory-source]").first().text().replace(/\s+/g, " ").trim() !== source) {
+    fail(`/apps: the first fact below the hero does not read "${source}"`);
   }
 }
 // The category control offers the sync's categories, in its order, each with the count

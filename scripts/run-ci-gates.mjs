@@ -58,6 +58,7 @@ export const unitTests = {
     "tests/social-frames.test.mjs",
     "tests/social-image-check.test.mjs",
     "tests/release-slot.test.mjs",
+    "tests/version-labels.test.mjs",
   ],
 };
 
