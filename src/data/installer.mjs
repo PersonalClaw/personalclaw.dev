@@ -19,7 +19,17 @@ const installerPath = path.join(process.cwd(), "public", "install");
  * @returns {string}
  */
 export function installerPython() {
-  const match = /^PC_PYTHON="(\d+\.\d+)"$/m.exec(readFileSync(installerPath, "utf8"));
+  return installerPythonOf(readFileSync(installerPath, "utf8"));
+}
+
+/**
+ * The `X.Y` an installer's text hands `uv tool install --python`.
+ *
+ * @param {string} text
+ * @returns {string}
+ */
+export function installerPythonOf(text) {
+  const match = /^PC_PYTHON="(\d+\.\d+)"$/m.exec(text);
   if (!match) {
     throw new Error(
       'public/install names no PC_PYTHON="X.Y", so the home page cannot say which Python the ' +
@@ -27,6 +37,29 @@ export function installerPython() {
     );
   }
   return match[1];
+}
+
+/**
+ * The requirement an installer's text hands `uv tool install`: the package name, with any extras
+ * (`personalclaw`, or `personalclaw[x]`). /release installs the checked wheel with the same.
+ *
+ * @param {string} text
+ * @returns {string}
+ */
+export function installerPackageOf(text) {
+  const match = /^PC_PACKAGE="([^"\s]+)"$/m.exec(text);
+  if (!match) {
+    throw new Error(
+      'public/install names no PC_PACKAGE="…", so /release cannot install the checked wheel the ' +
+        "way the installer does. Re-apply core's deploy/website/install.sh to public/install."
+    );
+  }
+  return match[1];
+}
+
+/** The requirement the served installer hands `uv tool install` (installerPackageOf). */
+export function installerPackage() {
+  return installerPackageOf(readFileSync(installerPath, "utf8"));
 }
 
 /**

@@ -168,13 +168,14 @@ The build runs Astro diagnostics before producing the static site in `dist/`.
 | Command | What it does |
 |---|---|
 | `npm run sync:sources` | Validates source pins, generates ignored release facts from exact revisions, and writes `public/install` from the pinned core installer with its digest |
+| `npm run record:release` | Records the pinned core release's assets in `sources/personalclaw.sources.json`: each file's name, size and SHA-256 as GitHub's release record holds them. Run it at a re-pin; `/release` shows them and `validate:release-parity` holds them to the live release |
 | `npm run check:served-installer` | Checks the installer served at `/install` against `public/install`, the newest core release's installer and its checksums (run daily by **Release follow**) |
 | `npm run sync:registry` | Reads the community app registry, and one README per listing, from the registry repository at its pinned commit, once the pinned core release lists it in its Store |
 | `npm run dev` | Starts the local Astro development server |
 | `npm run check` | Runs Astro and TypeScript diagnostics |
 | `npm run build` | Runs diagnostics and creates the production static build |
 | `npm run preview` | Serves the production build locally |
-| `npm run validate:release-parity` | Checks the website version against the pinned + newest published core release (see [Release parity](#release-parity)) |
+| `npm run validate:release-parity` | Checks the website version against the pinned + newest published core release, and the recorded release assets against the live release record (see [Release parity](#release-parity)) |
 | `npm run validate:registry` | Rebuilds `/registry` against fixture registries that carry listings and asserts what it renders |
 | `npm run validate:blog` | Asserts `/blog` renders one listing item per readable post, and that each post is published, contracted, and not an empty body |
 | `npm run validate:compare` | Refuses a `/compare` matrix that renders no rows, drifts from its data, sources a row to a branch instead of the pinned release, stops carrying the rows that do not hold, or gives a row an id other than its capability key (`/compare#telemetry`) or one another element shares; and refuses a `/product` section that talks about a row's subject without linking the row, a sentence that states a claim a row says does not hold, or a link to a row that does not exist |
@@ -428,6 +429,7 @@ Because the site publishes a released version, its own release identity must mat
 
 - **Truthful pins** — each tag must dereference to the pinned commit (these repositories use annotated tags, so a tag object's SHA is not the commit).
 - **Freshness** — if core has published a newer release tag than the manifest pins, the check FAILS. A published core release is an obligation on this repository, not an optional follow-up.
+- **Release assets** — `core.releaseAssets`, written by `npm run record:release`, must name the pinned version's wheel and sdist and an SBOM, offline, and must equal the live release record name for name, with the same size and SHA-256, online. `/release` shows those checksums, so a stale record would show a reader wrong ones.
 - **Registry freshness** — the registry pin must be the registry's current default-branch commit. A merged listing or delisting is the same obligation as a core release: a stale pin would keep showing a reader a listing, its permissions and its verdict after the registry withdrew them. It re-pins `data.registry` alone, with no version bump.
 
 It runs inside `test:static` (so `test:ci` and the pre-push hook include it) and as a dedicated strict CI job; a daily **Release follow** workflow re-checks freshness between pushes and files a tracking issue when the site falls behind. Strict runs treat an unreachable GitHub API as a failure rather than a skip. The step-by-step release sequence is [docs/release-runbook.md](./docs/release-runbook.md).

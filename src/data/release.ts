@@ -28,6 +28,33 @@ export type ChangelogEntry = {
 /** One of the newest releases in the pinned changelog, newest first (latestReleases()). */
 export type ChangelogRelease = Pick<ChangelogEntry, "heading" | "date" | "summary">;
 
+/** An asset of the pinned core release, as GitHub's release record holds it. */
+export type ReleaseAsset = {
+  name: string;
+  size: number;
+  /** GitHub's SHA-256 digest of the uploaded bytes. */
+  sha256: string;
+  url: string;
+  sbom: boolean;
+  /** Core's release workflow attests build provenance for it. */
+  attested: boolean;
+};
+
+/** The pinned core release, and the steps that verify its wheel (scripts/release-assets.mjs). */
+export type CoreRelease = {
+  url: string;
+  assets: ReleaseAsset[];
+  steps: {
+    file: string;
+    sha256: string;
+    download: string;
+    checksumMac: string;
+    checksumLinux: string;
+    attestation: string;
+    install: string;
+  };
+};
+
 export type ReleaseFacts = {
   schemaVersion: number;
   generatedAt: string;
@@ -40,6 +67,8 @@ export type ReleaseFacts = {
     version: string;
     versionLabel: string;
     source: SourceFact;
+    /** Null for a core pinned by commit alone. */
+    release: CoreRelease | null;
     changelog: {
       currentVersion: ChangelogEntry;
       unreleased: ChangelogEntry;

@@ -151,6 +151,7 @@ function parityRun(plant) {
       "scripts/validate-release-parity.mjs",
       "scripts/served-installer.mjs",
       "scripts/github-api.mjs",
+      "scripts/release-assets.mjs",
       "sources/personalclaw.sources.json",
       "sources/personalclaw.sources.schema.json",
       "package.json",

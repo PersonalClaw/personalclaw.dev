@@ -27,6 +27,8 @@ import {
 } from "../tests/support/site-contract.mjs";
 import { BUILDERS_SNIPPET, appManifestProblems } from "../src/data/apps-snippet.mjs";
 import { runsDownloadUnseen } from "./install-commands.mjs";
+import { releasePageProblems } from "./release-assets.mjs";
+import { installerPackage, installerPython } from "../src/data/installer.mjs";
 import { docsIndex } from "../src/data/docs-index.mjs";
 import { registryArtifactExists, registryListing } from "../src/data/registry.mjs";
 
@@ -36,6 +38,9 @@ const expectNoIndex = process.env.EXPECT_NOINDEX === "1";
 const failures = [];
 const releaseFacts = JSON.parse(
   await readFile(path.join(root, ".generated", "release-facts.json"), "utf8")
+);
+const sourceManifest = JSON.parse(
+  await readFile(path.join(root, "sources", "personalclaw.sources.json"), "utf8")
 );
 
 const fail = (message) => failures.push(message);
@@ -592,6 +597,22 @@ if (!release$.text().includes(releaseFacts.core.versionLabel)) {
 }
 if (!release$.text().includes(`${releaseFacts.apps.total}`)) {
   fail("/release: app count is missing from rendered provenance");
+}
+// The verify steps, the dependency limit and the asset table, held to the assets the manifest
+// records for the pinned release and to the installer /install serves (scripts/release-assets.mjs):
+// the attestation bound to core's release workflow and the tag, and the install step on the
+// installer's Python and requirement. validate:release-parity holds the record to GitHub's.
+if (releaseFacts.channel === "released") {
+  const core = sourceManifest.sources.core;
+  for (const problem of releasePageProblems(release$, {
+    repository: core.repository,
+    tag: core.tag,
+    version: releaseFacts.core.version,
+    assets: core.releaseAssets ?? [],
+    installer: { python: installerPython(), package: installerPackage() }
+  })) {
+    fail(problem);
+  }
 }
 
 for (const routePath of ["/", "/apps"]) {
