@@ -52,7 +52,7 @@ import sources from "../../sources/personalclaw.sources.json" with { type: "json
  * @property {string} checkedOn
  *
  * @typedef {"file" | "release-asset" | "attestation" | "workflow-run" | "test"} SourceType
- * @typedef {"compare" | "home" | "security"} Surface
+ * @typedef {"compare" | "home" | "security" | "blog"} Surface
  *
  * @typedef {object} Group
  * @property {string} id
@@ -67,7 +67,7 @@ const VERDICTS = ["yes", "partial", "no"];
 const COMMIT = /^[0-9a-f]{40}$/;
 const RELEASE = /^v\d+\.\d+\.\d+(?:-[0-9A-Za-z.]+)?$/;
 export const SOURCE_TYPES = ["file", "release-asset", "attestation", "workflow-run", "test"];
-export const SURFACES = ["compare", "home", "security"];
+export const SURFACES = ["compare", "home", "security", "blog"];
 const CORE_REPOSITORY = "https://github.com/PersonalClaw/PersonalClaw/";
 const APPS_REPOSITORY = "https://github.com/PersonalClaw/PersonalClawApps/";
 

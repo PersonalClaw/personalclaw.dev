@@ -25,10 +25,17 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { load } from "cheerio";
 import { blogRoutes } from "../tests/support/site-contract.mjs";
+import { feedProblems } from "./blog-feed.mjs";
+import { currentRows } from "./ledger.mjs";
 
 const repositoryRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const postsDirectory = join(repositoryRoot, "src", "content", "blog");
 const distDirectory = join(repositoryRoot, process.env.DIST_DIR ?? "dist");
+const ledger = JSON.parse(readFileSync(join(repositoryRoot, "src", "data", "capabilities.json"), "utf8"));
+const pinnedCore = JSON.parse(
+  readFileSync(join(repositoryRoot, "sources", "personalclaw.sources.json"), "utf8")
+).sources.core;
+const currentIds = new Set(currentRows(ledger.rows ?? [], { tag: pinnedCore.tag }).map((row) => row.id));
 
 const failures = [];
 const fail = (message) => failures.push(message);
@@ -62,7 +69,16 @@ function readPost(fileName) {
     fail(`${fileName}: front matter is missing ${missing.join(", ")}`);
     return null;
   }
-  return { id: fileName.replace(/\.md$/, ""), ...data };
+  // `claims` is a flow list of ledger row ids, `claims: ["license", "audit_log"]`.
+  let claims = [];
+  if (data.claims) {
+    try {
+      claims = JSON.parse(match[1].match(/^claims:\s*(\[.*\])\s*$/m)?.[1] ?? "[]");
+    } catch {
+      fail(`${fileName}: claims is not a list of ledger row ids`);
+    }
+  }
+  return { id: fileName.replace(/\.md$/, ""), ...data, claims };
 }
 
 /** @param {string} routePath */
@@ -139,6 +155,9 @@ if (!listing) {
     if (title !== post.title) {
       fail(`/blog lists ${post.id} as "${title}", front matter says "${post.title}"`);
     }
+    if (item.find('a[href="/release"][data-blog-verified]').length !== 1) {
+      fail(`/blog's "Verified against" badge for ${post.id} does not link /release`);
+    }
   }
 }
 
@@ -175,6 +194,57 @@ for (const post of posts) {
   }
   if (links === 0) {
     fail(`${routePath} rendered no links — a post whose claims cite nothing`);
+  }
+
+  // The verification callout: what was checked, against which release, where corrections
+  // go, and each ledger row the post names, current only when the ledger says so.
+  const callout = page("[data-blog-callout]");
+  if (callout.length !== 1) {
+    fail(`${routePath} renders ${callout.length} verification callouts, expected one`);
+  } else {
+    if (!callout.text().includes(post.verifiedAgainst)) {
+      fail(`${routePath}'s callout does not name ${post.verifiedAgainst}, the release it was checked against`);
+    }
+    if (callout.find('a[href*="/issues"]').length === 0) {
+      fail(`${routePath}'s callout says nowhere where corrections go`);
+    }
+    for (const id of post.claims) {
+      const ledgerRow = (ledger.rows ?? []).find((row) => row.id === id);
+      if (!ledgerRow) {
+        fail(`${routePath} names the claim "${id}", which the ledger does not hold`);
+        continue;
+      }
+      if (!(ledgerRow.surfaces ?? []).includes("blog")) {
+        fail(`${routePath} names "${id}", whose ledger row does not list blog among its surfaces`);
+      }
+      const current = callout.find(`[data-blog-claim="${id}"]`).length;
+      const limit = callout.find(`[data-blog-claim-limit="${id}"]`).length;
+      if (currentIds.has(id) ? current !== 1 || limit !== 0 : current !== 0 || limit !== 1) {
+        fail(
+          `${routePath} shows the claim "${id}" as ${current ? "current" : limit ? "a known limit" : "nothing"}, ` +
+            `but the ledger has it ${currentIds.has(id) ? "verified" : "not verified"} at ${pinnedCore.tag}`
+        );
+      }
+    }
+  }
+  if (page('a[href="/release"][data-blog-verified]').length !== 1) {
+    fail(`${routePath}'s "Verified against" badge does not link /release`);
+  }
+}
+
+// The feed, contracted the way validate-build contracts robots.txt and the llms.txt pair.
+{
+  const feedPath = join(distDirectory, "blog", "rss.xml");
+  const origin = listing ? new URL(listing('link[rel="canonical"]').attr("href") ?? "https://invalid").origin : null;
+  for (const problem of feedProblems(
+    existsSync(feedPath) ? readFileSync(feedPath, "utf8") : null,
+    posts.map((post) => post.id),
+    origin ?? "https://invalid"
+  )) {
+    fail(problem);
+  }
+  if (listing && listing('a[href="/blog/rss.xml"]').length === 0) {
+    fail("/blog does not link its feed");
   }
 }
 

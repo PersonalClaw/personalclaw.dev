@@ -9,7 +9,7 @@
 // src/data/capabilities.mjs, so they can disagree with the normalizer the pages render.
 
 export const SOURCE_TYPES = ["file", "release-asset", "attestation", "workflow-run", "test"];
-export const SURFACES = ["compare", "home", "security"];
+export const SURFACES = ["compare", "home", "security", "blog"];
 const COMMIT = /^[0-9a-f]{40}$/;
 const RELEASE = /^v\d+\.\d+\.\d+(?:-[0-9A-Za-z.]+)?$/;
 const REPOSITORIES = {
