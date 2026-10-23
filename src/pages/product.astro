@@ -1,17 +1,17 @@
 ---
 import { Image } from "astro:assets";
+import { CirclePlay } from "lucide-react";
 import agentsCapture from "../assets/agents.png";
 import chatCapture from "../assets/chat.png";
-import dashboardCapture from "../assets/dashboard.png";
-import inboxCapture from "../assets/inbox.png";
 import knowledgeCapture from "../assets/knowledge.png";
 import loopsCapture from "../assets/loops.png";
 import memoryCapture from "../assets/memory.png";
 import triggersCapture from "../assets/triggers.png";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { GITHUB_URL } from "../data/site";
+import { CHAPTER_PARAM, tourChapters } from "../data/tour.mjs";
 import { releaseFacts } from "../data/release";
-import { CHAPTER_PARAM, TOUR_CHAPTERS } from "../data/tour.mjs";
+import marketing from "../../marketing/screenshots.manifest.json";
 
 /*
  * WHY SEVERAL CLAIMS ON THIS PAGE ARE NARROWER THAN THEY COULD BE.
@@ -96,19 +96,29 @@ import { CHAPTER_PARAM, TOUR_CHAPTERS } from "../data/tour.mjs";
  * `npm run validate:compare` fails the build when one does not (scripts/product-claims.mjs).
  */
 
-/** Each chapter's still, by the manifest shot it names. */
-const stills: Record<string, ImageMetadata> = {
-  dashboard: dashboardCapture,
-  chat: chatCapture,
-  inbox: inboxCapture,
-  loops: loopsCapture,
-  knowledge: knowledgeCapture
+const chapters = tourChapters();
+
+// Which release the tour shows, from its manifest entry: the note says so, and says the screens
+// have moved when the recording is older than the release this site describes.
+const tourEntry = marketing.videos.find((video) => video.id === "tour");
+if (!tourEntry) throw new Error("product.astro: the marketing manifest has no tour entry");
+// No version label in the hero (SITE-REDESIGN.md, hard rules): the note names the release by what it is.
+const order = (a: string, b: string) => {
+  const [x, y] = [a, b].map((v) => v.split(".").map(Number));
+  for (let i = 0; i < 3; i++) if (x[i] !== y[i]) return x[i] < y[i] ? -1 : 1;
+  return 0;
 };
-const chapters = TOUR_CHAPTERS.map((chapter) => {
-  const still = stills[chapter.shot];
-  if (!still) throw new Error(`The tour's "${chapter.id}" chapter names a shot /product does not import: ${chapter.shot}`);
-  return { ...chapter, still };
-});
+const recorded = order(tourEntry.capturedAt, releaseFacts.core.version);
+const tourNote =
+  recorded === 0
+    ? "Recorded at the release this site describes."
+    : recorded < 0
+      ? "It was recorded at an earlier release than this site describes, so some screens have changed since."
+      : "It was recorded at a newer release than this site describes, so some screens may differ from it.";
+
+/** `m:ss`, from the track's seconds. */
+const clock = (seconds: number) =>
+  `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, "0")}`;
 
 interface Capability {
   id: string;
@@ -163,7 +173,7 @@ const capabilities: Capability[] = [
       { text: "What it holds: see all of it, edit its facts, and delete any fact, episode, lesson or entity." },
       { text: "Which chats it learns from: a Temporary chat neither reads nor writes it, and an Incognito chat reads it and writes nothing back." }
     ],
-    docs: { href: "/docs/architecture/knowledge-memory", label: "How memory and knowledge work" }
+    docs: { href: "/docs/architecture/knowledge-memory#memory", label: "How memory works" }
   },
   {
     id: "knowledge",
@@ -177,7 +187,7 @@ const capabilities: Capability[] = [
       { text: "What it knows about each item: with a model set, the people, places and things in it." },
       { text: "Where it lives: one database and a folder of originals in your PersonalClaw home." }
     ],
-    docs: { href: "/docs/architecture/knowledge-memory", label: "How memory and knowledge work" }
+    docs: { href: "/docs/architecture/knowledge-memory#knowledge", label: "How knowledge works" }
   },
   {
     id: "automation",
@@ -194,7 +204,7 @@ const capabilities: Capability[] = [
       },
       { text: "On or off: every schedule and trigger has its own switch." },
       { text: "What interrupts you: Notify, Badge, Digest or Never, for each kind of notification." },
-      { text: "One inbox for a loop's question, an approval, a proposed skill or a message. A row a loop, chat or run raised links straight back to it." }
+      { text: "One inbox for a loop's question, an approval, a proposed skill or a message. Each row links back to the loop, chat or run that raised it." }
     ],
     docs: { href: "/docs/architecture/tasks-triggers", label: "How tasks and triggers work" }
   },
@@ -222,27 +232,52 @@ const capabilities: Capability[] = [
   <section class="tour" id="tour" aria-labelledby="product-title" data-tour data-param={CHAPTER_PARAM}>
     <div class="shell tour-grid">
       <div class="tour-copy">
-        <h1 class="tour-title" id="product-title">See it do the work.</h1>
+        <h1 class="tour-title" id="product-title">Watch it do the work.</h1>
         <p class="tour-lede" data-support>
-          Five screens from one workspace, captured at {releaseFacts.core.versionLabel}: the home that shows what
-          waits on you, a chat stopped at its approval, the inbox that holds it, a goal loop's
-          report, and the knowledge it searches.
+          One machine, in chapters: a chat, its approval, a goal loop, a knowledge search and what
+          it made.
         </p>
+        <p class="tour-note">{tourNote}</p>
       </div>
-      <div class="tour-frame">
-        {chapters.map((chapter, index) => (
-          <figure class="tour-still" id={`tour-${chapter.id}`} data-still={chapter.id} hidden={index !== 0}>
-            <Image
-              src={chapter.still}
-              alt={chapter.alt}
-              widths={[640, 960, 1280, 1800]}
-              sizes="(max-width: 960px) 100vw, 64vw"
-              format="webp"
-              quality={86}
-              loading={index === 0 ? "eager" : "lazy"}
-            />
-          </figure>
-        ))}
+      <div class="tour-frame" data-tour-frame>
+        <video
+          class="tour-video"
+          width="1280"
+          height="720"
+          controls
+          muted
+          playsinline
+          preload="none"
+          poster="/media/personalclaw-tour-poster.webp"
+          aria-label="The PersonalClaw tour"
+        >
+          <source src="/media/personalclaw-tour.mp4" type="video/mp4" />
+          <track
+            default
+            kind="captions"
+            srclang="en"
+            label="English (described beats)"
+            src="/media/personalclaw-tour.vtt"
+          />
+          <track kind="chapters" srclang="en" label="Chapters" src="/media/personalclaw-tour-chapters.vtt" />
+        </video>
+        <button type="button" class="tour-play" data-tour-play hidden>
+          <CirclePlay size={28} aria-hidden="true" />
+          <span data-tour-play-label>Play the tour</span>
+        </button>
+        <div class="tour-fallback" data-tour-fallback hidden>
+          <img src="/media/personalclaw-tour-poster.webp" alt="" width="1280" height="720" />
+          <div class="tour-outline">
+            <p role="status">The tour could not play here. Its chapters, as text:</p>
+            <ol>
+              {chapters.map((chapter) => (
+                <li>
+                  <strong>{chapter.label}.</strong> {chapter.caption}
+                </li>
+              ))}
+            </ol>
+          </div>
+        </div>
       </div>
       <div class="tour-nav">
         <ol class="tour-chapters" aria-label="Tour chapters">
@@ -252,10 +287,11 @@ const capabilities: Capability[] = [
                 type="button"
                 class="chapter"
                 data-chapter={chapter.id}
-                aria-controls={`tour-${chapter.id}`}
+                data-start={chapter.start}
                 aria-pressed={index === 0 ? "true" : "false"}
               >
-                {chapter.label}
+                <span class="chapter-label">{chapter.label}</span>
+                <span class="chapter-time">{clock(chapter.start)}</span>
               </button>
             </li>
           ))}
@@ -328,25 +364,92 @@ const capabilities: Capability[] = [
 </BaseLayout>
 
 <script>
-  // The tour's chapters (#90): choosing one shows its still, and the one chosen is kept in the
-  // URL (`?chapter=`) with `replaceState`, so a reload, Back to the page and a copied link come
-  // back to it and a choice adds no history entry. With no script the first still shows.
+  // The tour (#90, #96). Its chapter is kept in the URL (`?chapter=`) with `replaceState`, so a
+  // reload, Back to the page and a copied link come back to it, and a choice adds no history entry.
+  //
+  // Nothing loads before a visitor asks. Choosing a chapter, or the tour's own play control, is
+  // that ask: the tour fetches its file once, whole, then plays and seeks from memory, so a seek
+  // never cancels a request in flight (tests/browser/support.ts fails on any failed request). A
+  // chapter restored from the URL is only selected, and the first play starts there. Until then the
+  // video has no source and no native controls, so nothing but these controls can start it; with no
+  // script it keeps both and plays as a plain video.
+  //
+  // It pauses when it is scrolled out of view or its page is hidden, and never resumes on its own.
+  // If its file cannot be fetched, or this browser cannot play it, the frame shows the poster, one
+  // line saying so, and the chapters as text; nothing retries.
   const tour = document.querySelector<HTMLElement>("[data-tour]");
-  if (tour) {
+  const frame = tour?.querySelector<HTMLElement>("[data-tour-frame]");
+  const video = frame?.querySelector("video");
+  const source = video?.querySelector("source");
+  const playButton = frame?.querySelector<HTMLButtonElement>("[data-tour-play]");
+  const fallback = frame?.querySelector<HTMLElement>("[data-tour-fallback]");
+  if (tour && frame && video && source && playButton && fallback) {
     const param = tour.dataset.param ?? "chapter";
     const buttons = [...tour.querySelectorAll<HTMLButtonElement>("[data-chapter]")];
-    const stills = [...tour.querySelectorAll<HTMLElement>("[data-still]")];
+    const file = source.src;
+    let loading: Promise<void> | null = null;
+    let failed = false;
 
     const select = (id: string | null) => {
       const chosen = buttons.find((b) => b.dataset.chapter === id) ?? buttons[0];
       for (const b of buttons) b.setAttribute("aria-pressed", String(b === chosen));
-      for (const still of stills) still.hidden = still.dataset.still !== chosen.dataset.chapter;
       return chosen;
     };
+    const selected = () => buttons.find((b) => b.getAttribute("aria-pressed") === "true") ?? buttons[0];
     const followUrl = () => select(new URLSearchParams(window.location.search).get(param));
+
+    const fail = () => {
+      failed = true;
+      frame.dataset.failed = "";
+      video.hidden = true;
+      playButton.hidden = true;
+      fallback.hidden = false;
+    };
+
+    // Detached before anything could ask for it: with preload="none" no request has been made.
+    source.remove();
+    video.controls = false;
+    if (video.canPlayType("video/mp4") === "") fail();
+    else playButton.hidden = false;
+
+    const label = playButton.querySelector<HTMLElement>("[data-tour-play-label]");
+    // While the file comes, the control says so and takes no second press. Once it is here the
+    // video's own controls take over, and focus that was on this control moves to them.
+    const load = () =>
+      (loading ??= (() => {
+        // aria-disabled, not disabled: a disabled button drops the focus it holds.
+        playButton.setAttribute("aria-disabled", "true");
+        playButton.setAttribute("aria-busy", "true");
+        if (label) label.textContent = "Loading the tour…";
+        return fetch(file)
+          .then((response) => {
+            if (!response.ok) throw new Error(`the tour answered ${response.status}`);
+            return response.blob();
+          })
+          .then((blob) => {
+            const focused = document.activeElement === playButton;
+            video.src = URL.createObjectURL(blob);
+            video.controls = true;
+            playButton.hidden = true;
+            playButton.removeAttribute("aria-busy");
+            if (focused) video.focus({ preventScroll: true });
+          });
+      })());
+
+    const play = async (from: HTMLButtonElement) => {
+      if (failed) return;
+      try {
+        await load();
+        video.currentTime = Number(from.dataset.start ?? 0);
+        await video.play();
+      } catch {
+        fail();
+      }
+    };
 
     followUrl();
     window.addEventListener("pageshow", followUrl);
+    video.addEventListener("error", fail);
 
     for (const button of buttons) {
       button.addEventListener("click", () => {
@@ -355,8 +458,17 @@ const capabilities: Capability[] = [
         if (chosen === buttons[0]) url.searchParams.delete(param);
         else url.searchParams.set(param, chosen.dataset.chapter ?? "");
         window.history.replaceState(window.history.state, "", url);
+        void play(chosen);
       });
     }
+    playButton.addEventListener("click", () => void play(selected()));
+
+    new IntersectionObserver((entries) => {
+      if (entries.some((entry) => !entry.isIntersecting) && !video.paused) video.pause();
+    }).observe(video);
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "hidden" && !video.paused) video.pause();
+    });
   }
 </script>
 
@@ -380,6 +492,7 @@ const capabilities: Capability[] = [
   }
 
   .tour-frame {
+    position: relative;
     grid-column: 5 / -1;
     grid-row: 1 / span 2;
     overflow: hidden;
@@ -387,21 +500,78 @@ const capabilities: Capability[] = [
     border-radius: 8px;
     background: var(--surface);
     box-shadow: 0 40px 100px rgba(0, 0, 0, 0.48);
-    aspect-ratio: 8 / 5;
+    aspect-ratio: 16 / 9;
   }
 
-  .tour-still {
-    margin: 0;
+  .tour-video {
+    display: block;
+    width: 100%;
+    height: 100%;
   }
 
-  .tour-still[hidden] {
+  .tour-video[hidden],
+  .tour-play[hidden] {
     display: none;
   }
 
-  .tour-still img {
+  /* The tour's own play control, over the poster until its file is here. */
+  .tour-play {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    display: inline-flex;
+    min-height: 44px;
+    padding: 0.75rem 1.25rem;
+    gap: 0.6rem;
+    align-items: center;
+    /* Transparent, so forced colors draw the control's edge once its fill is gone. */
+    border: 2px solid transparent;
+    border-radius: 999px;
+    background: var(--coral);
+    color: var(--night);
+    font: inherit;
+    font-weight: var(--fw-label);
+    white-space: nowrap;
+    cursor: pointer;
+    transform: translate(-50%, -50%);
+  }
+
+  .tour-play[aria-busy="true"] {
+    cursor: progress;
+  }
+
+  /* With no video, the frame grows to hold the poster and the chapters as text. */
+  .tour-frame[data-failed] {
+    aspect-ratio: auto;
+  }
+
+  .tour-fallback img {
     display: block;
     width: 100%;
     height: auto;
+  }
+
+  .tour-outline {
+    padding: 1.25rem 1.5rem 1.5rem;
+    color: var(--ink-soft);
+    font-size: var(--fs-label);
+  }
+
+  .tour-outline p {
+    margin: 0 0 0.75rem;
+    color: var(--ink);
+    font-weight: var(--fw-label);
+  }
+
+  .tour-outline ol {
+    display: grid;
+    margin: 0;
+    padding-left: 1.25rem;
+    gap: 0.5rem;
+  }
+
+  .tour-outline strong {
+    color: var(--ink);
   }
 
   .tour-title {
@@ -413,8 +583,15 @@ const capabilities: Capability[] = [
 
   .tour-lede {
     max-width: 68ch;
-    margin-bottom: 1.75rem;
+    margin-bottom: 0.75rem;
     color: var(--ink-soft);
+  }
+
+  .tour-note {
+    max-width: 68ch;
+    margin-bottom: 1.75rem;
+    color: var(--ink-muted);
+    font-size: var(--fs-label);
   }
 
   .tour-chapters {
@@ -430,7 +607,9 @@ const capabilities: Capability[] = [
     width: 100%;
     min-height: 44px;
     padding: 0.55rem 1rem;
+    gap: 1rem;
     align-items: center;
+    justify-content: space-between;
     border: 1px solid transparent;
     border-radius: 999px;
     background: transparent;
@@ -456,6 +635,13 @@ const capabilities: Capability[] = [
   .chapter[aria-pressed="true"] {
     background: var(--coral);
     color: var(--night);
+  }
+
+  .chapter-time {
+    flex: none;
+    font-family: var(--font-mono);
+    font-size: var(--fs-mono);
+    font-weight: var(--fw-mono);
   }
 
   .capability {

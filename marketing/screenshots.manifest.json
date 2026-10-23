@@ -248,6 +248,37 @@
   ],
   "videos": [
     {
+      "id": "tour",
+      "kind": "narrative",
+      "composition": "marketing/compositions/tour/index.html",
+      "sources": [
+        "tour"
+      ],
+      "capturedAt": "0.2.6",
+      "durationSeconds": 79.8,
+      "posterAtSeconds": 2,
+      "crf": 29,
+      "width": 1280,
+      "height": 720,
+      "output": "public/media/personalclaw-tour.mp4",
+      "poster": "public/media/personalclaw-tour-poster.webp",
+      "captions": "public/media/personalclaw-tour.vtt",
+      "chapters": "public/media/personalclaw-tour-chapters.vtt",
+      "budgetBytes": 1600000,
+      "autoplay": "none",
+      "fallback": "The poster, the chapters as a text outline (each title with its caption) and one line saying the video could not play, with no retry; the tour plays only from its own control.",
+      "audio": [],
+      "placements": [
+        {
+          "file": "src/pages/product.astro",
+          "kind": "product-tour",
+          "caption": "The tour (#tour): watch it do the work",
+          "alt": "The PersonalClaw tour"
+        }
+      ],
+      "status": "shipping"
+    },
+    {
       "id": "hero-loop",
       "kind": "loop",
       "composition": "marketing/compositions/hero-loop/index.html",
@@ -426,6 +457,14 @@
       "width": 1440,
       "height": 900,
       "scenario": "In Apps, open one app that needs no key, read its consent dialog, install, and it shows installed; about 6 s.",
+      "status": "shipping"
+    },
+    {
+      "id": "tour",
+      "file": "marketing/.captures/clips/tour.webm",
+      "width": 1440,
+      "height": 810,
+      "scenario": "Core's demo click-path at the release (docs/demo/CLICKPATH.md, docs/demo/capture_demo.mjs), end to end: Home, Chat, Approval, Loops, Knowledge, Artifacts and back to Home, about 85 s, with each beat's start time recorded for the composition's data-media-start.",
       "status": "shipping"
     }
   ]

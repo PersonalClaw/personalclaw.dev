@@ -16,7 +16,9 @@
 //   4. extracts its poster with FFmpeg at `posterAtSeconds` (0 by default), as a PNG that cwebp
 //      encodes, since many FFmpeg builds carry no WebP encoder;
 //   5. moves the output and the poster to the entry's `output` and `poster`, prints the sizes,
-//      and fails over the entry's `budgetBytes`.
+//      and fails over the entry's `budgetBytes`;
+//   6. for a composition cut into beats (the tour, #96), writes the entry's `captions` and
+//      `chapters` tracks from the beats' words and times (scripts/tour-tracks.mjs).
 //
 // It fails before rendering anything when FFmpeg, ffprobe or cwebp is not on PATH, or when the pinned
 // Hyperframes CLI is not already in npx's cache: fetching it is a supply-chain step the
@@ -29,10 +31,11 @@
 // (marketing/README.md). Nothing here runs in CI.
 
 import { spawnSync } from "node:child_process";
-import { copyFileSync, cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, renameSync, rmSync, statSync } from "node:fs";
+import { copyFileSync, cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { basename, dirname, extname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { beatsOf, captionsTrack, chaptersTrack } from "./tour-tracks.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 
@@ -254,6 +257,12 @@ export function main(argv, repoRoot = root) {
       for (const rel of [video.output, video.poster]) mkdirSync(dirname(join(repoRoot, rel)), { recursive: true });
       renameSync(rendered, join(repoRoot, video.output));
       renameSync(poster, join(repoRoot, video.poster));
+      const html = readFileSync(join(composition, "index.html"), "utf8");
+      if (html.includes('class="beat"')) {
+        const beats = beatsOf(html);
+        if (video.captions) writeFileSync(join(repoRoot, video.captions), captionsTrack(beats));
+        if (video.chapters) writeFileSync(join(repoRoot, video.chapters), chaptersTrack(beats));
+      }
       console.log(
         `${video.id}: ${video.output} ${size} bytes (budget ${video.budgetBytes}), ${lasts.toFixed(2)} s; ` +
           `poster ${video.poster} ${statSync(join(repoRoot, video.poster)).size} bytes`

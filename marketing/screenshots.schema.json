@@ -232,8 +232,9 @@
           "description": "Required for a narrative video; null for a silent loop."
         },
         "chapters": {
-          "enum": ["captions", null],
-          "description": "'captions' when its chapters are read from the captions track (src/data/tour.mjs); null for none."
+          "type": ["string", "null"],
+          "pattern": "^public/media/[a-z0-9-]+\\.vtt$",
+          "description": "Its chapters track (kind=\"chapters\"), which /product lists (src/data/tour.mjs); null for none. render:videos writes it with the captions from the composition's beats."
         },
         "budgetBytes": {
           "type": "integer",

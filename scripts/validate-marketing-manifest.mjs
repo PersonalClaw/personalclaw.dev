@@ -13,7 +13,7 @@
 //   4. every placement `file` exists in the repo (the site location is real).
 //   5. manifest targetRelease === package.json version (captures were taken for
 //      the release the site publishes; a new release without a re-capture reds).
-//   6. videos (#94): every shipping video's output, poster and captions exist, a
+//   6. videos (#94): every shipping video's output, poster, captions and chapters exist, a
 //      narrative video has captions, each source names a shot, each output fits its
 //      byte budget, each audio asset has its file (its source and licence are the
 //      schema's), and every file in public/media/ belongs to a video.
@@ -136,7 +136,7 @@ export function manifestProblems(repositoryRoot = siteRoot) {
   for (const video of videos) {
     if (videoIds.has(video.id)) problems.push(`duplicate video id: ${video.id}`);
     videoIds.add(video.id);
-    const files = [video.output, video.poster, video.captions].filter(Boolean);
+    const files = [video.output, video.poster, video.captions, video.chapters].filter(Boolean);
     for (const rel of files) mediaReferenced.add(rel);
     for (const placement of video.placements || []) {
       if (!existsSync(join(repositoryRoot, placement.file))) {

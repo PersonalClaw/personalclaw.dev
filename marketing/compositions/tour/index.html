@@ -1,0 +1,109 @@
+<!doctype html>
+<!--
+  The product tour (#96): /product plays it, click to play, with chapters and captions.
+
+  One real recording of the released app, the `tour` clip in marketing/screenshots.manifest.json:
+  core's demo click-path (docs/demo/CLICKPATH.md and capture_demo.mjs at the pinned tag), recorded
+  at 1440 x 810 by `scripts/capture-tour.mjs` and staged into assets/ by `npm run render:videos`.
+  Each beat of the path is one .beat here, in the path's order, and `data-media-start` and
+  `data-duration` are where that beat begins and how long it runs in the take, from the
+  tour.beats.json the recorder writes beside it. The loop beat starts where its mask lifts.
+
+  Each beat carries its words, so the tracks cannot drift from the cut:
+  - data-caption: what the beat shows, written into the captions track (nothing is spoken);
+  - data-chapter and data-title: the chapter /product lists, written into the chapters track.
+    The closing beat is no chapter of its own.
+  render:videos writes both tracks from these beats (scripts/tour-tracks.mjs).
+
+  Motion: each cut between beats dips through the theater's dark over 0.25 s each side, and the
+  tour fades out over its last half second; the first frame is Home, already on screen. Those are
+  paused Web Animations the runtime seeks, on a root marked `data-no-timeline`. Nothing loads from
+  the network.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      html,
+      body {
+        margin: 0;
+        background: #121416;
+      }
+      #main {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+        background: #121416;
+      }
+      .beat {
+        position: absolute;
+        inset: 0;
+      }
+      .beat video {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="main" data-composition-id="main" data-no-timeline data-start="0" data-duration="79.8" data-width="1280" data-height="720">
+      <div class="beat" data-chapter="home" data-title="Home, and what needs you"
+        data-caption="Home holds what needs its owner: an approval, a loop's question and a proposed skill.">
+        <video id="home" class="clip" src="assets/tour.webm" muted playsinline
+          data-start="0" data-duration="9" data-media-start="1.41" data-track-index="1"></video>
+      </div>
+      <div class="beat" data-chapter="chat" data-title="A chat, in your own words"
+        data-caption="A question in the owner's own words, answered on a local model: it reads the code and the tests, and explains the failure.">
+        <video id="chat" class="clip" src="assets/tour.webm" muted playsinline
+          data-start="9" data-duration="14" data-media-start="10.41" data-track-index="2"></video>
+      </div>
+      <div class="beat" data-chapter="approval" data-title="The approval it stops on"
+        data-caption="Before it edits a file, the run stops and asks: the tool, what it would change, its risk, and how far an answer is remembered. The answer is the owner's.">
+        <video id="approval" class="clip" src="assets/tour.webm" muted playsinline
+          data-start="23" data-duration="18" data-media-start="24.42" data-track-index="3"></video>
+      </div>
+      <div class="beat" data-chapter="loops" data-title="A goal loop and its report"
+        data-caption="A goal loop that ran five cycles on its own, and the report it wrote.">
+        <video id="loops" class="clip" src="assets/tour.webm" muted playsinline
+          data-start="41" data-duration="10.9" data-media-start="45.53" data-track-index="4"></video>
+      </div>
+      <div class="beat" data-chapter="knowledge" data-title="Knowledge searched locally"
+        data-caption="Documents kept on this machine narrow as a station number is typed.">
+        <video id="knowledge" class="clip" src="assets/tour.webm" muted playsinline
+          data-start="51.9" data-duration="12" data-media-start="56.43" data-track-index="5"></video>
+      </div>
+      <div class="beat" data-chapter="artifacts" data-title="What it made, in the Library"
+        data-caption="What the agent made stays in the Library: here, a chart of the fall-back weekend's tides.">
+        <video id="artifacts" class="clip" src="assets/tour.webm" muted playsinline
+          data-start="63.9" data-duration="12" data-media-start="68.43" data-track-index="6"></video>
+      </div>
+      <div class="beat"
+        data-caption="Back where it started: one gateway, one machine, owned by the person using it.">
+        <video id="close" class="clip" src="assets/tour.webm" muted playsinline
+          data-start="75.9" data-duration="3.9" data-media-start="80.44" data-track-index="7"></video>
+      </div>
+    </div>
+    <script>
+      // The runtime seeks every paused Web Animation to timeline time: each cut dips through the
+      // dark, 0.25 s out of one beat and 0.25 s into the next, and the last beat fades out over its
+      // last half second. Animation times are document time, so each beat's start is its delay.
+      const DIP = 0.25;
+      const END = 0.5;
+      const beats = [...document.querySelectorAll(".beat")];
+      beats.forEach((beat, index) => {
+        const clip = beat.querySelector("video");
+        const start = Number(clip.dataset.start);
+        const length = Number(clip.dataset.duration);
+        const fadeIn = index === 0 ? 0 : DIP;
+        const fadeOut = index === beats.length - 1 ? END : DIP;
+        const frames = [{ opacity: fadeIn ? 0 : 1 }];
+        if (fadeIn) frames.push({ opacity: 1, offset: fadeIn / length });
+        frames.push({ opacity: 1, offset: 1 - fadeOut / length }, { opacity: 0 });
+        beat.animate(frames, { delay: start * 1000, duration: length * 1000, fill: "both" }).pause();
+      });
+    </script>
+  </body>
+</html>
