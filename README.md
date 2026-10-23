@@ -403,8 +403,9 @@ and it is held to the release, not to the branch.
   the evidence's type (`source_type`: a file at the tag, a release asset, an attestation, a
   workflow run or a test), the core or apps commit it was read at, the release it was last
   verified against (`verified_release`), and the pages that show it (`surfaces`). A row not
-  verified at the pinned release shows on `/compare` only as a known limit, with its claim
-  and the release it was last checked at. Home and `/security` refuse it at build time, so a
+  verified at the pinned release shows on `/compare` only as a known limit: "Not re-checked
+  for <pinned release>:", then the statement it was last verified with and that statement's
+  evidence link. Home and `/security` refuse it at build time, so a
   re-pin can't publish a claim nobody read again.
 
 The tag-not-branch half of that rule is **not** limited to `/compare` rows. `npm run

@@ -185,8 +185,11 @@ if (!existsSync(pagePath)) {
     }
   }
 
-  // A row verified at an older release shows only as a known limit: its claim and the release
-  // it was last checked at, never its wording and never among the current rows.
+  // A row verified at an older release is never among the current rows. It is listed as a known
+  // limit in #98's settled form: "Not re-checked for <pinned release>:", then the statement it
+  // was last verified with, then that statement's evidence link, and nothing else, so the old
+  // wording never reads as current.
+  const words = (text) => String(text ?? "").replace(/\s+/g, " ").trim();
   for (const row of stale) {
     if (page(`[data-capability-row="${row.id}"]`).length > 0) {
       fail(
@@ -197,13 +200,25 @@ if (!existsSync(pagePath)) {
     const limit = page(`[data-capability-limit="${row.id}"]`);
     if (limit.length !== 1) {
       fail(`/compare does not list ${row.id} among the rows not checked again at ${pin.tag}`);
-    } else {
-      if (String(row.statement ?? "").trim() !== "" && limit.text().includes(String(row.statement).trim())) {
-        fail(`/compare shows ${row.id}'s wording though it was not verified at ${pin.tag}`);
-      }
-      if (!limit.text().includes(row.verified_release)) {
-        fail(`/compare lists ${row.id} as a known limit without the release it was last verified at`);
-      }
+      continue;
+    }
+    // The statement, and then the link: read apart, so the check doesn't depend on the space
+    // between the two elements.
+    const lead = `Not re-checked for ${pin.tag}: ${words(row.statement)}`;
+    const link = `${words(row.source_label)} at ${row.verified_release}`;
+    const links = limit.find("a[href]");
+    const statement = limit.clone();
+    statement.find("a[href]").remove();
+    if (words(statement.text()) !== lead) {
+      fail(`/compare lists ${row.id} as "${words(statement.text())}", not as the known limit "${lead}"`);
+    }
+    if (
+      links.length !== 1 ||
+      !limit.children().last().is("a[href]") ||
+      links.attr("href") !== row.source_url ||
+      words(links.text()) !== link
+    ) {
+      fail(`/compare's known limit ${row.id} does not end in one link, "${link}", to ${row.source_url}`);
     }
   }
 

@@ -241,7 +241,8 @@ export function buildMatrix(capabilities, pin) {
   // here would red every gate at once and hide which one was meant to catch it.
 
   // A row verified against an older release is not a current claim. It is shown only as a
-  // known limit: its claim, and the release it was last checked at, without its wording.
+  // known limit: "Not re-checked for <pinned release>:", then the wording and the evidence it
+  // was last verified with.
   const current = rows.filter((row) => row.current);
   const knownLimits = rows.filter((row) => !row.current);
 
