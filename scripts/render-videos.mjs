@@ -250,6 +250,8 @@ export function main(argv, repoRoot = root) {
         problems.push(`video "${video.id}" is over its budget: ${size} bytes, its budget ${video.budgetBytes}`);
         continue;
       }
+      // public/media/ is absent on a site that ships no video yet.
+      for (const rel of [video.output, video.poster]) mkdirSync(dirname(join(repoRoot, rel)), { recursive: true });
       renameSync(rendered, join(repoRoot, video.output));
       renameSync(poster, join(repoRoot, video.poster));
       console.log(

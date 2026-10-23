@@ -589,6 +589,39 @@ h3 {
   transform: scale(1);
 }
 
+/* A tab that plays a loop (#95) shows it in the still's place, framed the same way. Its Play
+   sits in the corner the caption leaves free, and a loop that cannot play says so at the top. */
+.system-loop {
+  position: absolute;
+  inset: 0;
+}
+
+.system-loop[hidden] {
+  display: none;
+}
+
+.system-loop .loop-video {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: 0;
+}
+
+.system-loop .loop-video video {
+  object-position: top center;
+}
+
+.system-loop .loop-toggle {
+  right: auto;
+  left: 1.25rem;
+  bottom: 1.25rem;
+}
+
+.system-loop .loop-fallback {
+  top: 0.75rem;
+  bottom: auto;
+}
+
 .system-caption {
   position: absolute;
   z-index: 3;
@@ -1174,6 +1207,15 @@ h3 {
 
   .system-image {
     object-position: top left;
+  }
+
+  .system-loop .loop-video video {
+    object-position: top left;
+  }
+
+  .system-loop .loop-toggle {
+    left: 0.7rem;
+    bottom: 0.7rem;
   }
 
   .system-caption {

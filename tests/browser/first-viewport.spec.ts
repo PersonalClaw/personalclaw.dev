@@ -76,7 +76,8 @@ for (const size of FIRST_VIEWPORTS) {
 
     // A real capture in the System Window, most of it on screen.
     const systemWindow = hero.locator(".system-window");
-    const capture = systemWindow.locator("img.system-image.is-active");
+    // The Home tab's loop (#95) shows this still until it plays; the other tabs' stills are hidden.
+    const capture = systemWindow.locator("img.system-image.is-active:visible");
     expect(await capture.count(), "the System Window shows one capture").toBe(1);
     expect(
       await capture.evaluate((image: HTMLImageElement) => image.complete && image.naturalWidth > 0),
