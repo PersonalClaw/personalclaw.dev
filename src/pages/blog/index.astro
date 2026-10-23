@@ -58,7 +58,7 @@ const readableDate = new Intl.DateTimeFormat("en-GB", {
                     {readableDate.format(post.data.publishDate)}
                   </time>{" "}
                   <a class="verified" href="/release" data-blog-verified>
-                    Verified against <span translate="no">{post.data.verifiedAgainst}</span>
+                    <span>Verified against <span translate="no">{post.data.verifiedAgainst}</span></span>
                   </a>
                 </p>
                 <p class="post-description">{post.data.description}</p>
@@ -103,6 +103,8 @@ const readableDate = new Intl.DateTimeFormat("en-GB", {
     color: var(--ink-muted);
   }
 
+  /* The badge keeps its phrase in one inner span: a text run straight in an inline-flex box loses
+     its trailing space. */
   .feed a,
   .verified {
     display: inline-flex;
@@ -145,13 +147,15 @@ const readableDate = new Intl.DateTimeFormat("en-GB", {
     color: var(--coral-bright);
   }
 
+  /* The date and the badge share one centre line (the badge's box is 44 px tall). */
   .post-meta {
     display: flex;
     flex-wrap: wrap;
     gap: 0.4rem 0.9rem;
+    align-items: center;
     color: var(--ink-muted);
     font-family: var(--font-mono);
-    font-size: 0.875rem;
+    font-size: var(--fs-mono);
   }
 
   .post-meta,
