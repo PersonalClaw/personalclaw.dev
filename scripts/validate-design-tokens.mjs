@@ -57,7 +57,7 @@ const ENFORCE_DESIGN_TOKENS = false;
 // a change that grows a count fails. When a migration drops a count below its ceiling,
 // lower the ceiling to the new count in the same change — that is the ratchet tightening.
 // When both reach zero, flip ENFORCE_DESIGN_TOKENS and delete the ratchets.
-const FONT_SIZE_DEBT_CEILING = 59;
+const FONT_SIZE_DEBT_CEILING = 55;
 const COLOUR_LITERAL_DEBT_CEILING = 7;
 
 const repositoryRoot = dirname(dirname(fileURLToPath(import.meta.url)));

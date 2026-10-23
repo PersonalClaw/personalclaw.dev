@@ -9,10 +9,15 @@
 // keeps its poster and says it could not play. Nothing removes a source once it is attached,
 // so no media request is ever aborted (tests/browser/support.ts fails on any failed request).
 //
+// A clip that plays once instead of repeating (the release clip on /release, #97) plays through
+// the same rules: it renders without `loop`, carries its captions as a default track, and its
+// control goes back to Play when it ends.
+//
 // One file holds both halves, so the markup a page renders and the markup the playback spec
-// drives cannot drift: `loopVideoMarkup` writes it (src/components/LoopVideo.astro, and the
-// System Window's tabs through `manifestLoopMarkup`), and `mountLoopVideos` makes every loop on
-// the page play by these rules. Its look is ./loop-video.css.
+// drives cannot drift: `loopVideoMarkup` writes it (src/components/LoopVideo.astro, which
+// src/components/ReleaseClip.astro uses, and the System Window's tabs through
+// `manifestLoopMarkup`), and `mountLoopVideos` makes every loop on the page play by these rules.
+// Its look is ./loop-video.css.
 
 /** Every loop on a page carries this attribute. */
 export const LOOP_SELECTOR = "[data-loop-video]";
@@ -24,7 +29,7 @@ const escape = (value) =>
   String(value).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 
 /**
- * The markup of one loop.
+ * The markup of one loop, or of a clip that plays once (`loop: false`) with its captions.
  *
  * A loop shows its rendered poster until it plays. A page may give it a `still` instead, an
  * image of its own (its HTML): the loop then shows that still, and its video has no poster and
@@ -32,19 +37,23 @@ const escape = (value) =>
  * largest paint in the System Window, or a capture below the fold that loads after the page.
  *
  * @param {{ src: string, poster?: string, still?: string, width: number, height: number,
- *   label: string, autoplay?: string, fallback: string }} loop
+ *   label: string, autoplay?: string, fallback: string, loop?: boolean, captions?: string }} loop
  * @returns {string}
  */
-export function loopVideoMarkup({ src, poster, still, width, height, label, autoplay = "none", fallback }) {
+export function loopVideoMarkup({ src, poster, still, width, height, label, autoplay = "none", fallback, loop = true, captions }) {
   if (!AUTOPLAY.includes(autoplay)) throw new Error(`a loop's autoplay policy is one of ${AUTOPLAY.join(", ")}, not ${autoplay}`);
   if (!(width > 0 && height > 0)) throw new Error("a loop has a width and a height, so its box never moves");
   if (!still && !poster) throw new Error("a loop shows its poster or a still until it plays");
+  if (!loop && autoplay !== "none") throw new Error("a clip that plays once starts only from its control");
+  const track = captions
+    ? `<track kind="captions" srclang="en" label="English" src="${escape(captions)}" default>`
+    : "";
   return (
     `<figure class="loop-video" data-loop-video data-src="${escape(src)}" data-autoplay="${escape(autoplay)}"` +
     `${still ? " data-still" : ""} data-state="poster" style="aspect-ratio: ${width} / ${height}">` +
     (still ?? "") +
-    `<video muted playsinline loop preload="none"${still ? "" : ` poster="${escape(poster)}"`} width="${width}" height="${height}"` +
-    ` aria-label="${escape(label)}"></video>` +
+    `<video muted playsinline${loop ? " loop" : ""} preload="none"${still ? "" : ` poster="${escape(poster)}"`} width="${width}" height="${height}"` +
+    ` aria-label="${escape(label)}">${track}</video>` +
     `<button type="button" class="loop-toggle" data-loop-toggle aria-pressed="false">` +
     `<span data-loop-word>Play</span><span class="sr-only"> ${escape(label)}</span></button>` +
     `<figcaption class="loop-fallback" data-loop-fallback hidden>${escape(fallback)}</figcaption>` +
@@ -55,11 +64,12 @@ export function loopVideoMarkup({ src, poster, still, width, height, label, auto
 /**
  * The markup of the manifest's loop *id*. It must be a shipping loop, so a page cannot play a
  * loop the manifest does not declare, or one it has retired; the files, the box and the autoplay
- * policy are the entry's.
+ * policy are the entry's. A narrative entry (the release clip, #97) plays once, with its captions
+ * as the default track, and one without captions is refused.
  *
  * @param {{ id: string, kind: string, status: string, output: string, poster: string,
- *   width: number, height: number, autoplay: string, fallback: string }[]} videos the manifest's
- *   `videos` (marketing/screenshots.manifest.json)
+ *   width: number, height: number, autoplay: string, fallback: string, captions?: string | null }[]} videos
+ *   the manifest's `videos` (marketing/screenshots.manifest.json)
  * @param {string} id
  * @param {string} label what the loop shows, for a screen reader
  * @param {string} [still] the page's own image to show until the loop plays (`loopVideoMarkup`)
@@ -68,8 +78,12 @@ export function loopVideoMarkup({ src, poster, still, width, height, label, auto
 export function manifestLoopMarkup(videos, id, label, still) {
   const entry = videos.find((video) => video.id === id);
   if (!entry) throw new Error(`no video "${id}" in marketing/screenshots.manifest.json`);
-  if (entry.kind !== "loop") throw new Error(`video "${id}" is a ${entry.kind} video, not a loop`);
+  if (entry.kind !== "loop" && entry.kind !== "narrative") {
+    throw new Error(`video "${id}" is a ${entry.kind} video, not a loop or a narrative clip`);
+  }
   if (entry.status !== "shipping") throw new Error(`video "${id}" is ${entry.status}, not shipping`);
+  const once = entry.kind === "narrative";
+  if (once && !entry.captions) throw new Error(`video "${id}" is a narrative clip with no captions`);
   const url = (rel) => `/${rel.replace(/^public\//, "")}`;
   return loopVideoMarkup({
     src: url(entry.output),
@@ -79,7 +93,9 @@ export function manifestLoopMarkup(videos, id, label, still) {
     height: entry.height,
     label,
     autoplay: entry.autoplay,
-    fallback: entry.fallback
+    fallback: entry.fallback,
+    loop: !once,
+    captions: once ? url(entry.captions) : undefined
   });
 }
 
@@ -144,7 +160,8 @@ export function mountLoopVideos(root = document) {
       source.src = figure.dataset.src ?? "";
       source.type = typeOf(source.src);
       source.addEventListener("error", fail);
-      video.append(source);
+      // Sources come before tracks in a video's content.
+      video.insertBefore(source, video.querySelector("track"));
     };
     const run = () => {
       if (failed || !wanted || !inView || document.visibilityState !== "visible") return;
@@ -168,6 +185,11 @@ export function mountLoopVideos(root = document) {
     video.addEventListener("error", fail);
     video.addEventListener("playing", show);
     video.addEventListener("pause", show);
+    // A clip that plays once is done at its end: the control offers Play again, from the start.
+    video.addEventListener("ended", () => {
+      wanted = false;
+      show();
+    });
     toggle.addEventListener("click", () => (wanted ? stop() : start()));
 
     const observer = new IntersectionObserver((entries) => {

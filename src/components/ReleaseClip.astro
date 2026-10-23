@@ -1,0 +1,96 @@
+---
+/*
+ * /release's top slot (#93): the pinned release in its own words, and its clip (#97) beside them
+ * once the marketing manifest ships one. The clip plays through the site's one player
+ * (./LoopVideo.astro): its poster first, its captions as the default track, no byte before its
+ * play control, and its poster with this text when it can't play. The words are the clip's brief
+ * once the manifest has one for the pinned release, and until then the opening of the pinned
+ * changelog's summary, with a link to the whole entry further down (src/data/release-slot.mjs).
+ */
+import manifest from "../../marketing/screenshots.manifest.json";
+import { releaseFacts } from "../data/release";
+import { RELEASE_CLIP_ID, longDate, releaseClipEntry, slotWords } from "../data/release-slot.mjs";
+import LoopVideo from "./LoopVideo.astro";
+
+const { version } = releaseFacts.core;
+// Null while no clip ships for the pinned release; a clip made for another release fails the build.
+const entry = releaseClipEntry(manifest, version);
+const words = slotWords(manifest, version, releaseFacts.core.changelog.currentVersion);
+---
+
+<div
+  class:list={["release-clip", { "has-clip": entry }]}
+  data-release-clip
+  data-state={entry ? "clip" : "text"}
+>
+  {entry && <LoopVideo id={RELEASE_CLIP_ID} label={`The PersonalClaw ${version} release clip`} />}
+  <div class="release-clip-text" data-release-highlights>
+    <h2 class="release-name">
+      PersonalClaw <span translate="no">{version}</span>
+    </h2>
+    {words.date && (
+      <p class="release-date">
+        Released <time datetime={words.date}>{longDate(words.date)}</time>
+      </p>
+    )}
+    {words.lead && <p class="release-summary">{words.lead}</p>}
+    {words.highlights && (
+      <ul class="release-highlights">
+        {words.highlights.map((line) => <li>{line}</li>)}
+      </ul>
+    )}
+    <a class="release-more" href="#baseline">The whole {version} entry</a>
+  </div>
+</div>
+
+<style>
+  .release-clip {
+    display: grid;
+    gap: 1.25rem;
+    align-content: end;
+  }
+
+  .release-name {
+    margin: 0;
+    font-size: var(--fs-title);
+    font-weight: var(--fw-title);
+    line-height: var(--lh-title);
+  }
+
+  .release-date {
+    margin: 0.4rem 0 0;
+    color: var(--ink-muted);
+    font-size: var(--fs-label);
+  }
+
+  .release-summary {
+    max-width: 62ch;
+    margin: 1rem 0 0;
+    color: var(--ink-soft);
+  }
+
+  .release-highlights {
+    display: grid;
+    margin: 1rem 0 0;
+    padding: 0;
+    gap: 0.5rem;
+    list-style: none;
+    color: var(--ink-soft);
+  }
+
+  .release-highlights li {
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--line);
+  }
+
+  .release-more {
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
+    color: var(--coral-bright);
+    font-weight: 650;
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.3em;
+  }
+</style>

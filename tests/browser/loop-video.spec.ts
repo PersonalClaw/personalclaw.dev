@@ -12,6 +12,8 @@ import { monitorRuntime } from "./support";
 // (tests/fixtures/loop-fixture.webm). The brand mark stands in as each loop's poster.
 // tests/browser/system-window-loops.spec.ts holds the System Window to the same player.
 //
+// A third clip plays once with captions, as the release clip on /release does (#97).
+//
 // Data saver has no Playwright emulation, so it is stubbed as `navigator.connection.saveData`.
 
 const ROOT = process.cwd();
@@ -19,7 +21,10 @@ const FIXTURE = "/__loop-video-fixture";
 const CLIP = "/media/loop-fixture.webm";
 const IDLE_CLIP = "/media/loop-fixture-idle.webm";
 const STILL_CLIP = "/media/loop-fixture-still.webm";
+const ONCE_CLIP = "/media/loop-fixture-once.webm";
+const CAPTIONS = "/media/loop-fixture-once.vtt";
 const POSTER = "/brand/personalclaw-mark.svg";
+const CUES = "WEBVTT\n\n00:00:00.000 --> 00:00:02.000\nThe words the clip shows.\n";
 
 function fixturePage(): string {
   const loop = (src: string, label: string, autoplay: string, still?: string) =>
@@ -33,6 +38,16 @@ function fixturePage(): string {
       autoplay,
       fallback: "The still frame, and the text beside it."
     });
+  const once = loopVideoMarkup({
+    src: ONCE_CLIP,
+    poster: POSTER,
+    width: 160,
+    height: 90,
+    label: "A clip that plays once",
+    fallback: "The poster, and the clip's words as text beside it.",
+    loop: false,
+    captions: CAPTIONS
+  });
   const module = readFileSync(join(ROOT, "src/components/loop-video.mjs"), "utf8");
   const css = readFileSync(join(ROOT, "src/components/loop-video.css"), "utf8");
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Loop fixture</title>
@@ -43,6 +58,7 @@ ${css}</style>
 </head><body><main>
 <section id="waits">${loop(CLIP, "A loop that waits for its play control", "none")}</section>
 <section id="stills">${loop(STILL_CLIP, "A loop with a still of its own", "none", `<img src="${POSTER}" alt="" width="160" height="100" />`)}</section>
+<section id="once">${once}</section>
 <div class="spacer"></div>
 <section id="idles">${loop(IDLE_CLIP, "A loop allowed an idle hint", "idle-hint")}</section>
 </main><script type="module">${module}\nmountLoopVideos();</script></body></html>`;
@@ -53,7 +69,8 @@ async function serve(page: Page, options: { failClip?: boolean } = {}) {
   await page.route(`**${FIXTURE}`, (route) =>
     route.fulfill({ status: 200, contentType: "text/html", body: fixturePage() })
   );
-  await page.route(/\/media\/loop-fixture(-idle|-still)?\.webm$/, (route) =>
+  await page.route(`**${CAPTIONS}`, (route) => route.fulfill({ status: 200, contentType: "text/vtt", body: CUES }));
+  await page.route(/\/media\/loop-fixture(-idle|-still|-once)?\.webm$/, (route) =>
     options.failClip
       ? route.fulfill({ status: 404, contentType: "text/plain", body: "gone" })
       : route.fulfill({ status: 200, contentType: "video/webm", body: clip })
@@ -73,6 +90,7 @@ function mediaRequests(page: Page): Request[] {
 const waits = (page: Page) => page.locator("#waits [data-loop-video]");
 const idles = (page: Page) => page.locator("#idles [data-loop-video]");
 const stills = (page: Page) => page.locator("#stills [data-loop-video]");
+const once = (page: Page) => page.locator("#once [data-loop-video]");
 const playing = (figure: ReturnType<typeof waits>) =>
   figure.locator("video").evaluate((v: HTMLVideoElement) => !v.paused && v.currentTime > 0);
 
@@ -212,6 +230,49 @@ test.describe("a loop", () => {
     await figure.getByRole("button", { name: /^Pause/ }).click();
     await expect(figure.locator("video")).toHaveJSProperty("paused", true);
     expect(await opacity(), "a paused loop keeps its frame, not the still").toBe("1");
+    runtime.assertClean();
+  });
+
+  test("that plays once renders without loop, with its captions as the default track, and no source", async ({ page }) => {
+    await serve(page);
+    await page.goto(FIXTURE);
+    const video = once(page).locator("video");
+    for (const attribute of ["muted", "playsinline"]) await expect(video).toHaveAttribute(attribute, "");
+    expect(await video.evaluate((v: HTMLVideoElement) => v.loop)).toBe(false);
+    await expect(video).toHaveAttribute("preload", "none");
+    const track = video.locator("track");
+    await expect(track).toHaveAttribute("kind", "captions");
+    await expect(track).toHaveAttribute("src", CAPTIONS);
+    await expect(track).toHaveAttribute("default", "");
+    await expect(video.locator("source")).toHaveCount(0);
+    // A clip that plays once never starts by itself.
+    expect(() =>
+      loopVideoMarkup({ src: ONCE_CLIP, poster: POSTER, width: 16, height: 9, label: "x", fallback: "x", loop: false, autoplay: "idle-hint" })
+    ).toThrow(/starts only from its control/);
+  });
+
+  test("that plays once asks for no byte before its control, shows its captions, and offers Play again at its end", async ({ page, baseURL }) => {
+    const runtime = monitorRuntime(page, baseURL!);
+    const media = mediaRequests(page);
+    await serve(page);
+    await page.goto(FIXTURE);
+    await page.waitForTimeout(400);
+    expect(media.filter((r) => r.url().endsWith(ONCE_CLIP)), "no byte before play").toEqual([]);
+
+    await once(page).getByRole("button", { name: /^Play/ }).click();
+    await expect.poll(() => playing(once(page))).toBe(true);
+    // The source went in ahead of the track, and the track is the one showing.
+    expect(await once(page).locator("video").evaluate((v: HTMLVideoElement) => v.firstElementChild?.tagName)).toBe("SOURCE");
+    await expect
+      .poll(() => once(page).locator("video").evaluate((v: HTMLVideoElement) => v.textTracks[0]?.mode))
+      .toBe("showing");
+
+    await expect(once(page).locator("video")).toHaveJSProperty("ended", true, { timeout: 6_000 });
+    await expect(once(page)).toHaveAttribute("data-state", "poster");
+    const again = once(page).getByRole("button", { name: /^Play/ });
+    await expect(again).toHaveAttribute("aria-pressed", "false");
+    await again.click();
+    await expect.poll(() => playing(once(page))).toBe(true);
     runtime.assertClean();
   });
 
