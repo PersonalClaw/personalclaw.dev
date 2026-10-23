@@ -73,10 +73,22 @@ export async function settleSystemWindow(page: Page) {
   });
 }
 
+/**
+ * Whether a failed request is the page's own media cancelling a read of its own blob, which is
+ * not a failed request. The tour plays from a blob URL (src/pages/product.astro), and a seek, such
+ * as a chapter choice, makes the video drop the read it had in flight: Chromium reports that
+ * as `GET blob:<this origin>/… (net::ERR_ABORTED)`. Only that exact pair is excused. An aborted
+ * request for anything else, or a blob of another origin, still fails the run.
+ */
+export function isOwnBlobAbort(url: string, errorText: string | undefined, expectedOrigin: string): boolean {
+  return errorText === "net::ERR_ABORTED" && url.startsWith(`blob:${expectedOrigin}/`);
+}
+
 export function monitorRuntime(page: Page, baseURL: string) {
   const consoleErrors: string[] = [];
   const pageErrors: string[] = [];
   const failedRequests: string[] = [];
+  const excusedRequests: string[] = [];
   const thirdPartyRequests: string[] = [];
   const expectedOrigin = new URL(baseURL).origin;
 
@@ -85,7 +97,9 @@ export function monitorRuntime(page: Page, baseURL: string) {
   });
   page.on("pageerror", (error) => pageErrors.push(error.message));
   page.on("requestfailed", (request) => {
-    failedRequests.push(`${request.method()} ${request.url()} (${request.failure()?.errorText ?? "unknown"})`);
+    const errorText = request.failure()?.errorText;
+    const line = `${request.method()} ${request.url()} (${errorText ?? "unknown"})`;
+    (isOwnBlobAbort(request.url(), errorText, expectedOrigin) ? excusedRequests : failedRequests).push(line);
   });
   page.on("request", (request) => {
     const url = new URL(request.url());
@@ -95,6 +109,10 @@ export function monitorRuntime(page: Page, baseURL: string) {
   });
 
   return {
+    /** The requests that failed, which assertClean fails on. */
+    failedRequests,
+    /** The blob reads the page's own media cancelled, which assertClean does not count. */
+    excusedRequests,
     assertClean() {
       expect(consoleErrors, "browser console errors").toEqual([]);
       expect(pageErrors, "uncaught page errors").toEqual([]);
