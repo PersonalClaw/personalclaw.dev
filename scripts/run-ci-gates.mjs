@@ -47,6 +47,7 @@ export const unitTests = {
     "tests/blog-feed.test.mjs",
     "tests/ledger-claims.test.mjs",
     "tests/social-card.test.mjs",
+    "tests/render-videos.test.mjs",
   ],
 };
 

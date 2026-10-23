@@ -24,9 +24,18 @@ refresh — executable by the main agent or a subagent with these instructions.
 autoplay policy and its no-media fallback, and where it plays. The policy is `none` (no byte
 before its play control) or `idle-hint` (it may start once the page is idle, and only while
 reduced motion and data saver are both off). No route loads a video byte while it loads
-(Lighthouse's `media` budget is zero). Rendering compositions with Hyperframes (`render:videos`)
-is not built yet: it waits on the Hyperframes install the brief leaves to the maintainer
-(`.agents/skills/README.md`).
+(Lighthouse's `media` budget is zero).
+
+A video with a `composition` is rendered from it: `npm run render:videos` stages each composition
+under `marketing/compositions/<id>/` with the sources it names (a shot's PNG, or a clip from the
+manifest's `clips`, recorded with the shots into `marketing/.captures/clips/`), runs `hyperframes
+check`, renders it with the pinned CLI (`.agents/skills/README.md`) at the entry's `crf` when it
+names one, confirms its duration, extracts its poster with FFmpeg at `posterAtSeconds` (encoded to
+WebP by cwebp), and fails over its byte budget. It needs FFmpeg, cwebp and the pinned CLI already in
+npx's cache, with the integrity `.agents/skills/README.md` records; it never fetches the CLI. A
+composition is written by hand (never `hyperframes init`), loads nothing from the network, and
+animates with paused Web Animations (or CSS keyframes) that the runtime seeks, on a root marked
+`data-no-timeline`, so the site takes no animation library.
 
 **Key rule:** every **shipping** shot is **re-captured every release** — there is no
 "still current, skip it" state. Even a small UI shift changes a shot, so the whole

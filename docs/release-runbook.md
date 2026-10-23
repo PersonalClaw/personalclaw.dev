@@ -81,10 +81,11 @@ created), because every step below verifies against the published tag.
    rather than being generated from it:
    - screenshots and marketing copy per `marketing/README.md` (every *shipping*
      shot is re-captured each release — a small UI shift changes the shot);
-   - the manifest's `videos`: each shipping entry's `capturedAt` says the release
-     its captures show, and `validate:marketing-manifest` fails on a missing file
-     or an output over its budget. Rendering them from their compositions waits
-     on the Hyperframes install (#94);
+   - the manifest's `clips` and `videos`: record each clip with the shots, then
+     `npm run render:videos` renders every shipping video from its composition and
+     its poster with it, and fails over a budget. Set each entry's `capturedAt` to
+     the release; `validate:marketing-manifest` fails on a missing file or an
+     output over its budget;
    - security content synchronized from core's threat model and limitations;
    - any page section describing capabilities the release added;
    - the builders band's `app.json` on `/apps` (`BUILDERS_SNIPPET` in

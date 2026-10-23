@@ -129,7 +129,7 @@ test("a video made from a shot the manifest does not have fails", () => {
   const problems = problemsAfter((m) => {
     tour(m).sources = ["no-such-shot"];
   });
-  assert.ok(problems.some((p) => /"tour" names a source no shot has: no-such-shot/.test(p)), problems.join("\n"));
+  assert.ok(problems.some((p) => /"tour" names a source no shot or clip has: no-such-shot/.test(p)), problems.join("\n"));
 });
 
 test("a loop that may start on its own outside the two policies fails the schema", () => {

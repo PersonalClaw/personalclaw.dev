@@ -125,6 +125,12 @@ export function manifestProblems(repositoryRoot = siteRoot) {
   // public/media/.
   const videos = Array.isArray(manifest.videos) ? manifest.videos : [];
   const shotIds = new Set(shots.map((s) => s.id));
+  const clips = Array.isArray(manifest.clips) ? manifest.clips : [];
+  const clipIds = new Set();
+  for (const clip of clips) {
+    if (clipIds.has(clip.id) || shotIds.has(clip.id)) problems.push(`duplicate source id: ${clip.id}`);
+    clipIds.add(clip.id);
+  }
   const videoIds = new Set();
   const mediaReferenced = new Set();
   for (const video of videos) {
@@ -138,7 +144,9 @@ export function manifestProblems(repositoryRoot = siteRoot) {
       }
     }
     for (const source of video.sources || []) {
-      if (!shotIds.has(source)) problems.push(`video "${video.id}" names a source no shot has: ${source}`);
+      if (!shotIds.has(source) && !clipIds.has(source)) {
+        problems.push(`video "${video.id}" names a source no shot or clip has: ${source}`);
+      }
     }
     for (const asset of video.audio || []) {
       if (!existsSync(join(repositoryRoot, asset.file))) {

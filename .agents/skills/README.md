@@ -16,15 +16,41 @@ machine at its pin, the way core holds its review skills ([core `web/REDESIGN.md
   vendoring, so none of it is committed.
 - **With `DO_NOT_TRACK=1`.** The installer reports each install to `skills.sh`, Impeccable reports
   which design direction won a round, and the Hyperframes CLI and `media-use` send usage events to
-  PostHog. `DO_NOT_TRACK=1` turns all four off.
+  PostHog. `DO_NOT_TRACK=1` turns all four off. The Hyperframes CLI also checks npm for a newer
+  release, installs one on its own when installed globally, and checks GitHub for newer skills,
+  none of which `DO_NOT_TRACK` stops, so it always runs as
+  `DO_NOT_TRACK=1 HYPERFRAMES_NO_TELEMETRY=1 HYPERFRAMES_NO_UPDATE_CHECK=1 HYPERFRAMES_NO_AUTO_INSTALL=1 HYPERFRAMES_SKIP_SKILLS=1`
+  (`scripts/render-videos.mjs` sets all five).
 - **At the pin, and nowhere else.** No row names a branch or "latest". Raising a pin is a change to
   this file: the new commit, its licence read at that commit, and a new network scan. Impeccable
-  runs as `npx impeccable@4.6.0` and the Hyperframes CLI as `npx hyperframes@0.8.181`, the releases
+  runs as `npx impeccable@4.6.0` and the Hyperframes CLI as `npx hyperframes@0.8.186`, the releases
   the pins match.
-- **No skill moves its own pin.** `product-launch-video` and `pr-to-video` open by offering to run
-  `npx hyperframes skills update`, `hyperframes init` updates any global skill that is behind its
-  latest on GitHub, and `hyperframes-animation` suggests installing `pixel-point/animate-text`.
-  Decline all three. #94 works out how a video project is created without moving the pins.
+- **The CLI is the pinned tarball.** `npx hyperframes@0.8.186` is fetched once into npx's cache,
+  under the five opt-outs above, as a step the maintainer approves, and `scripts/render-videos.mjs`
+  only ever runs it with `--no-install`. Before it runs, the script reads the `package-lock.json`
+  npm wrote beside every cached copy of that release and fails unless each one was installed from
+  the registry's tarball with the integrity in the pin row below.
+- **One limit: the CLI's own dependencies are not pinned.** npx resolved the CLI's 123 dependencies
+  from its `package.json` ranges when it was fetched, with no lockfile of ours, so the integrity
+  check covers the CLI's own tarball and not them. The check also reads npm's install record (the
+  `package-lock.json`), not the files on disk, so a file changed after the fetch is not caught. It
+  is a local authoring tool: it never runs in CI, and nothing it installs ships with the site, only
+  the videos it renders, each reviewed frame by frame.
+- **The local tools the renderer needs.** `ffmpeg` and `ffprobe` (FFmpeg: Homebrew's `ffmpeg` on
+  macOS, the distribution's `ffmpeg` package on Linux), `cwebp` (libwebp: Homebrew's `webp` on
+  macOS, the `webp` package on Debian and Ubuntu), and a Chrome the CLI finds (the system Google
+  Chrome on the machine that made them; `hyperframes browser ensure` downloads one and is not run).
+  `cwebp` encodes the posters, because FFmpeg builds often carry no WebP encoder: Homebrew's FFmpeg
+  9.0.2 has none. They were FFmpeg 9.0.2 and libwebp 1.6.0 on 2026-10-22. Nothing here installs
+  them; `render:videos` names any that is missing and stops.
+- **No skill moves its own pin.** The Hyperframes skills offer `npx hyperframes skills update`,
+  `npx skills add heygen-com/hyperframes --all` and `npx hyperframes@latest upgrade --project .`,
+  and `hyperframes init` always runs an unpinned `npx skills add` of the repository's `main` into
+  every agent's global folder. Decline all of them, and never run `init`: a composition is written
+  by hand under `marketing/compositions/<id>/`, which the skill's own `format.md` allows (#94). Nor
+  run what the skills ask for on their own: `hyperframes usage` (it reads the agent's sign-in to
+  ask its provider for plan usage), `feedback` and `--search-miss` reports, `catch-up`, `publish`
+  or `cloud render`.
 - **Read in full before first use.** A skill is instructions an agent follows. The PR that first
   uses a skill here reads every instruction file and script it ships at its pin, refuses anything
   that tracks without an opt-out, and puts the date in **Read in full**.
@@ -45,7 +71,7 @@ core's pins, whose licences core read on 2026-10-18.
 | `emil-design-eng`, `review-animations` | Motion review of every animation change | `github.com/emilkowalski/skills`, `2d228630ba1446365f614a108cb8252f1feda202` (2026-10-11), core's pin | MIT (`LICENSE`) | not yet |
 | webapp-testing | Driving Playwright against a changed page | `github.com/anthropics/skills`, `skills/webapp-testing`, `dbd4588f9e1033efb41dad4bef2f7947c8993d44`, the frontend-design commit | Apache-2.0 (`skills/webapp-testing/LICENSE.txt`) | not yet |
 | `copywriting`, `cro`, `seo-audit`, `ai-seo`, `schema` | Copy and search (#98) | `github.com/coreyhaines31/marketingskills`, release v2.13.0, `e85f3cbc2e4a79bf33b2a12e9bdd9087d414735b` (2026-10-19) | MIT (`LICENSE`) | not yet |
-| `hyperframes`, `hyperframes-core`, `hyperframes-animation`, `hyperframes-keyframes`, `media-use`, `product-launch-video`, `pr-to-video` | Video (#94 to #97) | `github.com/heygen-com/hyperframes`, release v0.8.181, `ae02e5aceff4742e5d72c20f0859eb3e6b449035` (2026-10-20) | Apache-2.0 (`LICENSE`) | not yet |
+| `hyperframes`, `hyperframes-cli`, `hyperframes-registry`, `media-use` | Video (#94 to #97) | `github.com/heygen-com/hyperframes`, release v0.8.186, `bbf9f8ffd0b2faa5edca9852c5528c5312f6c57e` (2026-10-22). Raised from v0.8.181 (`ae02e5ac`) on 2026-10-22: the installer put v0.8.186's skills on the machine, where `hyperframes-core`, `-animation`, `-keyframes`, `product-launch-video` and `pr-to-video` are folded into the first three. The copy installed on 2026-10-22 is `main` at `821003b112cfed528cabb46b8cb66213e85d28fa`, one line past the tag (a motion-blur note in `skills/hyperframes/references/motion.md`). The CLI: `hyperframes@0.8.186` on npm, tarball `https://registry.npmjs.org/hyperframes/-/hyperframes-0.8.186.tgz`, `dist.integrity` `sha512-JcBRmBdr955LU40+yWarQFL6c3MLeuJqPnYW9tFCS7yLiQGbB5YyoOuhJw5VaDbNHkmM0afn77Dlup5d2q3Anw==`, read from the registry and from npx's cached lock on 2026-10-22 | Apache-2.0 (`LICENSE`, read at `bbf9f8ff` on 2026-10-22) | 2026-10-22, every file of all seven skills the release ships (these four, and `figma`, `remotion-to-hyperframes` and `slideshow`, installed with them and not used), and the CLI's telemetry, update and install code in `packages/cli` |
 | brag | The release clip (#97) | `github.com/latent-spaces/brag`, `skills/brag`, `069432cac935ed1895859df201c31436c07fb74e` (2026-10-13), after tag v0.3.0 | MIT (`LICENSE`); its bundled music and sound effects are third-party and not used until their terms are checked | not yet |
 
 **Not pinned:** ui-taste. It is distributed from `uizze.sh`, a website rather than a Git repository,
@@ -77,21 +103,29 @@ never given a key for a hosted model or voice service ([decided on
 - **The marketingskills five:** instructions only. `seo-audit` and `ai-seo` have the agent fetch the
   page being audited, and `ai-seo` suggests outside scoring tools (`npx is-agentic`) and paid
   AI-visibility services.
-- **`hyperframes`, `hyperframes-core`, `hyperframes-keyframes`, `hyperframes-animation`:** run the
-  Hyperframes CLI from npm, which sends usage events to PostHog unless `DO_NOT_TRACK=1` or
-  `HYPERFRAMES_NO_TELEMETRY=1`. Its registry commands search and add blocks over the network. The
-  compositions in the skills' examples load libraries from `cdn.jsdelivr.net`,
-  `cdnjs.cloudflare.com` and `unpkg.com`.
-- **`media-use`:** HeyGen's catalog, voices and avatars when signed in, with usage linked to the
-  account; Openverse and Pixabay; ElevenLabs, Gemini (Lyria), OpenAI or Groq when their keys are
-  set; voice, music and transcription models downloaded on first use; and its own PostHog usage
-  events, off with `DO_NOT_TRACK=1`. Its bundled sound effects are under the Pixabay Content
-  License (`audio/assets/sfx/CREDITS.md`).
-- **`product-launch-video`, `pr-to-video`:** the Hyperframes CLI (page capture, voice, registry
-  blocks) and `media-use`. `product-launch-video` sends captured images to Gemini or OpenRouter for
-  captions when a key is set. `pr-to-video` reads the PR and its contributors' avatars from GitHub.
-  Both route to Hyperframes skills not pinned here, such as `hyperframes-cli` and
-  `hyperframes-registry`; adding one is a new row.
+- **`hyperframes`, `hyperframes-cli`, `hyperframes-registry`** (read in full at v0.8.186 on
+  2026-10-22): run the Hyperframes CLI from npm, which sends usage events, with the machine's CPU,
+  memory and OS, to PostHog unless `DO_NOT_TRACK=1` or `HYPERFRAMES_NO_TELEMETRY=1`. With telemetry
+  off it still checks npm for a newer release every 24 hours (`HYPERFRAMES_NO_UPDATE_CHECK=1`),
+  installs one when installed globally (`HYPERFRAMES_NO_AUTO_INSTALL=1`), and checks GitHub for
+  newer skills (`HYPERFRAMES_SKIP_SKILLS=1`). `usage` reads Claude, Codex or Grok sign-ins and asks
+  the provider for plan usage. `cloud render` and `publish` upload a project to HeyGen. The
+  registry's manifest and blocks are read from `main`, not the pin, so no block is added from it.
+  `capture` fetches the page it is pointed at and captions images through OpenRouter or Gemini
+  when a key is set. `preview` serves on port 3002. The skills' templates load GSAP and three.js
+  from `cdn.jsdelivr.net` and fonts from Google; the site's compositions load nothing from the
+  network, since a render may not.
+- **`figma`, `remotion-to-hyperframes`, `slideshow`** (installed with the four, not used): Figma's
+  API with a personal token; a test corpus that runs `npm install` without a lockfile when started
+  by hand; and a presenter server that listens on every interface.
+- **`media-use`** (read in full at v0.8.186 on 2026-10-22): HeyGen's catalog, voices and avatars
+  when a credential is found, including a `.env` up to five folders up, with every call marked as
+  `media-use` server-side; Openverse for every sound effect, with no offline switch; ElevenLabs or
+  Gemini (Lyria) as soon as their keys are set; models downloaded on first use; a silent
+  `pip install` into the user's Python for generated music; and PostHog events that identify a
+  HeyGen sign-in, off with `DO_NOT_TRACK=1`. Its 19 bundled sound effects are under the Pixabay
+  Content License (`audio/assets/sfx/CREDITS.md`), with no per-file source. The site's videos
+  carry no audio (#94), so `media-use` is not run.
 - **brag:** runs the Hyperframes CLI (checks, voice, beat detection); nothing fetched by its own
   files. Its music is a series from ende.app, and its music README asks for the exact licence terms
   to be verified before publishing. Its sound effects credit Kenney.
@@ -109,6 +143,6 @@ npx skills@1.7.2 add nextlevelbuilder/ui-ux-pro-max-skill#56ea9cf174ed86786187da
 npx skills@1.7.2 add vercel-labs/agent-skills#063bee94c3f4df8453406c830b0a7df0f2860278 --skill web-design-guidelines -g
 npx skills@1.7.2 add emilkowalski/skills#2d228630ba1446365f614a108cb8252f1feda202 --skill emil-design-eng --skill review-animations -g
 npx skills@1.7.2 add coreyhaines31/marketingskills#e85f3cbc2e4a79bf33b2a12e9bdd9087d414735b --skill copywriting --skill cro --skill seo-audit --skill ai-seo --skill schema -g
-npx skills@1.7.2 add heygen-com/hyperframes#ae02e5aceff4742e5d72c20f0859eb3e6b449035 --skill hyperframes --skill hyperframes-core --skill hyperframes-animation --skill hyperframes-keyframes --skill media-use --skill product-launch-video --skill pr-to-video -g
+npx skills@1.7.2 add heygen-com/hyperframes#bbf9f8ffd0b2faa5edca9852c5528c5312f6c57e --skill hyperframes --skill hyperframes-cli --skill hyperframes-registry --skill media-use -g
 npx skills@1.7.2 add latent-spaces/brag#069432cac935ed1895859df201c31436c07fb74e --skill brag -g
 ```

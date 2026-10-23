@@ -42,6 +42,11 @@
       "minItems": 1,
       "items": { "$ref": "#/$defs/shot" }
     },
+    "clips": {
+      "type": "array",
+      "description": "Recorded clips of the released app, captured with the shots at each release and kept under marketing/.captures/clips/ (not committed): what a video shows in motion, such as the agent orb's states. scripts/render-videos.mjs stages each source a video names into its composition.",
+      "items": { "$ref": "#/$defs/clip" }
+    },
     "videos": {
       "type": "array",
       "description": "Every video the site plays (#94): what it is made from, the release it shows, where it plays and the rules it plays by. scripts/validate-marketing-manifest.mjs holds each shipping entry's files and budget, and src/components/loop-video.mjs plays a loop by its autoplay policy.",
@@ -139,6 +144,22 @@
         }
       }
     },
+    "clip": {
+      "type": "object",
+      "required": ["id", "file", "width", "height", "scenario", "status"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+        "file": { "type": "string", "pattern": "^marketing/\\.captures/clips/[a-z0-9-]+\\.(webm|mp4)$" },
+        "width": { "type": "integer", "minimum": 1 },
+        "height": { "type": "integer", "minimum": 1 },
+        "scenario": {
+          "type": "string",
+          "description": "What the clip must show, beat by beat: the real work to seed before recording it."
+        },
+        "status": { "type": "string", "enum": ["shipping", "new-needs-placement", "retired"] }
+      }
+    },
     "video": {
       "type": "object",
       "required": [
@@ -182,6 +203,17 @@
           "description": "The core release its captures show."
         },
         "durationSeconds": { "type": "number", "exclusiveMinimum": 0 },
+        "posterAtSeconds": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Where render:videos takes the poster from the render, in seconds; 0 when absent."
+        },
+        "crf": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 51,
+          "description": "The encoder's constant rate factor for render:videos (lower is higher quality), so a loop fits its budget; the CLI's delivery quality when absent."
+        },
         "width": {
           "type": "integer",
           "minimum": 1,
