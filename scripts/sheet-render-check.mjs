@@ -16,6 +16,21 @@ import { gitBlobSha, NOT_DECLARED, NOT_RECORDED } from "./app-sheet.mjs";
 
 export const NO_SCAN_PUBLISHED = "No scan is published before install";
 
+/**
+ * The install-time rescan in words true of each kind of sheet: a community listing is not
+ * reviewed or endorsed, and a first-party app is not a listing at all. Both keep the Store's
+ * closing clause, "rescanned when you install". Stated here apart from src/data/registry.mjs, so
+ * a sheet that renders the other kind's sentence, or a reworded one, fails.
+ */
+export const INSTALL_GATE = {
+  community:
+    "PersonalClaw does not review or endorse listed apps. It runs its own scan of the actual code " +
+    "instead: every listed app is rescanned when you install, and that scan is what can stop an install.",
+  "first-party":
+    "PersonalClaw runs its own scan of the actual code of every app it installs: this one is " +
+    "rescanned when you install, and that scan is what can stop an install."
+};
+
 /** The fields every sheet carries, by `data-field`. */
 export const SHEET_FIELDS = [
   "permissions",
@@ -233,6 +248,24 @@ export function manifestProblems($, name, raw) {
  * @param {string} name
  * @param {boolean} blocked
  */
+/**
+ * What is wrong with a sheet's install-time rescan sentence for its kind.
+ *
+ * @param {import("cheerio").CheerioAPI} $
+ * @param {string} name
+ * @param {"community" | "first-party"} kind
+ */
+export function installGateProblems($, name, kind) {
+  const shown = $(".install-gate").first().text().replace(/\s+/g, " ").trim();
+  if (!shown) return [`${name}: the sheet names no install-time rescan`];
+  if (shown !== INSTALL_GATE[kind]) return [`${name}: a ${kind} sheet must read "${INSTALL_GATE[kind]}", not "${shown}"`];
+  // The rescan is a ledger claim: its /compare row sits beside the sentence, in the decision.
+  if ($("[data-decision]").find('a[href="/compare#install_rescan"]').length === 0) {
+    return [`${name}: the install-time rescan does not link its row, /compare#install_rescan, beside it`];
+  }
+  return [];
+}
+
 export function actionProblems($, name, blocked) {
   const problems = [];
   const steps = $("[data-enable-steps]");

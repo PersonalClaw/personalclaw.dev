@@ -5,6 +5,7 @@ import FieldRow from "../../components/SheetFieldRow.astro";
 import capabilities from "../../data/capabilities.json";
 import {
   EVIDENCE_PANELS,
+  FIRST_PARTY_INSTALL_GATE_SENTENCE,
   FIRST_PARTY_SCAN,
   INSTALL_GATE_SENTENCE,
   SHEET_CLAIMS,
@@ -117,7 +118,13 @@ const scan = fields(["scanVerdict", "scanTime", "findings", "scanner"]);
           <span>{sheet.verdict.label}</span>
         </p>
         <p class="verdict-detail">{sheet.verdict.detail}</p>
-        <p class="install-gate">{INSTALL_GATE_SENTENCE}</p>
+        <p class="install-gate">{firstParty ? FIRST_PARTY_INSTALL_GATE_SENTENCE : INSTALL_GATE_SENTENCE}</p>
+        {/* The rescan is a ledger claim, so its row sits beside it. */}
+        {claim.install_rescan && (
+          <p class="install-gate-source">
+            <a class="inline-link" href="/compare#install_rescan">Its row on Compare<span class="sr-only">: install rescan</span></a>
+          </p>
+        )}
         {blocked && <p class="blocked-because" data-blocked-because>{sheet.blockedBecause}</p>}
         <dl class="sheet-facts glance">
           {glance.map((entry) => <FieldRow entry={entry} />)}
