@@ -48,6 +48,24 @@ created), because every step below verifies against the published tag.
    edit `public/install` or those two fields by hand: a changed byte, or a pin
    moved without a sync, fails `validate:release-parity` offline.
 
+   Then record the release's assets, for `/release`'s checksums and verify steps:
+
+   ```bash
+   npm run record:release
+   ```
+
+   It writes `core.releaseAssets`: each file attached to the pinned release, with
+   its size and the SHA-256 GitHub records for it. A pin moved without a new
+   record fails `validate:release-parity` offline, since the record names no
+   wheel for the new version. A record that differs from the live release fails
+   it online.
+
+   `/release`'s attestation command names core's `.github/workflows/release.yml`
+   as the signer and the pinned tag as the source ref, so the sync refuses a pin
+   whose release workflow no longer attests build provenance on `v*` tags. After
+   the record, download the new wheel and run the page's checksum and attestation
+   steps against it.
+
    Check the registry pin in the same edit. `data.registry.commit` must be the
    registry's current commit (see [Between releases](#between-releases-the-registry)):
 

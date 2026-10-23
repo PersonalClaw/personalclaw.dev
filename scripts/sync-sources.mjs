@@ -4,6 +4,15 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { promisify } from "node:util";
 import { githubJson } from "./github-api.mjs";
+import {
+  RELEASE_WORKFLOW,
+  assetUrl,
+  attestedFiles,
+  isSbom,
+  releaseWorkflowProblems,
+  verificationSteps
+} from "./release-assets.mjs";
+import { installerPackageOf, installerPythonOf } from "../src/data/installer.mjs";
 import Ajv2020 from "ajv/dist/2020.js";
 import { parse as parseToml } from "smol-toml";
 import {
@@ -751,6 +760,41 @@ function sourceFacts(source) {
   };
 }
 
+/**
+ * What /release shows of the pinned core release, from the assets the manifest records
+ * (`npm run record:release`): each asset with its size, GitHub's SHA-256 and its download URL,
+ * the SBOMs among them, and the verification steps built from the pin: the attestation names
+ * the pinned commit's release workflow, which must be the one that attests, and the install
+ * step uses the pinned installer's Python and requirement. Null for a source pinned by commit
+ * alone, which has no release to verify.
+ *
+ * @param {object} core  the manifest's core source
+ * @param {string} version
+ * @param {{ workflow: string | null, installer: string }} pinned  files at the pinned commit
+ */
+function releaseFactsFor(core, version, { workflow, installer }) {
+  if (!core.tag) return null;
+  const problems = releaseWorkflowProblems(workflow);
+  if (problems.length) throw new Error(problems.join("\n"));
+  const assets = (core.releaseAssets ?? []).map((asset) => ({
+    ...asset,
+    url: assetUrl(core.repository, core.tag, asset.name),
+    sbom: isSbom(asset.name),
+    attested: attestedFiles(version).includes(asset.name)
+  }));
+  return {
+    url: `https://github.com/${core.repository}/releases/tag/${core.tag}`,
+    assets,
+    steps: verificationSteps({
+      repository: core.repository,
+      tag: core.tag,
+      version,
+      assets,
+      installer: { python: installerPythonOf(installer), package: installerPackageOf(installer) }
+    })
+  };
+}
+
 async function main() {
   const manifest = await loadManifest({ recordedFieldsOptional: true });
   const [coreSource, appsSource] = await Promise.all([
@@ -760,12 +804,13 @@ async function main() {
   const resolvedSources = { core: coreSource, apps: appsSource };
   await validateReleaseTags(manifest, resolvedSources);
 
-  const [projectText, changelogText, installerBytes, apps] = await Promise.all([
+  const [projectText, changelogText, installerBytes, apps, , releaseWorkflow] = await Promise.all([
     coreSource.readText("pyproject.toml"),
     coreSource.readText("CHANGELOG.md"),
     coreSource.readBytes(INSTALLER_PATH),
     buildAppFacts(appsSource),
-    checkBuildersSnippet(coreSource, appsSource)
+    checkBuildersSnippet(coreSource, appsSource),
+    manifest.sources.core.tag ? readIfPresent(coreSource, RELEASE_WORKFLOW) : null
   ]);
 
   const project = parseToml(projectText);
@@ -813,6 +858,10 @@ async function main() {
       version,
       versionLabel: `v${version}`,
       source: sourceFacts(manifest.sources.core),
+      release: releaseFactsFor(manifest.sources.core, version, {
+        workflow: releaseWorkflow,
+        installer: installerBytes.toString("utf8")
+      }),
       changelog: {
         currentVersion,
         unreleased,

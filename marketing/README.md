@@ -111,6 +111,8 @@ Edit `../sources/personalclaw.sources.json`: set `core` and `apps` to the new
 `{ commit, tag }` (the released `vX.Y.Z` and its commit sha). `npm run sync:sources`
 re-derives the version label / app counts / release state from the tagged source and
 **fails closed** if a tag doesn't resolve to its pinned commit.
+Then `npm run record:release` records the release's assets (name, size and GitHub's SHA-256)
+in the same manifest, for `/release`'s checksums and verify steps.
 
 ### 7. Re-baseline the site visual regression (in the pinned image)
 

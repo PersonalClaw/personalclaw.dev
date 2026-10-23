@@ -167,7 +167,7 @@
       }
     },
     "coreSource": {
-      "description": "Core is also the source of the installer this site serves at /install. `npm run sync:sources` writes public/install from the pinned commit's deploy/website/install.sh and records the commit it read and the file's sha256, so a hand edit or a pin moved without a sync fails offline.",
+      "description": "Core is also the source of the installer this site serves at /install. `npm run sync:sources` writes public/install from the pinned commit's deploy/website/install.sh and records the commit it read and the file's sha256, so a hand edit or a pin moved without a sync fails offline. On the released channel it also records the release's assets (`npm run record:release`): each one's name, size and SHA-256 as GitHub's release record holds them, which /release shows and scripts/validate-release-parity.mjs compares with the live release.",
       "type": "object",
       "additionalProperties": false,
       "required": [
@@ -199,6 +199,32 @@
         },
         "installCommit": {
           "$ref": "#/$defs/commit"
+        },
+        "releaseAssets": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "size",
+              "sha256"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "size": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "sha256": {
+                "$ref": "#/$defs/sha256"
+              }
+            }
+          }
         }
       }
     },

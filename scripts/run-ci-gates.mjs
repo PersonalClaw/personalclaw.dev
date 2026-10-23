@@ -42,6 +42,7 @@ export const unitTests = {
     "tests/tour-chapters.test.mjs",
     "tests/security-page.test.mjs",
     "tests/marketing-manifest.test.mjs",
+    "tests/release-assets.test.mjs",
   ],
 };
 

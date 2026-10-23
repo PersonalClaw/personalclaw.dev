@@ -19,6 +19,9 @@
 //        sync:sources` from the pinned core commit. sha256(public/install) must equal
 //        `core.installSha256`, and `core.installCommit` must equal `core.commit`, so
 //        a hand-edited byte and a pin bump without a sync both fail with no network.
+//    11. THE RELEASE'S ASSETS, recorded: on the "released" channel, `core.releaseAssets`
+//        (written by `npm run record:release`) names the wheel and the sdist of the pinned
+//        version and at least one SBOM, so a re-pin without a new record fails offline.
 //
 //   REMOTE (runs when the network/GitHub API is reachable; skipped otherwise
 //   with a printed notice — never a silent pass, per the no-silent-caps rule)
@@ -32,6 +35,9 @@
 //        pinned commit's `deploy/website/install.sh` byte for byte, read from
 //        raw.githubusercontent.com (not the rate-limited API). Rule 9 trusts the
 //        digest the sync recorded; this compares against the pinned tree itself.
+//    12. THE RELEASE'S ASSETS, live: the recorded assets equal the pinned release's own
+//        record, name for name, with the same size and SHA-256 digest. /release shows these
+//        checksums, so a record that drifted from GitHub's would show a reader wrong ones.
 //     8. REGISTRY FRESHNESS, on either channel: the registry (`data.registry`) is
 //        pinned by commit alone, because it is published continuously rather than
 //        released. A pin is still a frozen copy, so it must be the registry's
@@ -51,6 +57,7 @@ import { fileURLToPath } from "node:url";
 import Ajv2020 from "ajv/dist/2020.js";
 import { parse as parseToml } from "smol-toml";
 import { githubJson } from "./github-api.mjs";
+import { attestedFiles, isSbom, recordAssets, releaseAssetProblems } from "./release-assets.mjs";
 import {
   INSTALLER_PATH,
   PUBLISHED_INSTALLER,
@@ -211,6 +218,19 @@ if (installBytes) {
   problems.push(...checkPublishedInstaller({ core: manifest.sources?.core, installBytes }));
 }
 
+// 11. the pinned release's assets are recorded, for the pinned version.
+if (channel === "released" && coreTag && SEMVER_TAG.test(coreTag)) {
+  const recorded = manifest.sources?.core?.releaseAssets ?? [];
+  const names = new Set(recorded.map((asset) => asset.name));
+  const record = "run `npm run record:release`, which records them from the pinned release";
+  for (const file of attestedFiles(coreTag.slice(1))) {
+    if (!names.has(file)) problems.push(`core.releaseAssets records no ${file}: ${record}`);
+  }
+  if (!recorded.some((asset) => isSbom(asset.name))) {
+    problems.push(`core.releaseAssets records no SBOM: ${record}`);
+  }
+}
+
 // ── remote layer ────────────────────────────────────────────────────────────
 
 const offline = process.env.RELEASE_PARITY_OFFLINE === "1";
@@ -272,6 +292,18 @@ if (!offline && installBytes && core?.commit) {
     if (!response.ok) throw new Error(`request failed (${response.status}) for ${url}`);
     const pinnedBytes = Buffer.from(await response.arrayBuffer());
     problems.push(...checkPinnedCopy({ core, installBytes, pinnedBytes }));
+  } catch (error) {
+    remoteCheckFailed(error);
+  }
+}
+
+// 12. the recorded assets are the pinned release's own.
+if (!offline && channel === "released" && core?.tag) {
+  try {
+    const record = await fetchJson(
+      `https://api.github.com/repos/${core.repository}/releases/tags/${encodeURIComponent(core.tag)}`
+    );
+    problems.push(...releaseAssetProblems(core.releaseAssets ?? [], recordAssets(record)));
   } catch (error) {
     remoteCheckFailed(error);
   }
