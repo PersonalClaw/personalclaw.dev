@@ -22,5 +22,6 @@ export const SOCIAL_IMAGE_HEIGHT = "600";
 // the image, so a reader who could not see the card was told something different from
 // what everyone else was shown.
 export const SOCIAL_IMAGE_ALT =
-  "The PersonalClaw mark and wordmark on coral, with the line " +
-  "“Your self-hosted personal AI agent”.";
+  "The PersonalClaw mark and wordmark in dark ink on coral, with the line " +
+  "“One agentic OS. Your machine. Your rules.” and “Self-hosted. MIT licensed. " +
+  "No analytics, no crash reporting.”";

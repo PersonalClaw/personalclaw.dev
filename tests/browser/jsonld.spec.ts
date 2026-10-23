@@ -83,3 +83,31 @@ test("a blog post publishes an Article node and a three-deep breadcrumb trail", 
   expect(names[1]).toBe("Writing");
   expect(names).toHaveLength(3);
 });
+
+test("home page publishes one FAQPage whose questions and answers are the visible ones", async ({
+  page
+}) => {
+  await openPage(page, "/");
+  const graph = await readGraph(page);
+  const faqs = nodeOfType(graph, "FAQPage");
+  expect(faqs).toHaveLength(1);
+  const published = (faqs[0].mainEntity as { name: string; acceptedAnswer: { text: string } }[]).map(
+    (question) => ({ name: question.name, text: question.acceptedAnswer.text })
+  );
+
+  // What a reader sees: each question's summary, and the text of its answer paragraphs.
+  const visible = await page.locator("details[data-faq]").evaluateAll((all) =>
+    all.map((details) => ({
+      name: (details.querySelector("summary")?.textContent ?? "").replace(/\s+/g, " ").trim(),
+      text: [...details.querySelectorAll("p[data-faq-answer]")]
+        .map((p) => (p.textContent ?? "").replace(/\s+/g, " ").trim())
+        .join(" ")
+    }))
+  );
+  expect(visible.length).toBeGreaterThan(0);
+  expect(published).toEqual(visible);
+
+  // Scoped to Home, like the SoftwareApplication node.
+  await openPage(page, "/product");
+  expect(nodeOfType(await readGraph(page), "FAQPage")).toHaveLength(0);
+});
