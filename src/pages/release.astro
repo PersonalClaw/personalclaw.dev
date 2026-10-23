@@ -717,8 +717,10 @@ const sboms = release?.assets.filter((asset) => asset.sbom) ?? [];
     margin: 0;
   }
 
+  /* A tag as short as "v0.2.6" is under 44 px wide in some fonts; the box keeps the target. */
   .source-ledger dd a {
     display: inline-flex;
+    min-width: 44px;
     min-height: 44px;
     gap: 0.5rem;
     align-items: center;
