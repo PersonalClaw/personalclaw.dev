@@ -1,7 +1,7 @@
 {
   "$schema": "./screenshots.schema.json",
   "schemaVersion": 1,
-  "targetRelease": "0.2.4",
+  "targetRelease": "0.2.6",
   "capture": {
     "instance": "A scratch home, never the install's own: seed core's demo home into it and run a gateway on a free loopback port (PERSONALCLAW_HOME=/tmp/pc-showcase personalclaw gateway --seed demo-home --seed-replace --port 10021 --no-open --json-ready), as core's docs/screenshots/CAPTURE.md describes. The seed carries projects, tasks, knowledge documents and markdown memory, and binds no model, so install a model app and bind chat (and embedding and speech-to-text, so no surface waits on a model) before any turn. Chat, the approval, the loop, the skill proposal, the artifacts and the memory records are the product of real turns on that model, a few short ones; nothing is staged. Then photograph each appView with scripts/capture-app-shots.mjs, which signs its browser in with the gateway's token.",
     "theme": "dark",
@@ -15,7 +15,7 @@
       "appView": "Dashboard home (the landing view)",
       "minWidth": 1200,
       "minHeight": 750,
-      "scenario": "A lived-in home: the header counting what waits on you (an approval, tasks ready, the inbox), the Jump back in row with recent chats, To triage holding a tool approval, a goal loop's question and a skill proposal, Active work with that loop waiting on your decision, Tasks, Suggestions and Agent world. Nothing empty: this is the 'what waits on me' shot. Home carries no system rail since 0.2.2; the machine's health is in Settings > System.",
+      "scenario": "Home's Attention view, lived in: Needs You holding a tool approval from a chat, a goal loop's question and a skill proposal, each answerable where it sits; Running Now with that loop waiting on your answer and the chat waiting on its approval; Recent and completed below. Nothing empty: this is the 'what waits on me' shot. Since 0.2.6 Home reads core's one list of what waits on you, and the Overview view (tasks, Agent world) is a toggle beside it, not this shot.",
       "value": "One home surfaces what waits on you, beside current work and recent conversations.",
       "placements": [
         {
@@ -246,33 +246,5 @@
       "status": "retired"
     }
   ],
-  "videos": [
-    {
-      "id": "tour",
-      "kind": "narrative",
-      "composition": null,
-      "sources": [],
-      "capturedAt": "0.1.3",
-      "durationSeconds": 83.72,
-      "width": 1280,
-      "height": 720,
-      "output": "public/media/personalclaw-tour.mp4",
-      "poster": "public/media/personalclaw-tour-poster.webp",
-      "captions": "public/media/personalclaw-tour.vtt",
-      "chapters": "captions",
-      "budgetBytes": 1600000,
-      "autoplay": "none",
-      "fallback": "The poster, the chapter list and the section's text; the tour plays only from its own control.",
-      "audio": [],
-      "placements": [
-        {
-          "file": "src/pages/product.astro",
-          "kind": "product-tour",
-          "caption": "The tour (#tour): watch it do the work",
-          "alt": "The PersonalClaw tour"
-        }
-      ],
-      "status": "shipping"
-    }
-  ]
+  "videos": []
 }

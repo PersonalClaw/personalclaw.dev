@@ -1,74 +1,48 @@
-// The tour's chapters, read from its captions track.
+// The tour's chapters: one still each, from the shots captured at the pinned release.
 //
-// public/media/personalclaw-tour.vtt names each beat of the capture in its first word
-// ("Chat. A prompt sent…"), with the cue's start. /product lists those beats as chapters a
-// visitor chooses, and the one chosen is kept in the URL (`?chapter=`). The start of each
-// chapter is the track's, never typed beside it: a re-cut tour carries its new times onto the
-// page in the same change. A chapter whose beat the track no longer names fails the build
-// rather than seeking to a time nobody checked.
-
-import { readFileSync } from "node:fs";
-import path from "node:path";
-
-const trackPath = path.join(process.cwd(), "public", "media", "personalclaw-tour.vtt");
+// The recorded tour came off /product at the 0.2.6 re-pin: it was cut at an earlier release and
+// showed screens the app no longer has. Until it is recorded again, /product lists the same
+// beats as chapters a visitor chooses, each showing the manifest shot of that screen, and the one
+// chosen is kept in the URL (`?chapter=`). A chapter names a shot by its manifest id, so a shot
+// that stops shipping fails the build (tests/tour-chapters.test.mjs) rather than leaving a
+// chapter with an image nobody re-captured.
 
 /** The query parameter that keeps the chosen chapter. */
 export const CHAPTER_PARAM = "chapter";
 
 /**
- * The chapters /product lists, in the tour's order: the beat each names in the track, and
- * what the list calls it.
+ * The chapters /product lists, in order: the manifest shot each shows, what the list calls it,
+ * and the shot's text alternative.
  */
 export const TOUR_CHAPTERS = Object.freeze([
-  { id: "home", beat: "Home", label: "The gateway's own dashboard" },
-  { id: "chat", beat: "Chat", label: "Chat with a model on this machine" },
-  { id: "approval", beat: "Approval", label: "The approval it stops on" },
-  { id: "loops", beat: "Loops", label: "A goal loop and its findings" },
-  { id: "knowledge", beat: "Knowledge", label: "Knowledge searched locally" },
-  { id: "artifacts", beat: "Artifacts", label: "The file it wrote, on disk" }
-]);
-
-/** `HH:MM:SS.mmm` or `MM:SS.mmm` as seconds. */
-function seconds(stamp) {
-  const parts = stamp.split(":").map(Number);
-  return parts.reduce((total, part) => total * 60 + part, 0);
-}
-
-/**
- * Every cue in *vtt*: its start in seconds and its text.
- *
- * @param {string} vtt
- * @returns {{ start: number, text: string }[]}
- */
-export function cuesOf(vtt) {
-  const cues = [];
-  for (const block of vtt.replace(/\r\n?/g, "\n").split(/\n{2,}/)) {
-    const lines = block.split("\n");
-    const at = lines.findIndex((line) => line.includes("-->"));
-    if (at < 0) continue;
-    const start = /^\s*([\d:.]+)\s*-->/.exec(lines[at]);
-    if (!start) continue;
-    cues.push({ start: seconds(start[1]), text: lines.slice(at + 1).join(" ").trim() });
+  {
+    id: "home",
+    shot: "dashboard",
+    label: "Home, and what waits on you",
+    alt: "PersonalClaw's home: a tool approval, a goal loop's question and a skill proposal waiting on you, above the work running now and the threads finished recently."
+  },
+  {
+    id: "chat",
+    shot: "chat",
+    label: "A chat stopped at its approval",
+    alt: "A PersonalClaw chat that read the code and ran the tests, now waiting at a permission card for a file edit, with Allow and Deny."
+  },
+  {
+    id: "approval",
+    shot: "inbox",
+    label: "Every approval in one inbox",
+    alt: "PersonalClaw's inbox holding three kinds of item, a tool approval, a goal loop's question and a skill proposal, each with a link to where it came from."
+  },
+  {
+    id: "loops",
+    shot: "loops",
+    label: "A goal loop and its report",
+    alt: "A finished PersonalClaw goal loop: its goal, five cycles, the time and spend, and the report it left, with a summary and an evidence table citing files and lines."
+  },
+  {
+    id: "knowledge",
+    shot: "knowledge",
+    label: "Knowledge, tagged and searchable",
+    alt: "PersonalClaw's knowledge library: source documents, notes and bookmarks, each tagged, with counts of items, entities, relations and embedded entries."
   }
-  return cues;
-}
-
-/**
- * The chapters with the start the track gives each beat.
- *
- * @param {string} [vtt] the track's text, read from public/media when absent
- * @returns {{ id: string, label: string, start: number }[]}
- */
-export function tourChapters(vtt = readFileSync(trackPath, "utf8")) {
-  const cues = cuesOf(vtt);
-  return TOUR_CHAPTERS.map(({ id, beat, label }) => {
-    const cue = cues.find((c) => c.text.startsWith(`${beat}.`));
-    if (!cue) {
-      throw new Error(
-        `public/media/personalclaw-tour.vtt has no cue that begins "${beat}.", so /product ` +
-          `cannot say where the "${id}" chapter starts. Name the beat in the track, or drop the chapter.`
-      );
-    }
-    return { id, label, start: cue.start };
-  });
-}
+]);

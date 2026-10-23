@@ -1,20 +1,22 @@
 ---
 import { Image } from "astro:assets";
-import { CirclePlay } from "lucide-react";
 import agentsCapture from "../assets/agents.png";
 import chatCapture from "../assets/chat.png";
+import dashboardCapture from "../assets/dashboard.png";
+import inboxCapture from "../assets/inbox.png";
 import knowledgeCapture from "../assets/knowledge.png";
 import loopsCapture from "../assets/loops.png";
 import memoryCapture from "../assets/memory.png";
 import triggersCapture from "../assets/triggers.png";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { GITHUB_URL } from "../data/site";
-import { CHAPTER_PARAM, tourChapters } from "../data/tour.mjs";
+import { releaseFacts } from "../data/release";
+import { CHAPTER_PARAM, TOUR_CHAPTERS } from "../data/tour.mjs";
 
 /*
  * WHY SEVERAL CLAIMS ON THIS PAGE ARE NARROWER THAN THEY COULD BE.
  *
- * Every claim below was read against the RELEASED tag this site pins (core v0.2.4, apps
+ * Every claim below was read against the RELEASED tag this site pins (core v0.2.6, apps
  * v0.2.2), and the ones that hold only in part say only the part that holds. Recorded here in
  * the frontmatter rather than beside the markup on purpose: an Astro template comment is
  * emitted into the HTML, and a retracted claim quoted verbatim in the shipped page is a string
@@ -27,8 +29,10 @@ import { CHAPTER_PARAM, tourChapters } from "../data/tour.mjs";
  * inbox shot stays, placed on Home, which shows it.
  *
  * CUT ENTIRELY — the safety-profile bullet. `guardrails/policy.py` was a closed island when
- * this was first read: nothing outside the module and its test referenced it. It stays cut
- * until a reading at the pin finds it wired; /compare's `tool_approval` row says the same.
+ * this was first read. At v0.2.6 it is wired: the gateway and the composer's Execution Boundary
+ * read `profile_for_session`. The bullet stays cut anyway, because /compare's `tool_approval`
+ * row states what the profiles bound and what they do not, and a line here would carry the
+ * claim without its limits.
  *
  * CHAT. The permission modes are Normal, Trust reads and Trust per chat; YOLO is gateway-wide,
  * auto-approves everywhere until it expires, and picking any other mode turns it off. The
@@ -47,15 +51,16 @@ import { CHAPTER_PARAM, tourChapters } from "../data/tour.mjs";
  * GUARDRAILS, narrowed. The incident kill switch holds every kind of unattended work at once
  * (clock and watch triggers, idle triggers and loop cycles, workflow runs, script-hook actions,
  * every subagent spawn, the inbound doors, the background maintenance) and resumes only on an
- * explicit confirm. It was said to "never affect interactive chat"; at v0.2.4 a chat's turns keep
+ * explicit confirm. It was said to "never affect interactive chat"; at v0.2.6 a chat's turns keep
  * running but a subagent a chat asks for is refused too, so the page says the turns keep running
  * and the spawns are held. Budgets are daily token and dollar ceilings on unattended spend only
  * (chat turns and Attended loops are not counted), unlimited until set: "on what your
- * automations spend". A per-run DOLLAR ceiling has never existed. The prompt-scanning modes are
- * left off this page.
+ * automations spend". The budgets have no per-run dollar ceiling; an automation's own per-run
+ * cost gate and a loop's cost cap are separate settings, not budgets. The prompt-scanning modes
+ * are left off this page.
  *
  * MEMORY. Semantic and episodic recall, lessons from corrections, and promotion of repeated
- * episodes to facts all have live callers. The procedural layer is now read back at v0.2.4, but
+ * episodes to facts all have live callers. The procedural layer is now read back at v0.2.6, but
  * only as a few global tool-outcome priors, so the page says "which tools have served it well"
  * rather than "recall" of everything it records. The memory page deletes facts, episodes, lessons
  * and entities and edits facts, so "edit" names facts alone.
@@ -83,18 +88,27 @@ import { CHAPTER_PARAM, tourChapters } from "../data/tour.mjs";
  * setting turns that off. The closing section says both halves and cites the row; no interval
  * is typed. The closing section no longer types a Python version (P4).
  *
- * WAITING ON YOU. Core's one list of everything waiting on you (`GET /api/waiting`) landed after
- * the pinned tag, so this page claims the inbox as v0.2.4 ships it, not that list.
+ * WAITING ON YOU. Core's one list of everything waiting on you (`GET /api/waiting`) ships at
+ * v0.2.6, and Home's Needs You reads it. The page still claims the inbox, which stays a
+ * destination of its own, rather than that list.
  *
  * Every section here that talks about a row's subject cites that row, and
  * `npm run validate:compare` fails the build when one does not (scripts/product-claims.mjs).
  */
 
-const chapters = tourChapters();
-
-/** `m:ss`, from the track's seconds. */
-const clock = (seconds: number) =>
-  `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, "0")}`;
+/** Each chapter's still, by the manifest shot it names. */
+const stills: Record<string, ImageMetadata> = {
+  dashboard: dashboardCapture,
+  chat: chatCapture,
+  inbox: inboxCapture,
+  loops: loopsCapture,
+  knowledge: knowledgeCapture
+};
+const chapters = TOUR_CHAPTERS.map((chapter) => {
+  const still = stills[chapter.shot];
+  if (!still) throw new Error(`The tour's "${chapter.id}" chapter names a shot /product does not import: ${chapter.shot}`);
+  return { ...chapter, still };
+});
 
 interface Capability {
   id: string;
@@ -208,34 +222,27 @@ const capabilities: Capability[] = [
   <section class="tour" id="tour" aria-labelledby="product-title" data-tour data-param={CHAPTER_PARAM}>
     <div class="shell tour-grid">
       <div class="tour-copy">
-        <h1 class="tour-title" id="product-title">Watch it do the work.</h1>
+        <h1 class="tour-title" id="product-title">See it do the work.</h1>
         <p class="tour-lede">
-          One unedited run on one machine: a chat with a local model, the approval it stops
-          on, a goal loop, knowledge searched locally, and the file the agent wrote. It was
-          recorded at an earlier release, so some screens have changed since.
+          Five screens from one workspace, captured at {releaseFacts.core.versionLabel}: the home that shows what
+          waits on you, a chat stopped at its approval, the inbox that holds it, a goal loop's
+          report, and the knowledge it searches.
         </p>
       </div>
       <div class="tour-frame">
-        <video
-          class="tour-video"
-          width="1280"
-          height="720"
-          controls
-          muted
-          playsinline
-          preload="none"
-          poster="/media/personalclaw-tour-poster.webp"
-          aria-label="The PersonalClaw tour"
-        >
-          <source src="/media/personalclaw-tour.mp4" type="video/mp4" />
-          <track
-            default
-            kind="captions"
-            srclang="en"
-            label="English (described beats)"
-            src="/media/personalclaw-tour.vtt"
-          />
-        </video>
+        {chapters.map((chapter, index) => (
+          <figure class="tour-still" id={`tour-${chapter.id}`} data-still={chapter.id} hidden={index !== 0}>
+            <Image
+              src={chapter.still}
+              alt={chapter.alt}
+              widths={[640, 960, 1280, 1800]}
+              sizes="(max-width: 960px) 100vw, 64vw"
+              format="webp"
+              quality={86}
+              loading={index === 0 ? "eager" : "lazy"}
+            />
+          </figure>
+        ))}
       </div>
       <div class="tour-nav">
         <ol class="tour-chapters" aria-label="Tour chapters">
@@ -245,19 +252,14 @@ const capabilities: Capability[] = [
                 type="button"
                 class="chapter"
                 data-chapter={chapter.id}
-                data-start={chapter.start}
+                aria-controls={`tour-${chapter.id}`}
                 aria-pressed={index === 0 ? "true" : "false"}
               >
-                <span class="chapter-label">{chapter.label}</span>
-                <span class="chapter-time">{clock(chapter.start)}</span>
+                {chapter.label}
               </button>
             </li>
           ))}
         </ol>
-        <p class="tour-hint">
-          <CirclePlay size={16} aria-hidden="true" />
-          Choose a chapter, then press play: the tour starts there.
-        </p>
       </div>
     </div>
   </section>
@@ -326,26 +328,20 @@ const capabilities: Capability[] = [
 </BaseLayout>
 
 <script>
-  // The tour's chapters (#90): the one chosen is kept in the URL (`?chapter=`) with
-  // `replaceState`, so a reload, Back to the page and a copied link come back to it and a choice
-  // adds no history entry. Choosing only selects: the video asks for no byte until a visitor
-  // presses play, and the first play starts at the chosen chapter. Once it has played, a choice
-  // seeks at once.
+  // The tour's chapters (#90): choosing one shows its still, and the one chosen is kept in the
+  // URL (`?chapter=`) with `replaceState`, so a reload, Back to the page and a copied link come
+  // back to it and a choice adds no history entry. With no script the first still shows.
   const tour = document.querySelector<HTMLElement>("[data-tour]");
-  const video = tour?.querySelector("video");
-  if (tour && video) {
+  if (tour) {
     const param = tour.dataset.param ?? "chapter";
     const buttons = [...tour.querySelectorAll<HTMLButtonElement>("[data-chapter]")];
-    let played = false;
+    const stills = [...tour.querySelectorAll<HTMLElement>("[data-still]")];
 
     const select = (id: string | null) => {
       const chosen = buttons.find((b) => b.dataset.chapter === id) ?? buttons[0];
       for (const b of buttons) b.setAttribute("aria-pressed", String(b === chosen));
+      for (const still of stills) still.hidden = still.dataset.still !== chosen.dataset.chapter;
       return chosen;
-    };
-    const selected = () => buttons.find((b) => b.getAttribute("aria-pressed") === "true") ?? buttons[0];
-    const seek = (b: HTMLButtonElement) => {
-      video.currentTime = Number(b.dataset.start ?? 0);
     };
     const followUrl = () => select(new URLSearchParams(window.location.search).get(param));
 
@@ -359,16 +355,8 @@ const capabilities: Capability[] = [
         if (chosen === buttons[0]) url.searchParams.delete(param);
         else url.searchParams.set(param, chosen.dataset.chapter ?? "");
         window.history.replaceState(window.history.state, "", url);
-        if (played) seek(chosen);
       });
     }
-
-    video.addEventListener("play", () => {
-      if (played) return;
-      played = true;
-      const chosen = selected();
-      if (Number(chosen.dataset.start ?? 0) > 0) seek(chosen);
-    });
   }
 </script>
 
@@ -399,13 +387,21 @@ const capabilities: Capability[] = [
     border-radius: 8px;
     background: var(--surface);
     box-shadow: 0 40px 100px rgba(0, 0, 0, 0.48);
-    aspect-ratio: 16 / 9;
+    aspect-ratio: 8 / 5;
   }
 
-  .tour-video {
+  .tour-still {
+    margin: 0;
+  }
+
+  .tour-still[hidden] {
+    display: none;
+  }
+
+  .tour-still img {
     display: block;
     width: 100%;
-    height: 100%;
+    height: auto;
   }
 
   .tour-title {
@@ -434,9 +430,7 @@ const capabilities: Capability[] = [
     width: 100%;
     min-height: 44px;
     padding: 0.55rem 1rem;
-    gap: 1rem;
     align-items: center;
-    justify-content: space-between;
     border: 1px solid transparent;
     border-radius: 999px;
     background: transparent;
@@ -462,22 +456,6 @@ const capabilities: Capability[] = [
   .chapter[aria-pressed="true"] {
     background: var(--coral);
     color: var(--night);
-  }
-
-  .chapter-time {
-    flex: none;
-    font-family: var(--font-mono);
-    font-size: var(--fs-mono);
-    font-weight: var(--fw-mono);
-  }
-
-  .tour-hint {
-    display: flex;
-    gap: 0.5rem;
-    align-items: center;
-    margin: 0;
-    color: var(--ink-muted);
-    font-size: var(--fs-label);
   }
 
   .capability {

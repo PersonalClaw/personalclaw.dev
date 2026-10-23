@@ -8,8 +8,8 @@ import { monitorRuntime } from "./support";
 // plays through (src/components/LoopVideo.astro). No page places a loop yet (#95 waits on the
 // renders), so this spec serves a page of its own on the site's origin: two loops, one waiting
 // for its play control and one allowed an idle hint, the module's own markup and script, and a
-// small VP9 clip the test browser can decode (tests/fixtures/loop-fixture.webm). The tour's
-// poster stands in as each loop's poster.
+// small VP9 clip the test browser can decode (tests/fixtures/loop-fixture.webm). The brand mark
+// stands in as each loop's poster.
 //
 // Data saver has no Playwright emulation, so it is stubbed as `navigator.connection.saveData`.
 
@@ -17,7 +17,7 @@ const ROOT = process.cwd();
 const FIXTURE = "/__loop-video-fixture";
 const CLIP = "/media/loop-fixture.webm";
 const IDLE_CLIP = "/media/loop-fixture-idle.webm";
-const POSTER = "/media/personalclaw-tour-poster.webp";
+const POSTER = "/brand/personalclaw-mark.svg";
 
 function fixturePage(): string {
   const loop = (src: string, label: string, autoplay: string) =>
