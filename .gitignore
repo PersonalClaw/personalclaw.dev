@@ -35,4 +35,4 @@ public/llms-full.txt
 
 # Throwaway build the registry render check produces (scripts/validate-registry-render.mjs).
 .registry-probe-dist/
-.registry-sheet-probe/
+.registry-sheet-probe-*
