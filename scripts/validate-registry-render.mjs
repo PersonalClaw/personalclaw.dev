@@ -57,6 +57,7 @@ import {
   expectedCommunity,
   expectedFirstParty,
   fieldProblems,
+  installGateProblems,
   manifestProblems
 } from "./sheet-render-check.mjs";
 import { INSTALL_GATE_SENTENCE, STORE_CONSENT } from "../src/data/registry.mjs";
@@ -305,6 +306,7 @@ try {
       fail(`${row.name}: the fixture's blocked row is not read as blocked`);
     }
     for (const problem of actionProblems($app, row.name, blocked)) fail(problem);
+    for (const problem of installGateProblems($app, row.name, "community")) fail(problem);
 
     // The Store's three consent jobs, in the Store's order, by position: the sheet is
     // reachable by URL without passing /registry, so it carries them itself.
@@ -381,6 +383,7 @@ try {
     const manifest = JSON.parse(sheet.text);
     const incompatible = (manifest.requiresCoreFeatures ?? []).some((name) => !synced.coreFeatures.includes(name));
     for (const problem of actionProblems($app, sheet.name, incompatible)) fail(problem);
+    for (const problem of installGateProblems($app, sheet.name, "first-party")) fail(problem);
     for (const [name] of Object.entries(manifest.mcpServers ?? {})) {
       if (!$app("[data-reach]").text().includes(`the MCP server ${name}`)) {
         fail(`/registry/${sheet.name} does not list its MCP server ${name}`);

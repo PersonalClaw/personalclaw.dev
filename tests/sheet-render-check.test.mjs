@@ -13,7 +13,9 @@ import { load } from "cheerio";
 import { gitBlobSha } from "../scripts/app-sheet.mjs";
 import {
   SHEET_FIELDS,
+  INSTALL_GATE,
   actionProblems,
+  installGateProblems,
   expectedCommunity,
   expectedFirstParty,
   fieldProblems,
@@ -109,4 +111,18 @@ test("an unsafe or incompatible sheet carries no action and says why; its contro
   assert.match(actionProblems(load(`<main>${why}<button disabled>Install</button></main>`), "blocked", true).join("\n"), /carries "Install"/);
   assert.match(actionProblems(load(`<main>${why}<code>personalclaw app install x</code></main>`), "blocked", true).join("\n"), /carries/);
   assert.match(actionProblems(load("<main></main>"), "control", false).join("\n"), /no enable steps/);
+});
+
+test("each kind of sheet names the install-time rescan in words true of it, and only those", () => {
+  const row = '<p><a href="/compare#install_rescan">Its row on Compare</a></p>';
+  const gate = (text, source = row) => load(`<main><section data-decision><p class="install-gate">${text}</p>${source}</section></main>`);
+  assert.deepEqual(installGateProblems(gate(INSTALL_GATE.community), "listing", "community"), []);
+  assert.deepEqual(installGateProblems(gate(INSTALL_GATE["first-party"]), "app", "first-party"), []);
+  // A first-party app is not a listing: the community sentence on its sheet is untrue there.
+  assert.match(installGateProblems(gate(INSTALL_GATE.community), "app", "first-party").join("\n"), /first-party/);
+  assert.match(installGateProblems(gate(INSTALL_GATE["first-party"]), "listing", "community").join("\n"), /community/);
+  assert.match(installGateProblems(load("<main></main>"), "app", "first-party").join("\n"), /names no install-time rescan/);
+  assert.match(installGateProblems(gate(INSTALL_GATE["first-party"], ""), "app", "first-party").join("\n"), /does not link its row/);
+  for (const sentence of Object.values(INSTALL_GATE)) assert.match(sentence, /rescanned when you install/, "each keeps the Store's job 3");
+  assert.doesNotMatch(INSTALL_GATE["first-party"], /listed|endorse/, "the first-party sentence says nothing of listings");
 });

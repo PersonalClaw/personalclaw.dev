@@ -125,6 +125,15 @@ export const INSTALL_GATE_SENTENCE =
   "is what can stop an install.";
 
 /**
+ * Job 3 on a first-party sheet. A first-party app is not a listing, so the community sentence's
+ * "does not review or endorse listed apps" is not true of it; the rescan is. The closing clause
+ * stays the Store's.
+ */
+export const FIRST_PARTY_INSTALL_GATE_SENTENCE =
+  "PersonalClaw runs its own scan of the actual code of every app it installs: this one is " +
+  `${STORE_CONSENT.installGate}, and that scan is what can stop an install.`;
+
+/**
  * The verdict values the registry schema defines. Everything outside this set — a typo,
  * a value added by a newer registry than this build knows about, a hand-edited row — is
  * presented as blocking, because the alternative is presenting an unknown string as if
@@ -457,7 +466,7 @@ export const FIRST_PARTY_SCAN = {
   key: "none-before-install",
   label: "No scan on record before install",
   tone: "unscanned",
-  // One sentence: the install-time rescan beside it on every sheet (INSTALL_GATE_SENTENCE) says
+  // One sentence: the install-time rescan beside it (FIRST_PARTY_INSTALL_GATE_SENTENCE) says
   // which scan can stop the install.
   detail: "PersonalClaw publishes no scan of its own apps before you install one."
 };
