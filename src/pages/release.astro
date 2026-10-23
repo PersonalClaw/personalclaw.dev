@@ -24,6 +24,12 @@ const megabytes = (bytes: number) =>
   bytes >= 1_000_000 ? `${(bytes / 1_000_000).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1000))} kB`;
 const attested = release?.assets.filter((asset) => asset.attested) ?? [];
 const sboms = release?.assets.filter((asset) => asset.sbom) ?? [];
+
+// One string, so no line break in the markup can join a name to the version after it.
+const describes =
+  `This site describes PersonalClaw ${releaseFacts.core.versionLabel} and PersonalClawApps ` +
+  `${releaseFacts.apps.source.tag ?? releaseFacts.apps.source.shortCommit}, and every product fact on it ` +
+  "is built from their pinned revisions.";
 ---
 
 <BaseLayout
@@ -42,11 +48,7 @@ const sboms = release?.assets.filter((asset) => asset.sbom) ?? [];
     <div class="shell release-hero-grid">
       <div class="release-heading">
         <h1 class="display">Know exactly what this site describes.</h1>
-        <p class="release-lede">
-          Product facts are built from pinned PersonalClaw and PersonalClawApps
-          revisions. The source state is visible here instead of being hidden
-          behind marketing copy.
-        </p>
+        <p class="release-lede" data-support>{describes}</p>
         <div class:list={["source-status", { "is-release": isReleased }]}>
           <Check size={18} aria-hidden="true" />
           <span>{releaseFacts.status.label}</span>

@@ -49,6 +49,7 @@ const behind = post.data.verifiedAgainst !== pinned;
       <a class="text-link back-link" href="/blog">All posts</a>
 
       <h1 class="section-title">{post.data.title}</h1>
+      <p class="post-lede" data-support>{post.data.description}</p>
       <p class="post-meta">
         <time datetime={post.data.publishDate.toISOString().slice(0, 10)}>{readableDate}</time>{" "}
         <a class="verified" href="/release" data-blog-verified>
@@ -127,6 +128,12 @@ const behind = post.data.verifiedAgainst !== pinned;
   h1 {
     max-width: 26ch;
     margin: 0.4rem 0 1rem;
+  }
+
+  .post-lede {
+    max-width: 68ch;
+    margin: 0 0 1.25rem;
+    color: var(--ink-soft);
   }
 
   .post-meta {

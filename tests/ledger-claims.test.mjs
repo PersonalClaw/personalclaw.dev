@@ -21,7 +21,8 @@ import {
   faqParityProblems,
   headClaimProblems,
   pageClaimProblems,
-  pinnedEvidencePrefixes
+  pinnedEvidencePrefixes,
+  supportSentenceProblems
 } from "../scripts/product-claims.mjs";
 
 const matrix = capabilityMatrix();
@@ -138,4 +139,28 @@ test("a page may quote a claim to narrow it, but not state it", () => {
     `<ul><li data-blog-claim="${row}"><a href="/compare#${link}">Zero telemetry.</a> <span>Narrower than it sounds</span></li></ul>`;
   assert.deepEqual(problems(callout("telemetry", "telemetry")), [], "a post's callout lists its row's claim");
   assert.notDeepEqual(problems(callout("telemetry", "webhooks")), [], "a callout entry that links another row");
+});
+
+test("a page carries one headline and one factual support sentence under it, one sentence long", () => {
+  const hero = (support, extra = "") =>
+    page({ main: `<section><h1>Bring the providers you choose.</h1>${support}</section>${extra}` });
+  assert.deepEqual(
+    supportSentenceProblems(hero("<p data-support>Models and search are apps you install.</p>"), { route: "/apps" }),
+    []
+  );
+  assert.match(
+    supportSentenceProblems(hero("<p data-support>Models are apps. Install what you need.</p>"), { route: "/apps" }).join(),
+    /\/apps's support sentence is 2 sentences, not one/
+  );
+  assert.deepEqual(supportSentenceProblems(hero("<p>Models are apps.</p>"), { route: "/apps" }), [
+    "/apps has 0 support sentences ([data-support]), not one"
+  ]);
+  assert.match(
+    supportSentenceProblems(hero("", "<section><p data-support>Models are apps.</p></section>"), { route: "/apps" }).join(),
+    /not in its headline's section/
+  );
+  assert.deepEqual(
+    supportSentenceProblems(hero("<p data-support>One.</p>", "<h1>Two</h1>"), { route: "/apps" }),
+    ["/apps has 2 h1 headlines, not one"]
+  );
 });

@@ -59,7 +59,8 @@ import {
   headClaimProblems,
   pageClaimProblems,
   pinnedEvidencePrefixes,
-  productClaimProblems
+  productClaimProblems,
+  supportSentenceProblems
 } from "./product-claims.mjs";
 import { currentRows, ledgerProblems } from "./ledger.mjs";
 
@@ -337,6 +338,7 @@ for (const route of HAND_AUTHORED) {
     for (const problem of pageClaimProblems(html, rows, { route, evidence: pageEvidence })) fail(problem);
   }
   if (route === "/") for (const problem of faqParityProblems(html)) fail(problem);
+  for (const problem of supportSentenceProblems(html, { route })) fail(problem);
 }
 
 if (!/^\d{4}-\d{2}-\d{2}$/.test(data.checked_on ?? "")) {
