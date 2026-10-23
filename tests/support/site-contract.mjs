@@ -153,7 +153,19 @@ export const registryIndexRoute = {
     "Browse community PersonalClaw apps with the permissions each one declares and the verdict of its last supply-chain scan, before installing anything."
 };
 
-export const registryRoutes = [registryIndexRoute];
+// One install-safety sheet (#112) joins the routes axe, the runtime contract and Lighthouse
+// visit: skills-sh's, the one first-party app whose launches name hosts. At the pinned registry
+// no community listing exists to add beside it; tests/browser/registry-sheet.spec.ts visits every
+// sheet the pinned data yields, and every fixture state from a probe build.
+export const registrySheetRoute = {
+  name: "registry-sheet",
+  path: "/registry/skills-sh",
+  title: "skills-sh · Install-safety sheet · PersonalClaw",
+  description:
+    "What skills-sh gets, reaches and runs before you install it or switch it on, read from the pinned release and registry sources."
+};
+
+export const registryRoutes = [registryIndexRoute, registrySheetRoute];
 
 // The BLOG tier. Its words ARE written here (src/content/blog/*.md is source-controlled,
 // unlike the generated /docs corpus), so its titles and descriptions are contracted below
@@ -238,8 +250,8 @@ export const qualityRoutes = [...routes, ...registryRoutes, ...blogRoutes, ...co
  * @returns {Promise<string[]>}
  */
 export async function registryAppRoutePaths() {
-  const { registryListing } = await import("../../src/data/registry.mjs");
-  return registryListing().apps.map((app) => app.path);
+  const { appSheets } = await import("../../src/data/registry.mjs");
+  return appSheets().sheets.map((sheet) => sheet.path);
 }
 
 /**

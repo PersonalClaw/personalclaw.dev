@@ -118,6 +118,24 @@ function isPinnedEvidence(href, evidence) {
   return typeof href === "string" && evidence.some((prefix) => href.startsWith(prefix));
 }
 
+/**
+ * Whether *block* sits in an app card (`data-app-card="<slug>"`, /apps) that links its own
+ * install-safety sheet, `/registry/<slug>`, and that sheet is in the build (#112). A card's words
+ * are its app's manifest, and the sheet shows that manifest as the pinned commit has it, so the
+ * card's own sheet is its evidence. Another app's sheet, a sheet the build lacks, or text outside
+ * the cards is not.
+ *
+ * @param {{ exists: (sheet: string) => boolean } | undefined} sheets
+ */
+function ownSheetIn(page, block, sheets) {
+  if (!sheets) return false;
+  const card = page(block).closest("[data-app-card]");
+  const slug = card.attr("data-app-card");
+  if (!slug) return false;
+  const sheet = `/registry/${slug}`;
+  return card.find("a[href]").toArray().some((link) => page(link).attr("href") === sheet) && sheets.exists(sheet);
+}
+
 /** Whether a link in `scope` points at release-pinned evidence. */
 function evidenceIn(page, scope, evidence) {
   if (evidence.length === 0) return false;
@@ -224,13 +242,15 @@ export function staleClaimTopics(rows, topics = CLAIM_TOPICS) {
  * @param {Array<{ id: string, verdict: string, claim: string }>} rows the /compare data's rows
  * @param {{ route: string, evidence?: readonly string[], requireCitation?: boolean,
  *           topics?: Readonly<Record<string, readonly string[]>>,
- *           shortForms?: Readonly<Record<string, readonly string[]>> }} options
+ *           shortForms?: Readonly<Record<string, readonly string[]>>,
+ *           sheets?: { exists: (sheet: string) => boolean } }} options
+ *   `sheets` says which install-safety sheets the build has, for an /apps card's own (`ownSheetIn`).
  * @returns {string[]}
  */
 export function pageClaimProblems(
   html,
   rows,
-  { route, evidence = [], requireCitation = false, topics = CLAIM_TOPICS, shortForms = LEAD_SHORT_FORMS }
+  { route, evidence = [], requireCitation = false, topics = CLAIM_TOPICS, shortForms = LEAD_SHORT_FORMS, sheets }
 ) {
   const page = load(html);
   const main = page("main").first();
@@ -256,7 +276,7 @@ export function pageClaimProblems(
     const text = fold(page(block).text());
     const scope = page(block).closest("section, article").get(0) ?? block;
     const citesHere = new Set(citationsIn(page, scope));
-    const pinnedHere = evidenceIn(page, scope, evidence);
+    const pinnedHere = evidenceIn(page, scope, evidence) || ownSheetIn(page, block, sheets);
     for (const [row, words] of Object.entries(topics)) {
       if (citesHere.has(row) || pinnedHere) continue;
       const word = words.find((candidate) => mentions(text, candidate));

@@ -31,6 +31,7 @@ import { releasePageProblems } from "./release-assets.mjs";
 import { installerPackage, installerPython } from "../src/data/installer.mjs";
 import { docsIndex } from "../src/data/docs-index.mjs";
 import { registryArtifactExists, registryListing } from "../src/data/registry.mjs";
+import { fixtureAppNames, fixtureLeaks } from "./fixture-leaks.mjs";
 
 const root = process.cwd();
 const distDir = path.resolve(root, process.env.DIST_DIR ?? "dist");
@@ -857,6 +858,18 @@ async function scanTextFiles(directory) {
 }
 
 await scanTextFiles(distDir);
+
+// No fixture app on a real build (#112). The registry fixtures build only into the probe's own
+// folder (src/data/registry.mjs refuses the override for dist), and this is the check behind
+// that rule: a page or a path naming a fixture app fails.
+{
+  const files = [];
+  for (const file of await collectFiles(distDir, () => true)) {
+    const text = /\.(?:html|json|txt|xml)$/.test(file) ? await readFile(file, "utf8") : undefined;
+    files.push({ path: path.relative(distDir, file), text });
+  }
+  for (const problem of fixtureLeaks(files, fixtureAppNames(path.join(root, "tests", "fixtures")))) fail(problem);
+}
 
 const vercel = JSON.parse(await readFile(path.join(root, "vercel.json"), "utf8"));
 if (vercel.framework !== "astro") fail('vercel.json framework must be "astro"');

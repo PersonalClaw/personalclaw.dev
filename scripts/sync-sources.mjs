@@ -13,6 +13,14 @@ import {
   verificationSteps
 } from "./release-assets.mjs";
 import { installerPackageOf, installerPythonOf } from "../src/data/installer.mjs";
+import {
+  COMPOSED_KEYS,
+  DESCRIBE_KEYS,
+  coreCompatibility,
+  describeKeysFromSource,
+  firstPartySheetFacts,
+  parseCoreFeatures
+} from "./app-sheet.mjs";
 import Ajv2020 from "ajv/dist/2020.js";
 import { parse as parseToml } from "smol-toml";
 import {
@@ -36,6 +44,12 @@ const manifestPath = path.join(root, "sources", "personalclaw.sources.json");
 const schemaPath = path.join(root, "sources", "personalclaw.sources.schema.json");
 const cacheRoot = path.join(root, ".source-cache");
 const generatedPath = path.join(root, ".generated", "release-facts.json");
+// Each first-party app's install-safety sheet facts (scripts/app-sheet.mjs), kept apart from
+// release-facts.json: they carry every manifest's exact text, which no page but the sheets reads.
+const sheetsPath = path.join(root, ".generated", "app-sheets.json");
+// Where core keeps the two things a sheet reads from the pinned tag.
+const CORE_FEATURES_PATH = "src/personalclaw/apps/core_features.py";
+const DISCLOSURE_PATH = "src/personalclaw/apps/disclosure.py";
 const installerPath = path.join(root, PUBLISHED_INSTALLER);
 const githubHeaders = {
   Accept: "application/vnd.github+json",
@@ -211,6 +225,23 @@ async function resolveLocalSource(key, source) {
     readText(relativePath) {
       return readFile(path.join(candidate, relativePath), "utf8");
     },
+    // Every blob's hash as the pinned commit's tree lists it, by path.
+    async listBlobShas() {
+      const { stdout } = await execFileAsync(
+        "git",
+        ["-C", candidate, "ls-tree", "-r", "--full-tree", source.commit],
+        { maxBuffer: 64 * 1024 * 1024 }
+      );
+      return Object.fromEntries(
+        stdout
+          .split("\n")
+          .filter(Boolean)
+          .map((line) => {
+            const [meta, blobPath] = line.split("\t");
+            return [blobPath, meta.split(" ")[2]];
+          })
+      );
+    },
     // The bytes of a file AT THE PINNED COMMIT, read from the object store rather than the
     // working tree, so an uncommitted edit in the checkout can never reach the site.
     async readBytes(relativePath) {
@@ -312,10 +343,9 @@ async function resolveRemoteSource(key, source) {
   // (api.github.com is unauthenticated at 60/hr unless GITHUB_TOKEN is set, and a full
   // `test:ci` runs the sync several times). Filtering one cached listing twice is also
   // the only way the two enumerations can be guaranteed to describe the same tree.
-  const listBlobPaths = async () => {
-    const indexPath = path.join(directory, ".tree.json");
-    if (await fileExists(indexPath)) return readJson(indexPath);
-
+  // The same one fetch also records each blob's hash as the tree lists it (.blobs.json), which
+  // an install-safety sheet's manifest panel is checked against.
+  const fetchTree = async () => {
     const tree = await fetchJson(
       `https://api.github.com/repos/${source.repository}/git/trees/${metadata.tree}?recursive=1`
     );
@@ -324,12 +354,22 @@ async function resolveRemoteSource(key, source) {
         `Could not read the complete pinned tree for ${source.repository}@${source.commit}`
       );
     }
-    const paths = tree.tree
-      .filter((entry) => entry.type === "blob")
-      .map((entry) => entry.path)
-      .sort();
-    await writeAtomically(indexPath, `${JSON.stringify(paths, null, 2)}\n`);
-    return paths;
+    const blobs = tree.tree.filter((entry) => entry.type === "blob");
+    const paths = blobs.map((entry) => entry.path).sort();
+    const shas = Object.fromEntries(blobs.map((entry) => [entry.path, entry.sha]));
+    await writeAtomically(path.join(directory, ".tree.json"), `${JSON.stringify(paths, null, 2)}\n`);
+    await writeAtomically(path.join(directory, ".blobs.json"), `${JSON.stringify(shas, null, 2)}\n`);
+    return { paths, shas };
+  };
+  const listBlobPaths = async () => {
+    const indexPath = path.join(directory, ".tree.json");
+    if (await fileExists(indexPath)) return readJson(indexPath);
+    return (await fetchTree()).paths;
+  };
+  const listBlobShas = async () => {
+    const shasPath = path.join(directory, ".blobs.json");
+    if (await fileExists(shasPath)) return readJson(shasPath);
+    return (await fetchTree()).shas;
   };
 
   return {
@@ -337,6 +377,7 @@ async function resolveRemoteSource(key, source) {
     mode: "remote",
     root: directory,
     source,
+    listBlobShas,
     async listAppManifests() {
       return (await listBlobPaths()).filter((blobPath) =>
         /^[^/]+\/app\.json$/.test(blobPath)
@@ -633,6 +674,7 @@ function compareText(left, right) {
 
 async function buildAppFacts(source) {
   const manifestPaths = await source.listAppManifests();
+  const treeShas = await source.listBlobShas();
   if (manifestPaths.length === 0) {
     throw new Error("Pinned apps source contains no app manifests");
   }
@@ -640,8 +682,12 @@ async function buildAppFacts(source) {
   const manifests = await Promise.all(
     manifestPaths.map(async (relativePath) => {
       let manifest;
+      let text;
       try {
-        manifest = JSON.parse(await source.readText(relativePath));
+        // The bytes at the pinned commit, not a checkout's working tree: a sheet shows them as
+        // the exact manifest, and its hash must be the one the pinned tree lists.
+        text = (await source.readBytes(relativePath)).toString("utf8");
+        manifest = JSON.parse(text);
       } catch (error) {
         throw new Error(`${relativePath} is not valid JSON: ${error.message}`);
       }
@@ -650,7 +696,12 @@ async function buildAppFacts(source) {
         name: manifest.name,
         version: manifest.version,
         category: deriveCategory(manifest),
-        capabilities: manifest.provider?.capabilities ?? []
+        capabilities: manifest.provider?.capabilities ?? [],
+        sheet: {
+          ...firstPartySheetFacts(manifest, text),
+          path: relativePath,
+          treeBlob: treeShas[relativePath] ?? null
+        }
       };
     })
   );
@@ -689,8 +740,34 @@ async function buildAppFacts(source) {
     capabilities,
     manifests: manifests
       .map(({ name, version, category }) => ({ name, version, category }))
-      .sort((left, right) => compareText(left.name, right.name))
+      .sort((left, right) => compareText(left.name, right.name)),
+    sheets: manifests.map(({ sheet }) => sheet).sort((left, right) => compareText(left.name, right.name))
   };
+}
+
+/**
+ * What a first-party sheet reads from the pinned core tag: the feature names it offers, and
+ * describe()'s keys, which must be the sheet's own (scripts/app-sheet.mjs: DESCRIBE_KEYS) in the
+ * same order. A key core adds, drops or moves fails the sync here, so no sheet is published a
+ * section short of what install consent shows.
+ */
+export async function readSheetContract(coreSource) {
+  const [featuresText, disclosureText] = await Promise.all([
+    coreSource.readText(CORE_FEATURES_PATH),
+    coreSource.readText(DISCLOSURE_PATH)
+  ]);
+  const keys = describeKeysFromSource(disclosureText);
+  if (JSON.stringify(keys) !== JSON.stringify(DESCRIBE_KEYS)) {
+    throw new Error(
+      `${DISCLOSURE_PATH} describe() lists ${JSON.stringify(keys)} at the pinned core, but ` +
+        `scripts/app-sheet.mjs shows ${JSON.stringify(DESCRIBE_KEYS)}: update DESCRIBE_KEYS and ` +
+        `the sheet's sections so they disclose what install consent does`
+    );
+  }
+  for (const key of COMPOSED_KEYS) {
+    if (!keys.includes(key)) throw new Error(`describe() no longer composes ${key}`);
+  }
+  return { features: parseCoreFeatures(featuresText), describeKeys: keys };
 }
 
 /** A missing path, as both source kinds report one: HTTP 404 (remote) or ENOENT (local). */
@@ -804,11 +881,12 @@ async function main() {
   const resolvedSources = { core: coreSource, apps: appsSource };
   await validateReleaseTags(manifest, resolvedSources);
 
-  const [projectText, changelogText, installerBytes, apps, , releaseWorkflow] = await Promise.all([
+  const [projectText, changelogText, installerBytes, apps, contract, , releaseWorkflow] = await Promise.all([
     coreSource.readText("pyproject.toml"),
     coreSource.readText("CHANGELOG.md"),
     coreSource.readBytes(INSTALLER_PATH),
     buildAppFacts(appsSource),
+    readSheetContract(coreSource),
     checkBuildersSnippet(coreSource, appsSource),
     manifest.sources.core.tag ? readIfPresent(coreSource, RELEASE_WORKFLOW) : null
   ]);
@@ -839,6 +917,7 @@ async function main() {
     );
   }
 
+  const { sheets, ...appFacts } = apps;
   const facts = {
     schemaVersion: manifest.schemaVersion,
     generatedAt: buildTimestamp(),
@@ -869,12 +948,28 @@ async function main() {
       }
     },
     apps: {
-      ...apps,
+      ...appFacts,
       source: sourceFacts(manifest.sources.apps)
     }
   };
 
+  // Compatibility is core's rule at the pinned release (scripts/app-sheet.mjs:
+  // coreCompatibility), so a sheet says whether the app works with this release, or what it
+  // lacks, and never shows a range end.
+  const appSheets = {
+    schemaVersion: 1,
+    release: { version, tag: manifest.sources.core.tag, commit: manifest.sources.core.commit },
+    apps: sourceFacts(manifest.sources.apps),
+    coreFeatures: contract.features,
+    describeKeys: contract.describeKeys,
+    sheets: sheets.map((sheet) => ({
+      ...sheet,
+      compatibility: coreCompatibility(sheet, { features: contract.features, version })
+    }))
+  };
+
   await writeAtomically(generatedPath, `${JSON.stringify(facts, null, 2)}\n`);
+  await writeAtomically(sheetsPath, `${JSON.stringify(appSheets, null, 2)}\n`);
   await writeInstaller(manifest, installerBytes);
   console.log(
     `Generated ${path.relative(root, generatedPath)}: ${facts.status.label}, ${facts.core.versionLabel}, ${facts.apps.total} apps, ${facts.apps.capabilityCount} capabilities.`

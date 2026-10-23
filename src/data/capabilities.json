@@ -328,6 +328,70 @@
       ]
     },
     {
+      "id": "install_rescan",
+      "group": "apps",
+      "claim": "Every app is scanned again when you install it, whatever its listing says.",
+      "verdict": "yes",
+      "statement": "An install stages the app in quarantine, checks its signature, and runs the shared supply-chain scanner over the staged bytes before anything is shown for consent. A registry's recorded verdict is not read at install: the scan that can stop it is this one.",
+      "source_label": "apps/app_manager.py",
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.6/src/personalclaw/apps/app_manager.py#L711",
+      "source_type": "file",
+      "retrieved": "2026-10-22",
+      "core": "c7305c85853549d871c404fefa976c0de6a1c06e",
+      "verified_release": "v0.2.6",
+      "surfaces": [
+        "compare"
+      ]
+    },
+    {
+      "id": "dangerous_refused",
+      "group": "apps",
+      "claim": "A dangerous scan verdict stops the install, and nothing overrides it.",
+      "verdict": "yes",
+      "statement": "A dangerous verdict returns a refusal before consent is asked, so there is no consent to give and no switch that skips it. A warning verdict asks for your consent instead.",
+      "source_label": "apps/app_manager.py",
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.6/src/personalclaw/apps/app_manager.py#L713",
+      "source_type": "file",
+      "retrieved": "2026-10-22",
+      "core": "c7305c85853549d871c404fefa976c0de6a1c06e",
+      "verified_release": "v0.2.6",
+      "surfaces": [
+        "compare"
+      ]
+    },
+    {
+      "id": "consent_bound_to_review",
+      "group": "apps",
+      "claim": "Consent covers exactly what you reviewed, and an app that changed asks again.",
+      "verdict": "yes",
+      "statement": "The review records a digest of the staged bytes, and an install committed against different bytes is refused: it needs consent again, because the app changed after it was reviewed. An update that changes what the app gets asks for consent again too.",
+      "source_label": "apps/app_manager.py",
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.6/src/personalclaw/apps/app_manager.py#L749",
+      "source_type": "file",
+      "retrieved": "2026-10-22",
+      "core": "c7305c85853549d871c404fefa976c0de6a1c06e",
+      "verified_release": "v0.2.6",
+      "surfaces": [
+        "compare"
+      ]
+    },
+    {
+      "id": "secrets_in_credential_store",
+      "group": "apps",
+      "claim": "A setting an app marks secret is kept in the credential store and never shown back.",
+      "verdict": "yes",
+      "statement": "The app's settings file holds only a reference, the value lives in the credential store, and every route that shows settings masks it. The app's own code receives the value when it runs.",
+      "source_label": "apps/secret_fields.py",
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.6/src/personalclaw/apps/secret_fields.py#L33",
+      "source_type": "file",
+      "retrieved": "2026-10-22",
+      "core": "c7305c85853549d871c404fefa976c0de6a1c06e",
+      "verified_release": "v0.2.6",
+      "surfaces": [
+        "compare"
+      ]
+    },
+    {
       "id": "local_models",
       "group": "capabilities",
       "claim": "It can run inference against a model hosted on your own machine.",

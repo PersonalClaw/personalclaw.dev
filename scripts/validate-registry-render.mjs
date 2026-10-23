@@ -38,36 +38,63 @@
 // the pinned release, so the agreement is measured rather than asserted the moment a
 // release carries it; the assertions below check that the page RENDERS them, in order.
 
-import { execFileSync } from "node:child_process";
-import { copyFileSync, existsSync, readFileSync, rmSync, unlinkSync } from "node:fs";
+//
+// THE INSTALL-SAFETY SHEETS (#112). The same fixture build carries every first-party app of the
+// pinned release and three first-party fixtures (tests/fixtures/first-party: one naming hosts and
+// an MCP server, one needing a core feature the release lacks, and its control), so every sheet
+// kind and state is built and checked: each field against its RAW source through
+// scripts/sheet-render-check.mjs (never through src/data, which built the page), the manifest
+// panel against the blob the pinned tree lists, and the action against the state.
+
+import { existsSync, readFileSync, rmSync } from "node:fs";
 import path from "node:path";
 import { load } from "cheerio";
+import { NOT_RECORDED } from "./app-sheet.mjs";
+import { firstPartyFixtures, withProbeBuild } from "./registry-probe.mjs";
+import {
+  SCHEMA_VERDICTS,
+  actionProblems,
+  expectedCommunity,
+  expectedFirstParty,
+  fieldProblems,
+  manifestProblems
+} from "./sheet-render-check.mjs";
 import { INSTALL_GATE_SENTENCE, STORE_CONSENT } from "../src/data/registry.mjs";
 
 const root = process.cwd();
 const artifactPath = path.join(root, ".generated", "registry.json");
-const backupPath = path.join(root, ".generated", "registry.json.probe-backup");
 const probeDist = path.join(root, ".registry-probe-dist");
 const fixtures = path.join(root, "tests", "fixtures");
 
 const failures = [];
 const fail = (message) => failures.push(message);
 
-/** @param {string} scenario */
-function buildWith(scenario) {
-  copyFileSync(path.join(fixtures, `registry-${scenario}.json`), artifactPath);
-  rmSync(probeDist, { recursive: true, force: true });
-  execFileSync(
-    path.join(root, "node_modules", ".bin", "astro"),
-    ["build", "--outDir", path.relative(root, probeDist)],
-    { cwd: root, env: { ...process.env, ASTRO_TELEMETRY_DISABLED: "1" }, stdio: "pipe" }
-  );
-}
+// The first-party sheets the probe build carries: the release's own apps, then the fixtures.
+const synced = JSON.parse(readFileSync(path.join(root, ".generated", "app-sheets.json"), "utf8"));
+const firstParty = [
+  ...synced.sheets.map((sheet) => ({ name: sheet.name, text: sheet.manifest.text, path: sheet.path, treeBlob: sheet.treeBlob })),
+  ...firstPartyFixtures().map((fixture) => ({ ...fixture, treeBlob: null }))
+];
+const reserved = new Set(firstParty.map((sheet) => sheet.name));
 
 /** @param {string} routePath */
 function probeHtml(routePath) {
   const filePath = path.join(probeDist, routePath.replace(/^\//, ""), "index.html");
   return existsSync(filePath) ? load(readFileSync(filePath, "utf8")) : null;
+}
+
+/**
+ * What every sheet carries: the app's name as its h1, its kind, the reach note, and nothing it
+ * may not: no README (a default branch is not a pin) and no claim about the reader's install.
+ */
+function sheetBasics($app, name, kind) {
+  if ($app("h1").text().trim() !== name) fail(`/registry/${name}: the h1 is "${$app("h1").text().trim()}", not the app's name`);
+  if ($app("[data-sheet]").attr("data-kind") !== kind) fail(`/registry/${name} is not a ${kind} sheet`);
+  if (!$app("[data-reach-note]").text().includes("Its own code has no host list")) {
+    fail(`/registry/${name} does not say its own code has no host list`);
+  }
+  if ($app("pre.readme-body, [data-readme]").length > 0) fail(`/registry/${name} shows a README`);
+  if ($app("[data-install-state]").length > 0) fail(`/registry/${name} claims an install state for the reader`);
 }
 
 function texts($, scope, selector) {
@@ -102,9 +129,11 @@ const listedFixture = JSON.parse(
 const rows = listedFixture.registry.apps;
 // The rows this site should refuse to list: one is not kebab-case, one declares its
 // permissions as a bare string. Both are shapes the pre-install surface must not guess at.
+// A row named for a first-party app is refused too: that name's route is the app's sheet.
 const readable = rows.filter((row) => /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(row.name) &&
-  Array.isArray(row.permissions_declared));
+  Array.isArray(row.permissions_declared) && !reserved.has(row.name));
 const unreadable = rows.filter((row) => !readable.includes(row));
+const lookalikes = rows.filter((row) => reserved.has(row.name));
 
 if (readable.length < 3 || unreadable.length < 2) {
   fail(
@@ -117,9 +146,7 @@ let listedIndexHtml = "";
 let emptyIndexHtml = "";
 
 try {
-  if (existsSync(artifactPath)) copyFileSync(artifactPath, backupPath);
-
-  buildWith("listed");
+  withProbeBuild("listed", probeDist, () => {
   const $index = probeHtml("/registry");
   if (!$index) {
     fail("the listed fixture produced no /registry page");
@@ -212,12 +239,15 @@ try {
       // "verdict-pass" would pass on a page whose cards were all wrong.
       const badge = $index(card).find(".registry-verdict");
       const classes = badge.attr("class") ?? "";
+      // Dangerous, and any verdict the schema does not define, is the blocked tone.
       const expectedTone =
         row.last_scan_verdict === undefined
           ? "verdict-unscanned"
           : row.last_scan_verdict === "clean"
             ? "verdict-pass"
-            : "verdict-caution";
+            : ["low", "warning"].includes(row.last_scan_verdict)
+              ? "verdict-caution"
+              : "verdict-blocked";
       if (!classes.split(/\s+/).includes(expectedTone)) {
         fail(
           `/registry card ${row.name} (verdict ${row.last_scan_verdict ?? "absent"}) ` +
@@ -259,120 +289,114 @@ try {
     }
   }
 
-  // Per-listing pages.
+  // THE SHEETS. Every one exists, with the app's name as its h1, and every field holds what its
+  // raw source says, or the exact line that says it has none.
+  const blockedRows = new Set(["registry-fixture-dangerous", "registry-fixture-unrecognised"]);
   for (const row of readable) {
     const $app = probeHtml(`/registry/${row.name}`);
     if (!$app) {
       fail(`/registry/${row.name} was not generated`);
       continue;
     }
-    if ($app("h1").text().trim() !== row.name) {
-      fail(`/registry/${row.name}: h1 is "${$app("h1").text().trim()}"`);
+    sheetBasics($app, row.name, "community");
+    for (const problem of fieldProblems($app, row.name, expectedCommunity(row, listedFixture.scanner ?? null))) fail(problem);
+    const blocked = row.last_scan_verdict !== undefined && !["clean", "low", "warning"].includes(row.last_scan_verdict);
+    if (blocked !== blockedRows.has(row.name) && blockedRows.has(row.name)) {
+      fail(`${row.name}: the fixture's blocked row is not read as blocked`);
     }
+    for (const problem of actionProblems($app, row.name, blocked)) fail(problem);
 
-    // THIS PAGE IS REACHABLE BY URL WITHOUT PASSING /registry, so it carries all three of
-    // the Store's consent jobs itself. Checked in the Store's order, by position.
+    // The Store's three consent jobs, in the Store's order, by position: the sheet is
+    // reachable by URL without passing /registry, so it carries them itself.
     const notEndorsedAt = orderOf($app, ".registry-not-endorsed");
     const badgeAt = orderOf($app, ".registry-verdict");
-    if ($app(".registry-not-endorsed").text().trim() !== STORE_CONSENT.notEndorsed) {
-      fail(
-        `/registry/${row.name} does not carry the non-endorsement ` +
-          `("${STORE_CONSENT.notEndorsed}")`
-      );
-    } else if (badgeAt === -1) {
-      fail(`/registry/${row.name} renders no verdict badge to order it against`);
-    } else if (notEndorsedAt > badgeAt) {
-      fail(
-        `/registry/${row.name} renders the non-endorsement AFTER the verdict badge — ` +
-          `the reassurance must not be read first`
-      );
+    const gateAt = orderOf($app, ".install-gate");
+    if ($app(".registry-not-endorsed").first().text().trim() !== STORE_CONSENT.notEndorsed) {
+      fail(`/registry/${row.name} does not lead with "${STORE_CONSENT.notEndorsed}"`);
+    } else if (!(notEndorsedAt < badgeAt && badgeAt < gateAt)) {
+      fail(`/registry/${row.name} does not keep the Store's order: not endorsed, the attributed verdict, the install-time rescan`);
     }
     if ($app(".install-gate").text().trim() !== INSTALL_GATE_SENTENCE) {
-      fail(
-        `/registry/${row.name} does not name the install-time rescan, so a recorded ` +
-          `verdict reads as the gate rather than as a record`
-      );
+      fail(`/registry/${row.name} does not name the install-time rescan`);
+    }
+    // Only a verdict the registry's schema defines is attributed as its check; an unrecognised
+    // one is shown as written and called unrecognised (src/data/registry.mjs: verdictPresentation).
+    const attributed = $app(".verdict-detail").text().includes(STORE_CONSENT.verdictAttribution);
+    if (SCHEMA_VERDICTS.has(row.last_scan_verdict) && !attributed) {
+      fail(`/registry/${row.name} states verdict "${row.last_scan_verdict}" without attributing it to the registry`);
+    }
+    if (!SCHEMA_VERDICTS.has(row.last_scan_verdict) && attributed) {
+      fail(`/registry/${row.name} attributes to the registry a verdict it never recorded as one`);
     }
 
-    // JOB 2: A VERDICT IS THE REGISTRY'S, AND ONLY A RECORDED ONE IS A CHECK. Both
-    // directions, because each failure is a different lie: an unattributed verdict speaks
-    // in PersonalClaw's voice about a check it did not run, and an attributed ABSENCE
-    // claims a check that never happened.
-    const verdictDetail = $app(".verdict-detail").text().trim();
-    const attributed = verdictDetail.includes(STORE_CONSENT.verdictAttribution);
-    if (row.last_scan_verdict !== undefined && !attributed) {
-      fail(
-        `/registry/${row.name} states verdict "${row.last_scan_verdict}" without ` +
-          `attributing it ("${STORE_CONSENT.verdictAttribution}") — it reads as ` +
-          `PersonalClaw's own finding`
-      );
+    // It names exactly the fields its row lacks.
+    const expected = expectedCommunity(row, listedFixture.scanner ?? null);
+    const lacking = Object.entries(expected)
+      .filter(([, want]) => want.value === null && want.missing === NOT_RECORDED)
+      .map(([id]) => $app(`[data-field="${id}"] dt`).text().trim());
+    const named = $app("[data-missing-fields]").text().trim();
+    if (named !== `This listing does not record: ${lacking.join(", ")}.`) {
+      fail(`/registry/${row.name} names its gaps as "${named}", its row lacks ${JSON.stringify(lacking)}`);
     }
-    if (row.last_scan_verdict === undefined && attributed) {
-      fail(
-        `/registry/${row.name} has no recorded verdict but its detail says ` +
-          `"${STORE_CONSENT.verdictAttribution}", claiming a check that did not happen`
-      );
-    }
-
-    // The listing facts, addressed by name. `added` and `lastValidated` were rendered and
-    // unasserted too; an absent `last_validated` must read as "Never", not as a date.
-    const appField = (name) => $app(`[data-field="${name}"]`).text().trim();
-    for (const [name, expected] of [
-      ["types", row.types.join(", ")],
-      ["maintainer", row.maintainer],
-      ["license", row.license],
-      ["added", row.added],
-      ["lastValidated", row.last_validated ?? "Never"]
-    ]) {
-      if (appField(name) !== expected) {
-        fail(
-          `/registry/${row.name} renders ${name} "${appField(name)}" but the registry ` +
-            `declares "${expected}"`
-        );
-      }
-    }
-
-    const rendered = $app(".permission-list li").toArray().map((el) => $app(el).text().trim());
-    if (JSON.stringify(rendered) !== JSON.stringify(row.permissions_declared)) {
-      fail(
-        `/registry/${row.name} renders permissions [${rendered.join(", ")}] ` +
-          `but the registry declares [${row.permissions_declared.join(", ")}]`
-      );
-    }
-    if (!$app(`a[href="${row.repo}"]`).length) {
+    const repoLinks = $app(`a[href="${row.repo}"]`).toArray();
+    if (!repoLinks.length) {
       fail(`/registry/${row.name} does not link to its repository ${row.repo}`);
     }
-
-    // README, both branches: captured text is shown as written; a failed capture shows
-    // the recorded reason instead of nothing.
-    const readme = listedFixture.readmes[row.name];
-    const body = $app("pre.readme-body");
-    if (readme?.status === "fetched") {
-      if (body.length !== 1) {
-        fail(`/registry/${row.name} captured a README but renders no README body`);
-      } else if (body.text().trim() !== readme.text.trim()) {
-        fail(`/registry/${row.name} renders a README that is not the captured text`);
-      } else if (body.attr("tabindex") !== "0") {
-        fail(
-          `/registry/${row.name}: the README region scrolls but is not keyboard ` +
-            `reachable (axe scrollable-region-focusable)`
-        );
-      }
-    } else {
-      if (body.length !== 0) {
-        fail(`/registry/${row.name} renders a README body it never captured`);
-      }
-      if (readme?.reason && !$app(".readme").text().includes(readme.reason)) {
-        fail(`/registry/${row.name} does not say why it has no README`);
+    // A listing's repository is a third party's URL, so the site does not vouch for it.
+    for (const link of repoLinks) {
+      const rel = ($app(link).attr("rel") ?? "").split(/\s+/);
+      if (!rel.includes("nofollow") || !rel.includes("ugc")) {
+        fail(`/registry/${row.name}: its repository link is not rel="nofollow ugc"`);
       }
     }
   }
+  if (new Set(readable.map((row) => [row.last_scan_verdict, row.last_validated, row.signer].join("|"))).size < 2) {
+    fail("the listed fixture has no two readable rows with different gaps to check the gap list on");
+  }
+
+  // A row named for a first-party app gets no sheet of its own: its route is the app's.
+  for (const row of lookalikes) {
+    const $app = probeHtml(`/registry/${row.name}`);
+    if (!$app || $app("[data-sheet]").attr("data-kind") !== "first-party") {
+      fail(`/registry/${row.name} is not the first-party app's sheet, so a look-alike listing took its route`);
+    }
+  }
+
+  for (const sheet of firstParty) {
+    const $app = probeHtml(`/registry/${sheet.name}`);
+    if (!$app) {
+      fail(`/registry/${sheet.name} was not generated for a first-party app`);
+      continue;
+    }
+    sheetBasics($app, sheet.name, "first-party");
+    const at = {
+      tag: synced.release.tag,
+      features: synced.coreFeatures,
+      appsRepositoryUrl: synced.apps.repositoryUrl,
+      appsCommit: synced.apps.commit,
+      path: sheet.path
+    };
+    for (const problem of fieldProblems($app, sheet.name, expectedFirstParty(sheet.text, at))) fail(problem);
+    if (sheet.treeBlob) for (const problem of manifestProblems($app, sheet.name, sheet)) fail(problem);
+    const manifest = JSON.parse(sheet.text);
+    const incompatible = (manifest.requiresCoreFeatures ?? []).some((name) => !synced.coreFeatures.includes(name));
+    for (const problem of actionProblems($app, sheet.name, incompatible)) fail(problem);
+    for (const [name] of Object.entries(manifest.mcpServers ?? {})) {
+      if (!$app("[data-reach]").text().includes(`the MCP server ${name}`)) {
+        fail(`/registry/${sheet.name} does not list its MCP server ${name}`);
+      }
+    }
+  }
+  if (!firstParty.some((sheet) => (JSON.parse(sheet.text).requiresCoreFeatures ?? []).some((name) => !synced.coreFeatures.includes(name)))) {
+    fail("no first-party fixture is incompatible, so the incompatible sheet is never checked");
+  }
+  });
 
   // -------------------------------------------------------------------------
   // Scenario 2: the registry exists and lists nothing. Pinned separately, because an
   // honest empty state and a broken grid are indistinguishable by card count alone.
   // -------------------------------------------------------------------------
-  buildWith("empty");
+  withProbeBuild("empty", probeDist, () => {
   const $empty = probeHtml("/registry");
   if (!$empty) {
     fail("the empty fixture produced no /registry page");
@@ -394,6 +418,7 @@ try {
       fail("a per-listing page survived a rebuild against an empty registry");
     }
   }
+  });
 
   // -------------------------------------------------------------------------
   // A REBUILD PICKS UP REGISTRY CHANGES. Same code, two inputs, two outputs.
@@ -406,12 +431,6 @@ try {
   }
 } finally {
   rmSync(probeDist, { recursive: true, force: true });
-  if (existsSync(backupPath)) {
-    copyFileSync(backupPath, artifactPath);
-    unlinkSync(backupPath);
-  } else if (existsSync(artifactPath)) {
-    unlinkSync(artifactPath);
-  }
 }
 
 // Verified AFTER the restore, not before: a probe that leaves a fixture registry behind
@@ -429,7 +448,9 @@ if (failures.length > 0) {
 } else {
   console.log(
     `Registry render verified: ${readable.length} listings rendered as cards and ` +
-      `per-listing pages, ${unreadable.length} unreadable rows refused and reported, ` +
+      `install-safety sheets, ${firstParty.length} first-party sheets held field by field to ` +
+      `their pinned app.json, ${unreadable.length} unreadable or look-alike rows refused and ` +
+      `reported (${lookalikes.map((row) => `${row.name}: its name is a first-party app's`).join("; ")}), ` +
       `an absent scan verdict rendered distinctly from a passing one, every enumerated ` +
       `card field (name, types, permissions, verdict, maintainer, license) byte-equal to ` +
       `the registry, the Store's three consent jobs rendered in the Store's order — ` +
