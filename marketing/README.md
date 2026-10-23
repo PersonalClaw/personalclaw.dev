@@ -37,6 +37,13 @@ composition is written by hand (never `hyperframes init`), loads nothing from th
 animates with paused Web Animations (or CSS keyframes) that the runtime seeks, on a root marked
 `data-no-timeline`, so the site takes no animation library.
 
+The tour (#96) is one recording cut into the demo click-path's beats
+(`marketing/compositions/tour/`). Each beat carries what it shows (`data-caption`) and, when it is a
+chapter, its id and title, and `render:videos` writes the tour's captions and chapters tracks from
+those beats (`scripts/tour-tracks.mjs`), so the words /product outlines and the cut cannot drift:
+edit a caption in the composition, never in a track. `tests/tour-tracks.test.mjs` fails a committed
+track the composition no longer yields.
+
 **Key rule:** every **shipping** shot is **re-captured every release** — there is no
 "still current, skip it" state. Even a small UI shift changes a shot, so the whole
 shipping set is re-shot against each `targetRelease`. A `new-needs-placement` shot is a

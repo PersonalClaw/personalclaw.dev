@@ -40,6 +40,7 @@ export const unitTests = {
     "tests/github-api.test.mjs",
     "tests/install-commands.test.mjs",
     "tests/tour-chapters.test.mjs",
+    "tests/tour-tracks.test.mjs",
     "tests/security-page.test.mjs",
     "tests/marketing-manifest.test.mjs",
     "tests/release-assets.test.mjs",

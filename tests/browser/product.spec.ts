@@ -1,22 +1,26 @@
 import { expect, test, type Page, type Request } from "@playwright/test";
 import { monitorRuntime, openPage, settlePage } from "./support";
 
-// /product (#90): the tour first, a still per chapter with the chapter kept in the URL, then
-// one section per capability, each with one dominant capture in a box that does not move.
+// /product (#90, #96): the tour first, poster-first, with its chapter kept in the URL, then one
+// section per capability, each with one dominant capture in a box that does not move. The tour
+// plays only when asked (a chapter, or its own play control), fetches its file once, pauses out
+// of view and on a hidden page, and falls back to its chapters as text when it cannot play.
 //
-// The recorded tour came off the page at the 0.2.6 re-pin (src/data/tour.mjs), so the page plays
-// no video at all: every request it makes is recorded, and one for a video file fails the test.
-// Data saver has no Playwright emulation, so it is stubbed as
-// `navigator.connection.saveData = true` before the page's scripts run.
+// "No video byte before an explicit play" (SITE-REDESIGN.md, section 5.6) is measured by
+// recording every request the page makes: a request for the tour's video file, or for any
+// other video, before play fails the test. Data saver has no Playwright emulation, so it is
+// stubbed as `navigator.connection.saveData = true` before the page's scripts run.
 
 const CAPABILITIES = ["chat", "loops", "memory", "knowledge", "automation", "agents"];
-const CHAPTERS = ["home", "chat", "approval", "loops", "knowledge"];
 const VIDEO = /\.(mp4|webm|mov|m4v)(\?|$)/i;
 
 function videoRequests(page: Page): Request[] {
   const seen: Request[] = [];
   page.on("request", (request) => {
-    if (VIDEO.test(new URL(request.url()).pathname) || request.resourceType() === "media") {
+    const url = new URL(request.url());
+    // A blob: or data: URL is the page reading what it already holds, not a request for a video.
+    if (url.protocol === "blob:" || url.protocol === "data:") return;
+    if (VIDEO.test(url.pathname) || request.resourceType() === "media") {
       seen.push(request);
     }
   });
@@ -35,18 +39,14 @@ async function saveData(page: Page) {
 const chapter = (page: Page, name: string) =>
   page.getByRole("list", { name: "Tour chapters" }).getByRole("button", { name: new RegExp(`^${name}`) });
 
-/** The one still the tour shows, by its chapter id, after the image has decoded. */
-async function expectStill(page: Page, id: string) {
-  const shown = page.locator("#tour [data-still]:not([hidden])");
-  await expect(shown).toHaveCount(1);
-  await expect(shown).toHaveAttribute("data-still", id);
-  const image = shown.locator("img");
-  await expect(image).toHaveAttribute("alt", /.{40,}/);
-  await image.evaluate((img: HTMLImageElement) => img.decode());
-  expect(await image.evaluate((img: HTMLImageElement) => img.naturalWidth), `${id}'s still shows`).toBeGreaterThan(0);
+async function expectPoster(page: Page) {
+  const video = page.locator("#tour video");
+  await expect(video).toHaveAttribute("preload", "none");
+  await expect(video).toHaveAttribute("poster", /personalclaw-tour-poster\.webp$/);
+  expect(await video.evaluate((v: HTMLVideoElement) => v.paused && v.readyState === 0)).toBe(true);
 }
 
-test.describe("the tour shows one still per chapter and plays no video", () => {
+test.describe("the tour asks for no video before play", () => {
   for (const [name, setup] of [
     ["by default", async () => {}],
     ["with reduced motion", async (page: Page) => page.emulateMedia({ reducedMotion: "reduce" })],
@@ -57,15 +57,13 @@ test.describe("the tour shows one still per chapter and plays no video", () => {
       const runtime = monitorRuntime(page, baseURL!);
       const videos = videoRequests(page);
       await openPage(page, "/product");
-      await expect(page.locator("#tour video")).toHaveCount(0);
-      await expect(page.locator("#tour [data-still]")).toHaveCount(CHAPTERS.length);
-      await expectStill(page, "home");
+      await expectPoster(page);
       await openPage(page, "/product?chapter=knowledge#tour");
-      await expect(chapter(page, "Knowledge, tagged and searchable")).toHaveAttribute("aria-pressed", "true");
-      await expectStill(page, "knowledge");
+      await expect(chapter(page, "Knowledge searched locally")).toHaveAttribute("aria-pressed", "true");
+      await expectPoster(page);
       await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
       await settlePage(page);
-      expect(videos.map((r) => r.url()), "a video was requested").toEqual([]);
+      expect(videos.map((r) => r.url()), "video requested before play").toEqual([]);
       runtime.assertClean();
     });
   }
@@ -73,58 +71,188 @@ test.describe("the tour shows one still per chapter and plays no video", () => {
 
 test("the chosen chapter is in the URL and comes back on reload, back and forward", async ({
   page,
+  context,
   baseURL
 }) => {
-  const runtime = monitorRuntime(page, baseURL!);
+  // Choosing a chapter is an explicit play, so it puts the chapter in the URL and plays.
   await openPage(page, "/product");
-  const loops = chapter(page, "A goal loop and its report");
-  const home = chapter(page, "Home, and what waits on you");
-  await expect(home).toHaveAttribute("aria-pressed", "true");
-
-  await loops.click();
-  await expect(loops).toHaveAttribute("aria-pressed", "true");
+  const chosen = chapter(page, "A goal loop and its report");
+  await expect(chapter(page, "Home, and what needs you")).toHaveAttribute("aria-pressed", "true");
+  await chosen.click();
   await expect(page).toHaveURL(/\/product\?chapter=loops$/);
-  await expectStill(page, "loops");
+  await expectPlayingFrom(page, Number(await chosen.getAttribute("data-start")));
+  const link = page.url();
 
-  await page.reload();
+  // That URL, loaded again, restores the chapter and asks for no video, through back and forward.
+  const again = await context.newPage();
+  const runtime = monitorRuntime(again, baseURL!);
+  const videos = videoRequests(again);
+  await again.goto(link);
+  await settlePage(again);
+  const loops = chapter(again, "A goal loop and its report");
   await expect(loops).toHaveAttribute("aria-pressed", "true");
-  await expectStill(page, "loops");
 
-  await openPage(page, "/apps");
-  await page.goBack();
-  await expect(page).toHaveURL(/\/product\?chapter=loops$/);
+  await again.reload();
   await expect(loops).toHaveAttribute("aria-pressed", "true");
 
-  await page.goForward();
-  await expect(page).toHaveURL(/\/apps$/);
-  await page.goBack();
+  await openPage(again, "/apps");
+  await again.goBack();
+  await expect(again).toHaveURL(/\/product\?chapter=loops$/);
   await expect(loops).toHaveAttribute("aria-pressed", "true");
-  await expect(home).toHaveAttribute("aria-pressed", "false");
-  await expectStill(page, "loops");
 
-  await home.click();
-  await expect(page).toHaveURL(/\/product$/);
-  await expectStill(page, "home");
+  await again.goForward();
+  await expect(again).toHaveURL(/\/apps$/);
+  await again.goBack();
+  await expect(loops).toHaveAttribute("aria-pressed", "true");
+  await expect(chapter(again, "Home, and what needs you")).toHaveAttribute("aria-pressed", "false");
+
+  expect(videos.map((r) => r.url()), "video requested by a restored chapter").toEqual([]);
   runtime.assertClean();
 });
 
-test("a chapter choice adds no history entry", async ({ page, baseURL }) => {
+test("a chapter choice adds no history entry, and plays the tour from that chapter", async ({
+  page,
+  baseURL
+}) => {
   const runtime = monitorRuntime(page, baseURL!);
   await openPage(page, "/");
   await openPage(page, "/product");
-  await chapter(page, "A chat stopped at its approval").click();
-  const approval = chapter(page, "Every approval in one inbox");
+  const approval = chapter(page, "The approval it stops on");
   await approval.click();
   await expect(page).toHaveURL(/\?chapter=approval$/);
-  await expect(approval).toHaveAttribute("aria-controls", "tour-approval");
+  await expectPlayingFrom(page, Number(await approval.getAttribute("data-start")));
 
   await page.goBack();
   await expect(page).toHaveURL(/\/$/);
   await page.goForward();
   await expect(page).toHaveURL(/\/product\?chapter=approval$/);
   await expect(approval).toHaveAttribute("aria-pressed", "true");
-  await expectStill(page, "approval");
   runtime.assertClean();
+});
+
+/** The tour plays, from at least *start* seconds in. */
+async function expectPlayingFrom(page: Page, start: number) {
+  const video = page.locator("#tour video");
+  await expect
+    .poll(() => video.evaluate((v: HTMLVideoElement, from: number) => !v.paused && v.currentTime >= from, start))
+    .toBe(true);
+}
+
+test("the tour carries a poster, a captions track and a chapters track", async ({ page }) => {
+  await openPage(page, "/product");
+  const video = page.locator("#tour video");
+  await expect(video).toHaveAttribute("poster", /personalclaw-tour-poster\.webp$/);
+  await expect(video.locator('track[kind="captions"]')).toHaveAttribute("src", /personalclaw-tour\.vtt$/);
+  await expect(video.locator('track[kind="chapters"]')).toHaveAttribute("src", /personalclaw-tour-chapters\.vtt$/);
+});
+
+test("playing, choosing three chapters out of order and scrubbing fail no request, and fetch the file once", async ({
+  page,
+  baseURL
+}) => {
+  const runtime = monitorRuntime(page, baseURL!);
+  const videos = videoRequests(page);
+  await openPage(page, "/product");
+  await page.getByRole("button", { name: "Play the tour" }).click();
+  await expectPlayingFrom(page, 0);
+  for (const name of ["Knowledge searched locally", "A chat, in your own words", "What it made, in the Library"]) {
+    const button = chapter(page, name);
+    await button.click();
+    await expect(button).toHaveAttribute("aria-pressed", "true");
+    await expectPlayingFrom(page, Number(await button.getAttribute("data-start")));
+  }
+  const video = page.locator("#tour video");
+  await video.evaluate(async (v: HTMLVideoElement) => {
+    v.currentTime = 30;
+    await new Promise((resolve) => v.addEventListener("seeked", resolve, { once: true }));
+  });
+  expect(await video.evaluate((v: HTMLVideoElement) => v.currentTime)).toBeCloseTo(30, 0);
+  expect(videos.map((r) => new URL(r.url()).pathname), "the tour's file, fetched once").toEqual([
+    "/media/personalclaw-tour.mp4"
+  ]);
+  runtime.assertClean();
+});
+
+test("scrolled out of view or on a hidden page the tour pauses, and neither resumes it", async ({ page }) => {
+  await openPage(page, "/product");
+  const video = page.locator("#tour video");
+  const paused = () => video.evaluate((v: HTMLVideoElement) => v.paused);
+
+  await page.getByRole("button", { name: "Play the tour" }).click();
+  await expectPlayingFrom(page, 0);
+  await page.locator("#automation").scrollIntoViewIfNeeded();
+  await expect.poll(paused).toBe(true);
+  await page.locator("#tour").scrollIntoViewIfNeeded();
+  await page.waitForTimeout(500);
+  expect(await paused(), "coming back into view does not resume it").toBe(true);
+
+  await video.evaluate((v: HTMLVideoElement) => v.play());
+  await expectPlayingFrom(page, 0);
+  const visibility = (state: "hidden" | "visible") =>
+    page.evaluate((value) => {
+      Object.defineProperty(document, "visibilityState", { configurable: true, get: () => value });
+      document.dispatchEvent(new Event("visibilitychange"));
+    }, state);
+  await visibility("hidden");
+  await expect.poll(paused).toBe(true);
+  await visibility("visible");
+  await page.waitForTimeout(500);
+  expect(await paused(), "the page coming back does not resume it").toBe(true);
+});
+
+test("with its video blocked the tour shows its poster, its chapters as text and one line, and tries no second time", async ({
+  page
+}) => {
+  const attempts: string[] = [];
+  await page.route(/personalclaw-tour\.mp4$/, (route) => {
+    attempts.push(route.request().url());
+    return route.abort();
+  });
+  await openPage(page, "/product");
+  await page.getByRole("button", { name: "Play the tour" }).click();
+
+  const fallback = page.locator("[data-tour-fallback]");
+  await expect(fallback).toBeVisible();
+  await expect(fallback.getByRole("status")).toHaveText(/could not play/);
+  await expect(fallback.locator("img")).toHaveAttribute("src", /personalclaw-tour-poster\.webp$/);
+  const titles = await page.locator("[data-chapter] .chapter-label").allTextContents();
+  const outline = fallback.locator("ol > li");
+  await expect(outline).toHaveCount(titles.length);
+  for (const [index, title] of titles.entries()) {
+    await expect(outline.nth(index)).toContainText(title);
+    expect((await outline.nth(index).textContent())!.length, `${title} reads with its caption`).toBeGreaterThan(title.length + 20);
+  }
+  await expect(page.getByRole("list", { name: "Tour chapters" })).toBeVisible();
+
+  await chapter(page, "The approval it stops on").click();
+  await page.waitForTimeout(500);
+  expect(attempts, "one attempt, and no retry").toHaveLength(1);
+});
+
+test("from the keyboard alone, Tab reaches the play control and every chapter in order, and Enter and Space work them", async ({
+  page
+}) => {
+  await openPage(page, "/product");
+  const play = page.getByRole("button", { name: "Play the tour" });
+  for (let i = 0; i < 40 && !(await play.evaluate((el) => el === document.activeElement)); i++) {
+    await page.keyboard.press("Tab");
+  }
+  await expect(play).toBeFocused();
+  expect(await play.evaluate((el) => el.matches(":focus-visible")), "focus shows").toBe(true);
+
+  const ids = await page.locator("[data-chapter]").evaluateAll((all) => all.map((b) => (b as HTMLElement).dataset.chapter));
+  for (const id of ids) {
+    await page.keyboard.press("Tab");
+    await expect(page.locator(`[data-chapter="${id}"]`)).toBeFocused();
+  }
+
+  await page.locator('[data-chapter="loops"]').focus();
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(/\?chapter=loops$/);
+  await expectPlayingFrom(page, Number(await page.locator('[data-chapter="loops"]').getAttribute("data-start")));
+  await page.locator('[data-chapter="knowledge"]').focus();
+  await page.keyboard.press("Space");
+  await expect(page).toHaveURL(/\?chapter=knowledge$/);
 });
 
 test.describe("each capability has one capture in a box that does not move", () => {
@@ -176,14 +304,59 @@ test.describe("each capability has one capture in a box that does not move", () 
   }
 });
 
-test("every capability's docs link resolves", async ({ page }) => {
+test("every capability's docs link resolves, and each says where it goes", async ({ page }) => {
   await openPage(page, "/product");
   const hrefs = await page.locator("[data-capability] a.docs-link").evaluateAll((links) =>
     links.map((a) => (a as HTMLAnchorElement).getAttribute("href")!)
   );
   expect(hrefs).toHaveLength(CAPABILITIES.length);
+  const labels = await page.locator("[data-capability] a.docs-link").allTextContents();
+  expect(new Set(labels.map((l) => l.trim())).size, "no two sections end on the same link").toBe(labels.length);
   for (const href of new Set(hrefs)) {
     const response = await page.request.get(href);
     expect(response.ok(), `${href} resolves`).toBe(true);
   }
+});
+
+test("while the tour's file comes, its control says so, and focus moves to the video once it plays", async ({ page }) => {
+  let release: () => void = () => {};
+  const held = new Promise<void>((resolve) => (release = resolve));
+  await page.route(/personalclaw-tour\.mp4$/, async (route) => {
+    await held;
+    await route.continue();
+  });
+  await openPage(page, "/product");
+  const play = page.getByRole("button", { name: "Play the tour" });
+  await play.focus();
+  await page.keyboard.press("Enter");
+  const loading = page.getByRole("button", { name: "Loading the tour…" });
+  await expect(loading).toHaveAttribute("aria-disabled", "true");
+  await expect(loading, "it keeps the focus it was pressed with").toBeFocused();
+  await expect(loading).toHaveAttribute("aria-busy", "true");
+  release();
+  await expectPlayingFrom(page, 0);
+  await expect(page.locator("#tour video")).toBeFocused();
+});
+
+test("the hero names no version", async ({ page }) => {
+  await openPage(page, "/product");
+  const hero = page.locator("#tour .tour-copy");
+  await expect(hero).not.toContainText(/\bv?\d+\.\d+\.\d+\b/);
+});
+
+test("the play control keeps one line at 320 px and its edge under forced colors", async ({ browser, baseURL }) => {
+  const narrow = await browser.newPage({ viewport: { width: 320, height: 640 }, baseURL });
+  await openPage(narrow, "/product");
+  const box = await narrow.getByRole("button", { name: "Play the tour" }).boundingBox();
+  expect(box!.height, "one line").toBeLessThan(60);
+  await narrow.close();
+
+  const forced = await browser.newContext({ viewport: { width: 1440, height: 900 }, forcedColors: "active", baseURL });
+  const page = await forced.newPage();
+  await openPage(page, "/product");
+  const border = await page
+    .getByRole("button", { name: "Play the tour" })
+    .evaluate((el) => getComputedStyle(el).borderTopStyle + " " + getComputedStyle(el).borderTopWidth);
+  expect(border).toBe("solid 2px");
+  await forced.close();
 });

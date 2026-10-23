@@ -1,0 +1,34 @@
+WEBVTT
+
+NOTE
+The tour is a silent screen capture, so these cues describe the beat on screen rather
+than transcribe speech. render:videos writes them from the tour's composition
+(marketing/compositions/tour/index.html); edit them there.
+
+1
+00:00:00.000 --> 00:00:09.000
+Home holds what needs its owner: an approval, a loop's question and a proposed skill.
+
+2
+00:00:09.000 --> 00:00:23.000
+A question in the owner's own words, answered on a local model: it reads the code and the tests, and explains the failure.
+
+3
+00:00:23.000 --> 00:00:41.000
+Before it edits a file, the run stops and asks: the tool, what it would change, its risk, and how far an answer is remembered. The answer is the owner's.
+
+4
+00:00:41.000 --> 00:00:51.900
+A goal loop that ran five cycles on its own, and the report it wrote.
+
+5
+00:00:51.900 --> 00:01:03.900
+Documents kept on this machine narrow as a station number is typed.
+
+6
+00:01:03.900 --> 00:01:15.900
+What the agent made stays in the Library: here, a chart of the fall-back weekend's tides.
+
+7
+00:01:15.900 --> 00:01:19.800
+Back where it started: one gateway, one machine, owned by the person using it.

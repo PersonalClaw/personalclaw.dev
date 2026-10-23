@@ -4,8 +4,7 @@
 // name, plants one defect, and expects the validator to name it: a missing output, a file in
 // public/media/ that no video plays, an output over its byte budget, an audio asset with no
 // licence, a narrative video with no captions track, and a source no shot has. The real
-// manifest passes as it is. It declares no video since the tour came off /product at the 0.2.6
-// re-pin, so the cases plant a narrative video of their own (`TOUR`) and hold the rules to it.
+// manifest passes as it is.
 
 import assert from "node:assert/strict";
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -33,7 +32,7 @@ function site(manifest, extra = {}) {
     for (const placement of shot.placements) files.add(placement.file);
   }
   for (const video of manifest.videos ?? []) {
-    for (const rel of [video.output, video.poster, video.captions]) if (rel) files.add(rel);
+    for (const rel of [video.output, video.poster, video.captions, video.chapters]) if (rel) files.add(rel);
     for (const placement of video.placements) files.add(placement.file);
   }
   for (const rel of files) {
@@ -47,32 +46,9 @@ function site(manifest, extra = {}) {
   return dir;
 }
 
-/** A narrative video in the manifest's form, planted in each copy: the shape the tour had. */
-const TOUR = Object.freeze({
-  id: "tour",
-  kind: "narrative",
-  composition: null,
-  sources: [],
-  capturedAt: "0.2.6",
-  durationSeconds: 83.72,
-  width: 1280,
-  height: 720,
-  output: "public/media/personalclaw-tour.mp4",
-  poster: "public/media/personalclaw-tour-poster.webp",
-  captions: "public/media/personalclaw-tour.vtt",
-  chapters: "captions",
-  budgetBytes: 1600000,
-  autoplay: "none",
-  fallback: "The poster, the chapter list and the section's text; the tour plays only from its own control.",
-  audio: [],
-  placements: [{ file: "src/pages/product.astro", kind: "product-tour", caption: "The tour", alt: "The PersonalClaw tour" }],
-  status: "shipping"
-});
-
 /** The problems the validator finds once *plant* changes a copy of the real manifest. */
 function problemsAfter(plant, extra) {
   const manifest = structuredClone(real);
-  manifest.videos = [structuredClone(TOUR), ...(manifest.videos ?? [])];
   const without = plant(manifest) ?? {};
   const dir = site(manifest, extra);
   try {
@@ -85,16 +61,18 @@ function problemsAfter(plant, extra) {
 
 const tour = (manifest) => manifest.videos.find((v) => v.id === "tour");
 
-test("the real manifest passes", () => {
+test("the real manifest passes, with the tour declared", () => {
   assert.deepEqual(manifestProblems().problems, []);
+  assert.ok(tour(real), "the tour is a video entry");
+  assert.equal(tour(real).autoplay, "none", "the tour waits for its play control");
 });
 
-test("a copy of the manifest with a video and every file it names passes", () => {
+test("a copy of the manifest with every file it names passes", () => {
   assert.deepEqual(problemsAfter(() => {}), []);
 });
 
 test("a shipping video whose output is missing fails", () => {
-  const problems = problemsAfter(() => ({ remove: [TOUR.output] }));
+  const problems = problemsAfter(() => ({ remove: [tour(real).output] }));
   assert.ok(problems.some((p) => /"tour" is shipping but a file it plays is missing: public\/media\/personalclaw-tour\.mp4/.test(p)), problems.join("\n"));
 });
 
