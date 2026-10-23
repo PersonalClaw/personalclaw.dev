@@ -53,9 +53,9 @@ Their rules overlap and sometimes disagree, so none is loaded for everything.
 - **Copy and search** ([#98]): `copywriting`, `cro`, `seo-audit`, `ai-seo` and `schema` from
   marketingskills, and nothing else from it. Its v2.0 renamed `page-cro` to `cro` (merged with
   `form-cro`) and `schema-markup` to `schema`.
-- **Video** ([#94] to [#97]): `hyperframes` (the entry point), `hyperframes-core`,
-  `hyperframes-animation`, `hyperframes-keyframes`, `media-use`, `product-launch-video` and
-  `pr-to-video`; brag for the release clip ([#97]).
+- **Video** ([#94] to [#97]): `hyperframes` (the entry point, which holds the composition
+  contract, the animation and the keyframes since v0.8.186), `hyperframes-cli` and
+  `hyperframes-registry`, and `media-use`; brag for the release clip ([#97]).
 
 **Not used**
 
