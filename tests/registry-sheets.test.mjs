@@ -3,11 +3,15 @@
 // reads a manifest, and tests/fixtures/registry-listed.json.
 
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import test from "node:test";
 
 import { coreCompatibility, firstPartySheetFacts } from "../scripts/app-sheet.mjs";
 import { fixtureAppNames, fixtureLeaks } from "../scripts/fixture-leaks.mjs";
+import { sharedProbeBuild } from "../scripts/registry-probe.mjs";
+import { removeSheetProbes, sheetProbeDir } from "./support/sheet-probe.mjs";
 import { buildSheets, listingFrom, registryArtifactsDir } from "../src/data/registry.mjs";
 
 const read = (name) => readFileSync(new URL(`./fixtures/${name}`, import.meta.url), "utf8");
@@ -109,4 +113,41 @@ test("a real build that names a fixture app, in a page or a path, fails", () => 
   assert.deepEqual(fixtureLeaks([{ path: "apps/index.html", text: '<a href="/registry/registry-fixture-clean">' }], names), [
     "apps/index.html: names the fixture app registry-fixture-clean"
   ]);
+});
+
+test("callers that share a probe folder build it once, and the rest wait for it rather than rebuild", async () => {
+  const root = mkdtempSync(path.join(tmpdir(), "sheet-probe-"));
+  try {
+    const outDir = sheetProbeDir(4242, root);
+    let builds = 0;
+    const build = (scenario, dir) => {
+      builds += 1;
+      mkdirSync(dir, { recursive: true });
+      writeFileSync(path.join(dir, "index.html"), scenario);
+    };
+    const slow = (scenario, dir) => {
+      // Hold the build long enough that the second caller arrives while it runs.
+      const until = Date.now() + 150;
+      while (Date.now() < until);
+      build(scenario, dir);
+    };
+    const results = await Promise.all([
+      sharedProbeBuild("listed", outDir, { build: slow, pollMs: 10 }),
+      new Promise((resolve) => setTimeout(resolve, 20)).then(() => sharedProbeBuild("listed", outDir, { build, pollMs: 10 }))
+    ]);
+    assert.deepEqual(results.sort(), ["built", "reused"]);
+    assert.equal(builds, 1, "one build for both");
+    assert.equal(readFileSync(path.join(outDir, "index.html"), "utf8"), "listed");
+
+    // A failed build fails its waiters with its reason instead of leaving them to time out.
+    const broken = sheetProbeDir(4343, root);
+    await assert.rejects(sharedProbeBuild("listed", broken, { build: () => { throw new Error("astro build failed"); } }), /astro build failed/);
+    await assert.rejects(sharedProbeBuild("listed", broken, { build, pollMs: 10, timeoutMs: 2000 }), /failed: astro build failed/);
+
+    // The run's teardown removes every probe folder and its markers.
+    removeSheetProbes(root);
+    assert.deepEqual(readdirSync(root), []);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
 });

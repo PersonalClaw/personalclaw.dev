@@ -11,7 +11,16 @@
 // through here.
 
 import { execFileSync } from "node:child_process";
-import { copyFileSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync
+} from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { coreCompatibility, firstPartySheetFacts, gitBlobSha } from "./app-sheet.mjs";
@@ -71,5 +80,50 @@ export function withProbeBuild(scenario, outDir, check) {
     return check();
   } finally {
     rmSync(artifacts, { recursive: true, force: true });
+  }
+}
+
+/**
+ * One probe build shared by every caller that names the same *outDir*: the first to claim it
+ * builds (`build`, `withProbeBuild` by default), and the rest wait for it rather than build or
+ * delete the same folder under each other. tests/browser/registry-sheet.spec.ts runs in a worker
+ * per project, each of which used to rebuild and then remove one shared folder while another was
+ * serving it. A failed build is recorded, so a waiter fails with it instead of timing out.
+ *
+ * @param {string} scenario
+ * @param {string} outDir
+ * @param {{ build?: (scenario: string, outDir: string) => void, timeoutMs?: number, pollMs?: number }} [options]
+ * @returns {Promise<"built" | "reused">}
+ */
+export async function sharedProbeBuild(scenario, outDir, { build, timeoutMs = 300_000, pollMs = 500 } = {}) {
+  const claim = `${outDir}.claim`;
+  const done = `${outDir}.built`;
+  const failed = `${outDir}.failed`;
+  try {
+    mkdirSync(claim);
+  } catch (error) {
+    if (/** @type {NodeJS.ErrnoException} */ (error).code !== "EEXIST") throw error;
+    const deadline = Date.now() + timeoutMs;
+    while (!existsSync(done)) {
+      if (existsSync(failed)) throw new Error(`the shared probe build into ${outDir} failed: ${readFileSync(failed, "utf8")}`);
+      if (Date.now() > deadline) throw new Error(`the shared probe build into ${outDir} did not finish within ${timeoutMs} ms`);
+      await new Promise((resolve) => setTimeout(resolve, pollMs));
+    }
+    return "reused";
+  }
+  try {
+    (build ?? ((name, dir) => withProbeBuild(name, dir, () => undefined)))(scenario, outDir);
+    writeFileSync(done, "");
+    return "built";
+  } catch (error) {
+    writeFileSync(failed, String(/** @type {Error} */ (error)?.message ?? error));
+    throw error;
+  }
+}
+
+/** Remove a shared probe build and its markers. */
+export function removeSharedProbeBuild(outDir) {
+  for (const target of [outDir, `${outDir}.claim`, `${outDir}.built`, `${outDir}.failed`]) {
+    rmSync(target, { recursive: true, force: true });
   }
 }

@@ -1,9 +1,10 @@
 import { createServer, type Server } from "node:http";
-import { existsSync, readFileSync, rmSync, statSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import { extname, join, normalize } from "node:path";
 import { expect, test, type Page } from "@playwright/test";
 import { registryAppRoutePaths } from "../support/site-contract.mjs";
-import { withProbeBuild } from "../../scripts/registry-probe.mjs";
+import { sheetProbeDir } from "../support/sheet-probe.mjs";
+import { sharedProbeBuild } from "../../scripts/registry-probe.mjs";
 import { assertLayoutIntegrity, openPage } from "./support";
 
 // The install-safety sheets (/registry/<name>, #112).
@@ -101,7 +102,9 @@ test("after every control on a sheet is used, storage, cookies and the URL hold 
 test.describe("one sheet per state, from a fixture build", () => {
   test.describe.configure({ mode: "serial" });
 
-  const outDir = join(process.cwd(), ".registry-sheet-probe");
+  // One probe build per run, shared by every worker and project (tests/support/sheet-probe.mjs):
+  // a worker per project used to rebuild and then delete one folder while another served it.
+  const outDir = sheetProbeDir();
   let server: Server;
   let origin = "";
 
@@ -115,7 +118,7 @@ test.describe("one sheet per state, from a fixture build", () => {
 
   test.beforeAll(async () => {
     test.setTimeout(240_000);
-    withProbeBuild("listed", outDir, () => undefined);
+    await sharedProbeBuild("listed", outDir);
     const types: Record<string, string> = {
       ".html": "text/html; charset=utf-8",
       ".css": "text/css",
@@ -148,9 +151,9 @@ test.describe("one sheet per state, from a fixture build", () => {
     origin = `http://127.0.0.1:${typeof address === "object" && address ? address.port : 0}`;
   });
 
+  // The build stays until the run's teardown removes it: another worker may still be serving it.
   test.afterAll(async () => {
     await new Promise((resolve) => server?.close(resolve));
-    rmSync(outDir, { recursive: true, force: true });
   });
 
   for (const [state, name] of Object.entries(states)) {
