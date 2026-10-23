@@ -116,3 +116,22 @@ test("a loop that may start on its own outside the two policies fails the schema
   });
   assert.ok(problems.some((p) => /schema: .*\/videos\/0\/autoplay/.test(p)), problems.join("\n"));
 });
+
+test("a release clip /release plays ships only for the release the site describes", () => {
+  const clip = (m) => m.videos.find((video) => video.id === "release-clip");
+  const now = problemsAfter((m) => {
+    clip(m).status = "shipping";
+    clip(m).brief.release = m.targetRelease;
+  });
+  assert.ok(!now.some((p) => /plays on \/release but its brief is for/.test(p)), now.join("\n"));
+  const next = problemsAfter((m) => {
+    clip(m).status = "shipping";
+    clip(m).brief.release = "9.9.9";
+  });
+  assert.ok(next.some((p) => /"release-clip" plays on \/release but its brief is for 9\.9\.9/.test(p)), next.join("\n"));
+  const waiting = problemsAfter((m) => {
+    clip(m).status = "new-needs-placement";
+    clip(m).brief.release = "9.9.9";
+  });
+  assert.ok(!waiting.some((p) => /plays on \/release/.test(p)), "a brief for the next release may wait unshipped");
+});

@@ -400,6 +400,109 @@
         }
       ],
       "status": "shipping"
+    },
+    {
+      "id": "release-clip",
+      "kind": "narrative",
+      "composition": "marketing/compositions/release-clip/index.html",
+      "sources": [
+        "home-lanes",
+        "approval-wait",
+        "loops"
+      ],
+      "capturedAt": "0.2.6",
+      "durationSeconds": 20,
+      "posterAtSeconds": 1.5,
+      "crf": 28,
+      "width": 1280,
+      "height": 720,
+      "output": "public/media/release-clip.mp4",
+      "poster": "public/media/release-clip-poster.webp",
+      "captions": "public/media/release-clip.vtt",
+      "chapters": null,
+      "budgetBytes": 1500000,
+      "autoplay": "none",
+      "fallback": "The clip could not play. Its highlights are beside it, as text.",
+      "audio": [],
+      "placements": [
+        {
+          "file": "src/pages/release.astro",
+          "kind": "release-page",
+          "caption": "The release clip, in /release's top slot (#93)",
+          "alt": "The PersonalClaw release clip"
+        }
+      ],
+      "use": "site",
+      "brief": {
+        "release": "0.2.6",
+        "date": "2026-10-22",
+        "highlights": [
+          {
+            "text": "Home is what needs you.",
+            "source": "home-lanes",
+            "mediaStart": 4.54
+          },
+          {
+            "text": "Everything waiting on you is one list.",
+            "source": "approval-wait",
+            "mediaStart": 5.38
+          },
+          {
+            "text": "Loops and code sessions read like chats.",
+            "source": "loops"
+          }
+        ],
+        "shareCopy": "PersonalClaw 0.2.6 is the app's redesign: Home is what needs you, and everything waiting on you is one list. Every change, with its source: https://personalclaw.dev/release"
+      },
+      "status": "shipping"
+    },
+    {
+      "id": "release-clip-vertical",
+      "kind": "narrative",
+      "composition": "marketing/compositions/release-clip-vertical/index.html",
+      "sources": [
+        "home-lanes",
+        "approval-wait",
+        "loops"
+      ],
+      "capturedAt": "0.2.6",
+      "durationSeconds": 20,
+      "posterAtSeconds": 1.5,
+      "crf": 26,
+      "width": 720,
+      "height": 1280,
+      "output": "public/media/release-clip-vertical.mp4",
+      "poster": "public/media/release-clip-vertical-poster.webp",
+      "captions": "public/media/release-clip.vtt",
+      "chapters": null,
+      "budgetBytes": 1500000,
+      "autoplay": "none",
+      "fallback": "Not played on the site: the release operator posts it with its share copy.",
+      "audio": [],
+      "placements": [],
+      "use": "social",
+      "brief": {
+        "release": "0.2.6",
+        "date": "2026-10-22",
+        "highlights": [
+          {
+            "text": "Home is what needs you.",
+            "source": "home-lanes",
+            "mediaStart": 4.54
+          },
+          {
+            "text": "Everything waiting on you is one list.",
+            "source": "approval-wait",
+            "mediaStart": 5.38
+          },
+          {
+            "text": "Loops and code sessions read like chats.",
+            "source": "loops"
+          }
+        ],
+        "shareCopy": "PersonalClaw 0.2.6 is the app's redesign: Home is what needs you, and everything waiting on you is one list. Every change, with its source: https://personalclaw.dev/release"
+      },
+      "status": "shipping"
     }
   ],
   "clips": [

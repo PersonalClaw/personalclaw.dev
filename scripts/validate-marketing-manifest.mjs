@@ -153,8 +153,23 @@ export function manifestProblems(repositoryRoot = siteRoot) {
         problems.push(`video "${video.id}" names an audio file that is missing: ${asset.file}`);
       }
     }
+    for (const highlight of video.brief?.highlights ?? []) {
+      if (!(video.sources || []).includes(highlight.source)) {
+        problems.push(`video "${video.id}"'s brief plays "${highlight.text}" over ${highlight.source}, which is not one of its sources`);
+      }
+    }
     if (video.status !== "shipping") continue;
-    if ((video.placements || []).length === 0) {
+    // A release clip /release plays is the release this site describes: a brief for the next
+    // release may wait in the manifest, but it ships only with its re-pin.
+    if (video.brief && (video.placements || []).some((placement) => placement.kind === "release-page")) {
+      if (video.brief.release !== siteVersion) {
+        problems.push(
+          `video "${video.id}" plays on /release but its brief is for ${video.brief.release}, ` +
+            `and the site describes ${siteVersion}`
+        );
+      }
+    }
+    if (video.use !== "social" && (video.placements || []).length === 0) {
       problems.push(`video "${video.id}" is shipping but has no placements`);
     }
     if (video.kind === "narrative" && !video.captions) {

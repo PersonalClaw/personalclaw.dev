@@ -44,6 +44,16 @@ those beats (`scripts/tour-tracks.mjs`), so the words /product outlines and the 
 edit a caption in the composition, never in a track. `tests/tour-tracks.test.mjs` fails a committed
 track the composition no longer yields.
 
+Each release gets a clip (#97): the `release-clip` (landscape, for /release) and
+`release-clip-vertical` (for short-form social, played nowhere on the site) entries share a `brief`:
+the release, its date, three highlight lines in that release's changelog's own words, the capture
+each line plays over, and the share copy. After the capture pass, write the brief, run `npm run
+release-clip` to write both compositions and their captions from it, then `npm run render:videos`,
+and review every frame against the app at the tag before it ships. `tests/release-clip.test.mjs`
+fails a composition the brief no longer yields, and once the site pins the brief's release, a line
+its changelog does not say; it also keeps the brief's words to the /compare ledger and out of the
+words #97 bans.
+
 **Key rule:** every **shipping** shot is **re-captured every release** — there is no
 "still current, skip it" state. Even a small UI shift changes a shot, so the whole
 shipping set is re-shot against each `targetRelease`. A `new-needs-placement` shot is a
