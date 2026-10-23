@@ -17,6 +17,5 @@
   "registry": {
     "$schema": "./registry.schema.json",
     "apps": []
-  },
-  "readmes": {}
+  }
 }

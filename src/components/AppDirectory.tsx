@@ -210,11 +210,11 @@ export function AppDirectory({
           {filtered.length > 0 ? (
             <div className="app-grid">
               {filtered.map((app) => (
-                <article key={app.slug} className="app-card">
+                <article key={app.slug} className="app-card" data-app-card={app.slug}>
                   <h2>
-                    <a href={`${treeBase}${app.slug}`} target="_blank" rel="noreferrer">
-                      {app.name}
-                    </a>
+                    {/* Every card leads to the app's install-safety sheet (#112): what it gets,
+                        reaches and runs, read from the pinned release, before any install. */}
+                    <a href={`/registry/${app.slug}`}>{app.name}</a>
                   </h2>
                   <p className="app-category">{app.category}</p>
                   <p className="app-description">{app.description}</p>

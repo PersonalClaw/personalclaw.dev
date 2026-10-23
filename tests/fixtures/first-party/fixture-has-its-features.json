@@ -1,0 +1,55 @@
+{
+  "name": "fixture-has-its-features",
+  "version": "1.0.0",
+  "displayName": "Fixture: fixture-has-its-features",
+  "description": "A first-party fixture that launches a program with hosts, adds an MCP server at a URL and keeps a secret.",
+  "author": "PersonalClaw",
+  "license": "MIT",
+  "tags": [
+    "fixture"
+  ],
+  "requiresCoreFeatures": [
+    "guarded-clients"
+  ],
+  "permissions": {
+    "network": false,
+    "storage": true
+  },
+  "launches": [
+    {
+      "program": "fixture-cli",
+      "why": "It runs the fixture's own command line.",
+      "hosts": [
+        "api.example.com",
+        "cdn.example.com"
+      ]
+    }
+  ],
+  "mcpServers": {
+    "fixture-search": {
+      "url": "https://mcp.example.com/sse"
+    }
+  },
+  "provider": {
+    "type": "search",
+    "implementation": "provider:create_provider",
+    "settingsSchema": {
+      "type": "object",
+      "properties": {
+        "api_key": {
+          "type": "string",
+          "x-meta": {
+            "label": "API Key",
+            "sensitive": true
+          }
+        },
+        "region": {
+          "type": "string",
+          "x-meta": {
+            "label": "Region"
+          }
+        }
+      }
+    }
+  }
+}

@@ -333,9 +333,14 @@ for (const route of HAND_AUTHORED) {
   const pageEvidence = verifiedAgainst
     ? [...evidence, ...pinnedEvidencePrefixes({ repo: data.release?.repo ?? "", version: verifiedAgainst, commit: verifiedAgainst })]
     : evidence;
+  // An /apps card's own install-safety sheet, when the build has it, is that card's evidence (#112).
+  const sheets =
+    route === "/apps"
+      ? { exists: (sheet) => existsSync(join(distDirectory, ...sheet.split("/").filter(Boolean), "index.html")) }
+      : undefined;
   for (const problem of headClaimProblems(html, rows, { route })) fail(problem);
   if (route !== "/product" && route !== "/compare") {
-    for (const problem of pageClaimProblems(html, rows, { route, evidence: pageEvidence })) fail(problem);
+    for (const problem of pageClaimProblems(html, rows, { route, evidence: pageEvidence, sheets })) fail(problem);
   }
   if (route === "/") for (const problem of faqParityProblems(html)) fail(problem);
   for (const problem of supportSentenceProblems(html, { route })) fail(problem);

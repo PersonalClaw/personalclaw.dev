@@ -102,6 +102,25 @@ test("a section that talks about a row's subject links its evidence, the row or 
   );
 });
 
+test("an /apps card's words are evidenced by its own built sheet, and nothing else leans on a sheet", () => {
+  const built = new Set(["/registry/web-hooks", "/registry/other-app"]);
+  const sheets = { exists: (sheet) => built.has(sheet) };
+  const card = (slug, href) =>
+    `<article class="app-card" data-app-card="${slug}"><h2><a href="${href}">${slug}</a></h2>` +
+    "<p>Webhooks reach programs on this machine.</p></article>";
+  const apps = (main) => pageClaimProblems(page({ main }), matrix.rows, { route: "/apps", evidence: [], sheets });
+  assert.deepEqual(apps(card("web-hooks", "/registry/web-hooks")), [], "its own sheet, built, is its evidence");
+  assert.ok(apps(card("web-hooks", "/registry/other-app")).some((p) => /mentions "webhook"/.test(p)), "another app's sheet is not");
+  assert.ok(apps(card("gone-app", "/registry/gone-app")).some((p) => /mentions "webhook"/.test(p)), "a sheet the build lacks is not");
+  const hero = '<section class="apps-hero"><p>Webhooks reach programs on this machine.</p><a href="/registry/web-hooks">a sheet</a></section>';
+  assert.ok(apps(hero).some((p) => /mentions "webhook"/.test(p)), "text outside the cards gets no sheet evidence");
+  assert.ok(
+    pageClaimProblems(page({ main: card("web-hooks", "/registry/web-hooks") }), matrix.rows, { route: "/apps", evidence: [] })
+      .some((p) => /mentions "webhook"/.test(p)),
+    "a page given no sheets has no sheet evidence"
+  );
+});
+
 test("Home's FAQPage says exactly what its visible questions say", () => {
   const details = (name, text) =>
     `<details data-faq="q"><summary>${name}</summary><p data-faq-answer>${text}</p><p><a href="/compare#telemetry">row</a></p></details>`;

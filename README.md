@@ -48,10 +48,12 @@ The website should be persuasive because it is specific and checkable, not becau
 |---|---|
 | `/` | The proposition, a real System Window and the install panel in the first viewport, then five chapters: proof and install, delegation and control, the ownership boundary, apps and security, current maturity |
 | `/product` | Guided tour of chat, autonomous goals, memory, knowledge, automation, and agent runtimes |
-| `/apps` | Searchable first-party app directory and app-platform explanation |
+| `/apps` | Searchable first-party app directory and app-platform explanation; each card leads to its install-safety sheet |
 | `/security` | Trust boundaries, enforced controls, supply-chain lifecycle, and known limitations |
 | `/release` | Build channel, exact source commits, package/changelog facts, and manifest-derived ecosystem evidence |
 | `/blog` | Posts written here, each naming the release its claims were verified against |
+| `/registry` | Community app listings, each with its declared permissions and its attributed registry check, led by the Store's non-endorsement |
+| `/registry/[app]` | An app's install-safety sheet, for a first-party app of the release and a community listing alike: what it gets, reaches and runs, its scan, provenance, compatibility and secrets, the sequence from review to enable, and its manifest, scan record and claims as evidence panels (`?panel=`). Unsafe or incompatible sheets carry no enable steps |
 | `/compare` | Row-by-row account of what PersonalClaw does and does not do at the released version, each row sourced to a file at the tag |
 | `/docs` | Documentation landing: three routes through the corpus (running it, extending it, trusting it), over a generated list of sections |
 | `/docs/{guides,reference,architecture,security,research}` | One section index per tree — committed prose over a generated page list — and every document the pinned release publishes beneath it |
@@ -351,6 +353,8 @@ PersonalClaw spans three repositories, with deliberately separate ownership:
 | Product capabilities, version, docs, security posture, and changelog | [PersonalClaw](https://github.com/PersonalClaw/PersonalClaw) |
 | First-party app manifests, permissions, requirements, and compatibility | [PersonalClawApps](https://github.com/PersonalClaw/PersonalClawApps) |
 | Community app listings, their declared permissions, and their scan verdicts | [registry](https://github.com/PersonalClaw/registry) `app-registry.json`, pinned by commit as `data.registry` |
+| The scanner the registry's validation runs | [registry](https://github.com/PersonalClaw/registry) `requirements.txt` at `data.registry`, recorded only from one exact `personalclaw==<version>` pin |
+| What an install-safety sheet's compatibility and sections are held to | [PersonalClaw](https://github.com/PersonalClaw/PersonalClaw) `apps/core_features.py` (`CORE_FEATURES`) and `apps/disclosure.py` (`describe()`'s keys and order) at the pinned tag, read by `npm run sync:sources` |
 | The installer served at `/install` | [PersonalClaw](https://github.com/PersonalClaw/PersonalClaw) `deploy/website/install.sh`; `public/install` is generated from the pinned core commit by `npm run sync:sources` and held to it by `validate:release-parity` |
 | Presentation, public routing, synchronized docs build, and serving `/install` | This repository |
 

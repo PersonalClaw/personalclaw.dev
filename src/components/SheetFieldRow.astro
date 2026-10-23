@@ -1,0 +1,83 @@
+---
+// One fact on an install-safety sheet (#112): its label, then its value or the fixed line that
+// says it has no source. scripts/sheet-render-check.mjs reads each one by `data-field`, its value
+// by `data-field-value` and the fixed line by `data-field-missing`, so every field renders here.
+interface Props {
+  entry: { id: string; label: string; value: string | string[] | null; missing: string };
+  /** The source link's `rel`: a community listing's repository is a third party's URL. */
+  sourceRel?: string;
+}
+
+const { entry, sourceRel } = Astro.props;
+const noTranslate = ["license", "commit", "publisher"].includes(entry.id) ? "no" : undefined;
+---
+
+<div class="field" data-field={entry.id}>
+  <dt>{entry.label}</dt>
+  {entry.value === null ? (
+    <dd class="missing" data-field-missing>{entry.missing}</dd>
+  ) : Array.isArray(entry.value) ? (
+    <dd data-field-value>
+      <ul>
+        {entry.value.map((item) => <li translate="no">{item}</li>)}
+      </ul>
+    </dd>
+  ) : entry.id === "source" ? (
+    <dd data-field-value><a class="field-link" href={entry.value} rel={sourceRel} translate="no">{entry.value}</a></dd>
+  ) : (
+    <dd data-field-value class:list={[{ identifier: entry.id === "commit" }]} translate={noTranslate}>{entry.value}</dd>
+  )}
+</div>
+
+<style>
+  .field {
+    display: grid;
+    grid-template-columns: minmax(0, 14rem) minmax(0, 1fr);
+    gap: 0.4rem 1.5rem;
+    padding: 0.75rem 0;
+    border-top: 1px solid var(--line);
+  }
+
+  dt {
+    color: var(--ink-muted);
+    font-size: var(--fs-label);
+  }
+
+  dd {
+    min-width: 0;
+    margin: 0;
+    color: var(--ink);
+    overflow-wrap: anywhere;
+  }
+
+  dd ul {
+    margin: 0;
+    padding-left: 1.1rem;
+  }
+
+  .missing {
+    color: var(--ink-soft);
+  }
+
+  /* A commit is compared character by character, so it is set as the identifier it is. */
+  .identifier {
+    font-family: var(--font-mono);
+    font-size: var(--fs-mono);
+  }
+
+  .field-link {
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
+    color: var(--coral-bright);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+    overflow-wrap: anywhere;
+  }
+
+  @media (max-width: 760px) {
+    .field {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+</style>

@@ -48,6 +48,9 @@ export const unitTests = {
     "tests/ledger-claims.test.mjs",
     "tests/social-card.test.mjs",
     "tests/render-videos.test.mjs",
+    "tests/app-sheet.test.mjs",
+    "tests/sheet-render-check.test.mjs",
+    "tests/registry-sheets.test.mjs",
   ],
 };
 

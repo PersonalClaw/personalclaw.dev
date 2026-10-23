@@ -1,4 +1,4 @@
-// Sync the community app registry, plus one README per listed app, into the ignored
+// Sync the community app registry, and the scanner its validation runs, into the ignored
 // .generated/registry.json artifact the site renders.
 //
 //   node scripts/sync-registry.mjs
@@ -16,10 +16,9 @@
 // EGRESS: source resolution is REUSED from sync-sources.mjs, so this reaches the
 // network only when no local sibling checkout matches the pin — and then only
 // api.github.com and raw.githubusercontent.com, the hosts the existing source and
-// docs syncs already use. READMEs are fetched from raw.githubusercontent.com only;
-// a listing whose repo is not on GitHub is recorded as un-fetched rather than
-// turning an arbitrary community-controlled host into a build-time dependency.
-// Nothing is fetched at VIEW time: the site is static and same-origin only
+// docs syncs already use, and only for the registry repository at its pin. No listed app's
+// own repository is contacted: its README came from a default branch, not a pin, so the
+// install-safety sheet does not show one (#112). Nothing is fetched at VIEW time: the site is static and same-origin only
 // (tests/browser/support.ts asserts that).
 //
 // WHAT DECIDES WHETHER THE PAGE LISTS ANYTHING IS THE PINNED CORE RELEASE, not the
@@ -49,14 +48,15 @@
 //     absent-at-pin only while the pinned release's Store does not list the registry. By
 //     the same rule as the registry read: the site does not publish a consent surface it
 //     cannot show agrees with the product's own.
-//   - each README fetch is fail-OPEN, per app, with the reason recorded and rendered.
-//     A community repository deleting its README, renaming its default branch, or
-//     going private must not red the whole website build; and a README is prose, not
-//     a security claim. The permissions and the verdict never come from here.
+//   - the SCANNER the registry's validation runs is read from its requirements.txt at the
+//     registry pin, and recorded only from one exact `personalclaw==<version>` pin. A missing
+//     file, a range or no pin at all records it as not recorded, which the sheet says in
+//     those words (scripts/app-sheet.mjs: scannerPin).
 
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { STORE_CONSENT } from "../src/data/registry.mjs";
+import { scannerPin } from "./app-sheet.mjs";
 import { loadManifest, resolveSource, writeAtomically } from "./sync-sources.mjs";
 
 const root = process.cwd();
@@ -83,79 +83,6 @@ const REGISTRY_SCHEMA_SENTINEL = "app-registry.schema.json";
  * repository as a git source here. See `coreListsRegistry`.
  */
 const CORE_CATALOG_PATH = "src/personalclaw/apps/catalog.py";
-
-/** Characters of README kept per listing. See fetchReadme for why there is a cap. */
-const README_LIMIT = 96_000;
-
-const githubHeaders = {
-  Accept: "application/vnd.github.raw",
-  "User-Agent": "personalclaw.dev-registry-sync",
-  ...(process.env.GITHUB_TOKEN
-    ? { Authorization: `Bearer ${process.env.GITHUB_TOKEN}` }
-    : {})
-};
-
-/**
- * The GitHub `owner/repo` a registry `repo` URL points at, or null when the URL is
- * not a GitHub repository. Only GitHub is resolvable to a raw README host, so
- * everything else is reported as un-fetched instead of being contacted.
- *
- * @param {string} repositoryUrl
- * @returns {string | null}
- */
-export function githubSlug(repositoryUrl) {
-  const match = /^https:\/\/github\.com\/([^/\s]+)\/([^/\s]+?)(?:\.git)?\/?$/i.exec(
-    repositoryUrl.trim()
-  );
-  return match ? `${match[1]}/${match[2]}` : null;
-}
-
-/**
- * Fetch one listed app's README. Never throws: the result records either the text or
- * why there is none, and the per-app page renders that reason.
- *
- * @param {{ name: string, repo: string }} app
- */
-async function fetchReadme(app) {
-  const slug = githubSlug(app.repo);
-  if (!slug) {
-    return {
-      status: "unsupported-host",
-      reason:
-        "Only GitHub repositories are read at build time, so this README was not fetched."
-    };
-  }
-
-  // HEAD, not a pinned commit: the registry records a repository, not a revision, so
-  // there is no ref to pin to. The page says so rather than implying the prose was
-  // reviewed alongside the listing.
-  const url = `https://raw.githubusercontent.com/${slug}/HEAD/README.md`;
-  try {
-    const response = await fetch(url, { headers: githubHeaders });
-    if (!response.ok) {
-      return {
-        status: "unavailable",
-        url,
-        reason: `The repository's README could not be read (HTTP ${response.status}).`
-      };
-    }
-    const text = await response.text();
-    // Capped: a README is inlined into the generated artifact and then into one static
-    // page, and the site holds every route to a transfer budget. A community repository
-    // should not be able to blow that budget by writing a very long file.
-    return text.length > README_LIMIT
-      ? { status: "fetched", url, truncated: true, text: text.slice(0, README_LIMIT) }
-      : { status: "fetched", url, truncated: false, text };
-  } catch (error) {
-    return {
-      status: "unavailable",
-      url,
-      reason: `The repository's README could not be read (${
-        error instanceof Error ? error.message : String(error)
-      }).`
-    };
-  }
-}
 
 /**
  * Whether a read failure means "this path is not in the pinned tree" rather than
@@ -314,6 +241,24 @@ export async function checkStoreConsentParity(coreSource, pinDescription, storeL
   return { status: "verified" };
 }
 
+/** The registry's requirements.txt at its pin, where its validation pins the scanner. */
+const SCANNER_REQUIREMENTS_PATH = "requirements.txt";
+
+/**
+ * The scanner the registry's validation runs, or null when its pin records none.
+ *
+ * @param {{ repository: string, commit: string }} registryPin
+ */
+export async function readScanner(registryPin) {
+  const source = await resolveSource("registry", registryPin);
+  try {
+    return scannerPin(await source.readText(SCANNER_REQUIREMENTS_PATH));
+  } catch (error) {
+    if (!isMissingPath(error)) throw error;
+    return null;
+  }
+}
+
 async function main() {
   const manifest = await loadManifest();
   const coreSource = await resolveSource("core", manifest.sources.core);
@@ -354,17 +299,9 @@ async function main() {
 
   const apps =
     registry !== null && Array.isArray(/** @type {{ apps?: unknown }} */ (registry).apps)
-      ? /** @type {{ apps: { name?: unknown, repo?: unknown }[] }} */ (registry).apps
+      ? /** @type {{ apps: unknown[] }} */ (registry).apps
       : [];
-  /** @type {Record<string, unknown>} */
-  const readmes = {};
-  for (const app of apps) {
-    // Keyed by name because the per-app page is routed by name. A row too malformed to
-    // have a usable name/repo is dropped at render (src/data/registry.mjs) and simply
-    // has no README entry.
-    if (typeof app?.name !== "string" || typeof app?.repo !== "string") continue;
-    readmes[app.name] = await fetchReadme(app);
-  }
+  const scanner = storeListsRegistry ? await readScanner(registryPin) : null;
 
   const artifact = {
     schemaVersion: 1,
@@ -383,18 +320,18 @@ async function main() {
     },
     availability,
     registry,
-    readmes
+    // The scanner the registry's validation ran, from its requirements.txt at the pin, or null.
+    scanner
   };
 
   await writeAtomically(generatedPath, `${JSON.stringify(artifact, null, 2)}\n`);
-  const fetched = Object.values(readmes).filter(
-    (entry) => /** @type {{ status: string }} */ (entry).status === "fetched"
-  ).length;
   console.log(
     `Generated ${path.relative(root, generatedPath)}: registry ${availability.status}, ` +
       `${apps.length} listing(s) from ${artifact.source.repository}@` +
       `${artifact.source.commit.slice(0, 12)} (${pinDescription} ` +
-      `${storeListsRegistry ? "lists" : "does not list"} it), ${fetched} README(s) fetched, ` +
+      `${storeListsRegistry ? "lists" : "does not list"} it), scanner ${
+        scanner ? `${scanner.name}==${scanner.version}` : "not recorded"
+      }, ` +
       `Store consent parity ${storeConsent.status}.`
   );
 }
