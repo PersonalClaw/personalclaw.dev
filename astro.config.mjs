@@ -3,15 +3,13 @@ import react from "@astrojs/react";
 import sitemap from "@astrojs/sitemap";
 import starlight from "@astrojs/starlight";
 import { rehypeScrollableTables } from "./scripts/rehype-scrollable-tables.mjs";
-// Dependency-free by design so importing it here cannot pull generated JSON into the
+// Both read only committed files, so importing them here cannot pull generated JSON into the
 // config's load graph — see the header of src/data/social-card.ts.
-import {
-  SITE_URL,
-  SOCIAL_IMAGE_ALT,
-  SOCIAL_IMAGE_HEIGHT,
-  SOCIAL_IMAGE_PATH,
-  SOCIAL_IMAGE_WIDTH
-} from "./src/data/social-card";
+import { SITE_URL } from "./src/data/social-card";
+import { socialImageFor } from "./src/data/social-frames";
+
+// Every /docs page shares the docs landing's frame (#97).
+const docsImage = socialImageFor("/docs");
 
 // Starlight owns ONLY /docs. The marketing routes (/, /product, /apps, /security,
 // /release) keep their own layout and design tokens — Starlight's `prerender` scope is
@@ -91,28 +89,28 @@ export default defineConfig({
       // `Head` override below. Stating it in both places would put two conflicting
       // `<meta name="robots">` tags on one page.
       head: [
-        // The social card. Measured on origin/main: docs pages carried NO og:image at
-        // all, so every shared /docs link rendered as a bare text row in Slack, X and
-        // LinkedIn. Same file, dimensions and alt text as the marketing routes
-        // (src/data/structured-data.ts) — the numbers are the PNG's real size.
+        // The docs frame. Measured on origin/main: docs pages carried NO og:image at all,
+        // so every shared /docs link rendered as a bare text row in Slack, X and LinkedIn.
+        // The path, size and alt text come from the same map the marketing routes read
+        // (src/data/social-frames.ts); the numbers are the PNG's real size.
         {
           tag: "meta",
           attrs: {
             property: "og:image",
-            content: `${SITE_URL}${SOCIAL_IMAGE_PATH}`
+            content: `${SITE_URL}${docsImage.path}`
           }
         },
-        { tag: "meta", attrs: { property: "og:image:width", content: SOCIAL_IMAGE_WIDTH } },
-        { tag: "meta", attrs: { property: "og:image:height", content: SOCIAL_IMAGE_HEIGHT } },
-        { tag: "meta", attrs: { property: "og:image:alt", content: SOCIAL_IMAGE_ALT } },
+        { tag: "meta", attrs: { property: "og:image:width", content: docsImage.width } },
+        { tag: "meta", attrs: { property: "og:image:height", content: docsImage.height } },
+        { tag: "meta", attrs: { property: "og:image:alt", content: docsImage.alt } },
         {
           tag: "meta",
           attrs: {
             name: "twitter:image",
-            content: `${SITE_URL}${SOCIAL_IMAGE_PATH}`
+            content: `${SITE_URL}${docsImage.path}`
           }
         },
-        { tag: "meta", attrs: { name: "twitter:image:alt", content: SOCIAL_IMAGE_ALT } },
+        { tag: "meta", attrs: { name: "twitter:image:alt", content: docsImage.alt } },
         // OVERRIDES of Starlight's own defaults, both of which made /docs look like a
         // separate property:
         //   · og:site_name defaults to Starlight's `title` ("PersonalClaw docs"), so a

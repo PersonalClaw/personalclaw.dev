@@ -1,5 +1,5 @@
-// The site's SHARED head machinery: the social-card facts and the one JSON-LD graph
-// builder every route renders through.
+// The site's SHARED head machinery: the one JSON-LD graph builder every route renders
+// through. Each page's social image is src/data/social-frames.ts's.
 //
 // Why this module exists. The graph used to be assembled inline in BaseLayout.astro,
 // which meant it only ever reached the routes BaseLayout renders — the nine
@@ -20,14 +20,7 @@ import { GITHUB_URL } from "./site";
 import { capabilityMatrix } from "./capabilities.mjs";
 import { answerText, homeQuestions } from "./faq.mjs";
 import { releaseFacts } from "./release";
-import { SOCIAL_IMAGE_PATH } from "./social-card";
-
-export {
-  SOCIAL_IMAGE_ALT,
-  SOCIAL_IMAGE_HEIGHT,
-  SOCIAL_IMAGE_PATH,
-  SOCIAL_IMAGE_WIDTH
-} from "./social-card";
+import { socialImageFor } from "./social-frames";
 
 /**
  * Marketing sections that own a real landing page, mapped to the label the header nav
@@ -81,6 +74,8 @@ export type StructuredDataInput = {
   description: string;
   /** Set by blog post pages: emits an Article node in the graph. */
   article?: ArticleFacts;
+  /** The page's social image path, which a post's Article carries. Defaults to the route's frame. */
+  image?: string;
 };
 
 type Node = Record<string, unknown>;
@@ -99,7 +94,8 @@ export function buildStructuredData({
   pathname,
   title,
   description,
-  article
+  article,
+  image = socialImageFor(pathname).path
 }: StructuredDataInput): { "@context": string; "@graph": Node[] } {
   const siteUrl = site.toString();
   const canonical = new URL(pathname, site).toString();
@@ -221,7 +217,7 @@ export function buildStructuredData({
       datePublished: article.publishDate.toISOString().slice(0, 10),
       inLanguage: "en",
       mainEntityOfPage: { "@id": canonical },
-      image: absolute(SOCIAL_IMAGE_PATH),
+      image: absolute(image),
       author: { "@id": orgId },
       publisher: { "@id": orgId }
     });

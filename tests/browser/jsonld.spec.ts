@@ -75,6 +75,10 @@ test("a blog post publishes an Article node and a three-deep breadcrumb trail", 
   expect(String(article.headline).length).toBeGreaterThan(0);
   expect(String(article.datePublished)).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   expect(article.mainEntityOfPage).toBeTruthy();
+  // The post's own frame (#97), the image its head declares, not the site's card.
+  const ogImage = await page.locator('meta[property="og:image"]').getAttribute("content");
+  expect(article.image).toBe("https://personalclaw.dev/social/blog-launch.png");
+  expect(article.image).toBe(ogImage);
 
   const trails = nodeOfType(graph, "BreadcrumbList");
   expect(trails).toHaveLength(1);
