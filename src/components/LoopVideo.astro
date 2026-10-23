@@ -4,7 +4,8 @@
  * the playback rules in ./loop-video.mjs. A page names the entry by id; the files, the box and
  * the autoplay policy are the manifest's, so a page cannot play a loop the manifest does not
  * declare, or one it has retired. An image in the default slot is the loop's still: it shows
- * until the loop plays, in place of the rendered poster.
+ * until the loop plays, in place of the rendered poster. A narrative entry (the release clip,
+ * #97) plays once, with its captions as the default track.
  */
 import manifest from "../../marketing/screenshots.manifest.json";
 import { manifestLoopMarkup } from "./loop-video.mjs";

@@ -29,6 +29,7 @@ import { BUILDERS_SNIPPET, appManifestProblems } from "../src/data/apps-snippet.
 import { runsDownloadUnseen } from "./install-commands.mjs";
 import { releasePageProblems } from "./release-assets.mjs";
 import { installerPackage, installerPython } from "../src/data/installer.mjs";
+import { releaseClipEntry, releaseSlotProblems, slotWords } from "../src/data/release-slot.mjs";
 import { docsIndex } from "../src/data/docs-index.mjs";
 import { registryArtifactExists, registryListing } from "../src/data/registry.mjs";
 import { fixtureAppNames, fixtureLeaks } from "./fixture-leaks.mjs";
@@ -682,6 +683,21 @@ if (releaseFacts.channel === "released") {
     version: releaseFacts.core.version,
     assets: core.releaseAssets ?? [],
     installer: { python: installerPython(), package: installerPackage() }
+  })) {
+    fail(problem);
+  }
+}
+
+// The top slot: the pinned release in its own words, and its clip once one ships (#97).
+{
+  const marketing = JSON.parse(
+    await readFile(path.join(root, "marketing", "screenshots.manifest.json"), "utf8")
+  );
+  const { version } = releaseFacts.core;
+  for (const problem of releaseSlotProblems(release$, {
+    version,
+    words: slotWords(marketing, version, releaseFacts.core.changelog.currentVersion),
+    entry: releaseClipEntry(marketing, version)
   })) {
     fail(problem);
   }
