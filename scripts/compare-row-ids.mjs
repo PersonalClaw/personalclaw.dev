@@ -75,7 +75,13 @@ export function renderedRowIdProblems(html, rows) {
     const id = row?.id;
     if (typeof id !== "string" || id === "") continue;
     const found = holders.get(id) ?? [];
-    if (found.length === 1 && page(found[0]).attr("data-capability-row") !== id) {
+    // A row not verified at the pin is listed as a known limit, and keeps its id there.
+    const holder = found.length === 1 ? page(found[0]) : null;
+    if (
+      holder &&
+      holder.attr("data-capability-row") !== id &&
+      holder.attr("data-capability-limit") !== id
+    ) {
       problems.push(
         `the id "${id}" on /compare is on a <${found[0].tagName}>, not on the row ${id}`
       );

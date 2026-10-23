@@ -8,7 +8,7 @@
 // trustRows() then refuses to build until someone re-reads those two at the new pin and moves
 // `verified`: a row must never claim a release nobody checked.
 
-import { capabilityMatrix } from "./capabilities.mjs";
+import { capabilityMatrix, ledgerRow } from "./capabilities.mjs";
 
 /** Checked by hand: the release's assets, and the synced threat model. */
 const HAND_CHECKED = [
@@ -54,8 +54,8 @@ export function trustRows(core) {
   const matrix = capabilityMatrix();
   const verdicts = matrix.verdicts;
   const compared = FROM_COMPARE.map(({ id, evidence }) => {
-    const row = matrix.rows.find((candidate) => candidate.id === id);
-    if (!row) throw new Error(`src/data/trust.mjs: /compare has no row "${id}"`);
+    // Refuses a row not verified at the pin, or one that doesn't list Home among its surfaces.
+    const row = ledgerRow(id, "home", matrix);
     // LICENSE at the pinned commit, not the tag the matrix links: the same file, by the pin rule.
     const href =
       id === "license"
@@ -68,7 +68,7 @@ export function trustRows(core) {
       evidence,
       href,
       label: id === "license" ? "LICENSE" : `The ${row.id} row`,
-      verified: matrix.release.version
+      verified: row.verifiedRelease
     };
   });
 

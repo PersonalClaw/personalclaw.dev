@@ -19,6 +19,10 @@ import { fileURLToPath } from "node:url";
 
 export const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const dataPath = path.join(root, "src", "data", "capabilities.json");
+const sourcesPath = path.join(root, "sources", "personalclaw.sources.json");
+
+/** The core release the site pins, which a row must have been verified against to be current. */
+export const pinnedTag = () => JSON.parse(readFileSync(sourcesPath, "utf8")).sources.core.tag;
 
 /** src/data/capabilities.json, read fresh, so a test may change its copy. */
 export const readData = () => JSON.parse(readFileSync(dataPath, "utf8"));
@@ -36,15 +40,18 @@ const VERDICTS = ["yes", "partial", "no"];
 /**
  * A /compare page with everything validate-compare-render reads, rendered from `data` in the
  * page's group order. `rowId(row, position)` is a row's id attribute, null for none; `extra`
- * is markup added after the groups.
+ * is markup added after the groups. A row not verified at the pinned release is listed as a
+ * known limit, as the page lists it, unless `staleAsCurrent` plants it among the current rows.
  */
-export function comparePage(data, { rowId = (row) => row.id, extra = "" } = {}) {
+export function comparePage(data, { rowId = (row) => row.id, extra = "", staleAsCurrent = false } = {}) {
+  const tag = pinnedTag();
+  const shownAsCurrent = (row) => staleAsCurrent || row.verified_release === tag;
   const counts = { yes: 0, partial: 0, no: 0 };
-  for (const row of data.rows) counts[row.verdict] += 1;
+  for (const row of data.rows.filter(shownAsCurrent)) counts[row.verdict] += 1;
   let position = 0;
   const groups = data.groups.map((group) => {
     const rows = data.rows
-      .filter((row) => row.group === group.id)
+      .filter((row) => row.group === group.id && shownAsCurrent(row))
       .map((row) => {
         position += 1;
         const id = rowId(row, position);
@@ -58,18 +65,28 @@ export function comparePage(data, { rowId = (row) => row.id, extra = "" } = {}) 
           `${escapeHtml(row.source_label)}</a></li>`
         ].join("");
       });
+    if (rows.length === 0) return "";
     return (
       `<section data-capability-group="${group.id}">` +
       `<h2 id="group-${group.id}">${escapeHtml(group.label)}</h2>` +
       `<ul>${rows.join("")}</ul></section>`
     );
   });
+  const limits = data.rows
+    .filter((row) => !shownAsCurrent(row))
+    .map(
+      (row) =>
+        `<li id="${escapeHtml(row.id)}" data-capability-limit="${escapeHtml(row.id)}">` +
+        `<h3>${escapeHtml(row.claim)}</h3><a href="${escapeHtml(row.source_url)}">` +
+        `${escapeHtml(row.source_label)} last verified at ${escapeHtml(row.verified_release)}</a></li>`
+    );
   return [
     '<!doctype html><html lang="en"><body><main id="main-content">',
     "<h1>What it does</h1>",
-    `<ul>${VERDICTS.map((verdict) => `<li data-capability-count="${verdict}"><span class="count-n">${counts[verdict]}</span></li>`).join("")}</ul>`,
+    `<p data-capability-counts>${VERDICTS.map((verdict) => `<span data-capability-count="${verdict}">${counts[verdict]}</span>`).join(" ")}</p>`,
     `<section><h2 id="how-to-read">How to read a verdict</h2><dl>${VERDICTS.map((verdict) => `<div data-capability-legend-item="${verdict}"><dt>${verdict}</dt><dd></dd></div>`).join("")}</dl></section>`,
     ...groups,
+    limits.length > 0 ? `<section data-capability-limits><ul>${limits.join("")}</ul></section>` : "",
     extra,
     "</main></body></html>"
   ].join("\n");
@@ -103,14 +120,16 @@ export function compareRun({ data, page, product = citingProductPage }) {
   mkdirSync(scratch, { recursive: true });
   const copy = mkdtempSync(path.join(scratch, "compare-render-test-"));
   try {
-    for (const directory of ["scripts", "src/data", "dist/compare", "dist/product"]) {
+    for (const directory of ["scripts", "src/data", "sources", "dist/compare", "dist/product"]) {
       mkdirSync(path.join(copy, directory), { recursive: true });
     }
     for (const file of [
       "scripts/validate-compare-render.mjs",
       "scripts/compare-row-ids.mjs",
       "scripts/product-claims.mjs",
-      "scripts/llms-lead.mjs"
+      "scripts/llms-lead.mjs",
+      "scripts/ledger.mjs",
+      "sources/personalclaw.sources.json"
     ]) {
       copyFileSync(path.join(root, file), path.join(copy, file));
     }
