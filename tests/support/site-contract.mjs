@@ -274,9 +274,10 @@ export function allRoutePaths() {
 }
 
 /**
- * The published social card. The path is contracted; the DIMENSIONS deliberately are
- * not — scripts/validate-build.mjs measures the real PNG and asserts the rendered
- * `og:image:width`/`og:image:height` match it, so a card that lies about its aspect
+ * The site's social card: the image of a page with no frame of its own and in no framed
+ * section (src/data/social-frames.ts). The path is contracted; the DIMENSIONS deliberately
+ * are not — scripts/validate-build.mjs measures every declared PNG and asserts the rendered
+ * `og:image:width`/`og:image:height` match it, so an image that lies about its aspect
  * ratio fails against the artifact rather than against a second copy of the numbers.
  */
 export const socialImagePath = "/brand/social-preview.png";

@@ -86,6 +86,13 @@ created), because every step below verifies against the published tag.
      its poster with it, and fails over a budget. Set each entry's `capturedAt` to
      the release; `validate:marketing-manifest` fails on a missing file or an
      output over its budget;
+   - every page's social frame, after the screenshots: `npm run build`, then
+     `npm run render:social-frames`, then build again so each page declares its
+     new frame. A frame is made from its page's headline and support sentence,
+     the release and one pinned capture, so a re-pin or a reworded headline
+     leaves it stale, and `validate:build` names the frame. Commit
+     `public/social/`, `src/data/social-frames.json` and
+     `marketing/social-card/frames-stamp.json`. No video render is involved;
    - security content synchronized from core's threat model and limitations;
    - any page section describing capabilities the release added;
    - the builders band's `app.json` on `/apps` (`BUILDERS_SNIPPET` in

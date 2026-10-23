@@ -1,0 +1,44 @@
+{
+  "frames": {
+    "/": {
+      "inputs": "301f59f53fe423a459bba15dae71c8b498553ac05fb64ea30af1046c77edb664",
+      "png": "03828e327d8779c53813a1ff964865095565d36f05a26c886d74c405e90bf030"
+    },
+    "/product": {
+      "inputs": "63fde82aa4183823f02e70fda7261163f95cd748e9139217a756dab4df6eed7f",
+      "png": "a423babb16b2b55b9551dee65c86774bc9389360d275a91f4b1345235de9b07f"
+    },
+    "/apps": {
+      "inputs": "637c63797dc88b12089c763271778570b956d512be026095bfae01d302ab7137",
+      "png": "d838745732b45fc8ba6ed816e9b340c454e5520a7a987de1f4cb4660397fb642"
+    },
+    "/security": {
+      "inputs": "08e4b9163e80238a595bc959cb7ea8f6f816d517873deef6c28d4bbb56b3e5f9",
+      "png": "6ed207bdc7b5d1a2b8824a20743b1911e5fc9d9637b10ac5310f6e0432aada56"
+    },
+    "/release": {
+      "inputs": "bd226e635781e1014b93e7533ecdd5ce46f20aacfdeed3b92a8c5b87723cb2e6",
+      "png": "80db2d9a367216f3c9fe90d3fc35f27ba9f37e587dffdcf58c243d94dcda29c6"
+    },
+    "/compare": {
+      "inputs": "7e9f12e8e6dd43615f108a7c05d899518a27b38aa8b75be9b5ed1d4df873e149",
+      "png": "3b82a04245f811fbf89926d4a9c3deebd69e250132587aba9d0db1802ed6d63c"
+    },
+    "/blog": {
+      "inputs": "bfd77c1fa1ba2ef5239dfaf7a14d75d8fe6379a78ee726f1d515b863e911a221",
+      "png": "08ca06f0d3468091108a76e7590caa858b454bf4f5a7ae744c61aa3c671fd5f9"
+    },
+    "/blog/launch": {
+      "inputs": "dd76386f70fba554b217daa8468e606177cccb45799e53a8b91fcb9975ae64d3",
+      "png": "7e65ca226fc8cfd4aa4422df95681fcedc7c760ba079728029a8fd86988fbeaf"
+    },
+    "/registry": {
+      "inputs": "f4d3b777e80ffe62b14d4f70c9f8c63fad0f2cf04dfc24605afac460866471e2",
+      "png": "c0aa6c698c200a49b41d109a41a4c8073175d473854d24950eff993d45b3b930"
+    },
+    "/docs": {
+      "inputs": "a976cef91386755fb15fd407545cbde6d5cde79567cfffb38eeca7bb577b8996",
+      "png": "fc0949df2048d0e9da5b87f2a6ec67820309b1293cea897825d0a19f15bc32a8"
+    }
+  }
+}

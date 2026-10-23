@@ -1,0 +1,62 @@
+{
+  "/": {
+    "image": "/social/home.png",
+    "width": 1200,
+    "height": 630,
+    "alt": "The PersonalClaw mark and wordmark in dark ink on coral, with the title “Your personal agentic OS”, the line “Chat, autonomous goals, memory, knowledge, and automation behind one gateway you own.”, and “PersonalClaw v0.2.6 · Verified release”, beside a capture: Home view in the PersonalClaw dashboard."
+  },
+  "/product": {
+    "image": "/social/product.png",
+    "width": 1200,
+    "height": 630,
+    "alt": "The PersonalClaw mark and wordmark in dark ink on coral, with the title “Watch it do the work.”, the line “One machine, in chapters: a chat, its approval, a goal loop, a knowledge search and what it made.”, and “PersonalClaw v0.2.6 · Verified release”, beside a capture: Chat view in the PersonalClaw dashboard."
+  },
+  "/apps": {
+    "image": "/social/apps.png",
+    "width": 1200,
+    "height": 630,
+    "alt": "The PersonalClaw mark and wordmark in dark ink on coral, with the title “Bring the providers you choose.”, the line “Models, search, speech, channels, tools, agent runtimes and complete interfaces are apps you install, and replace when your needs change.”, and “PersonalClaw v0.2.6 · Verified release”, beside a capture: Apps view in the PersonalClaw dashboard."
+  },
+  "/security": {
+    "image": "/social/security.png",
+    "width": 1200,
+    "height": 630,
+    "alt": "The PersonalClaw mark and wordmark in dark ink on coral, with the title “The model proposes. The host decides.”, the line “Host code outside the model answers what an agent asks: an approval gate, not an operating-system jail.”, and “PersonalClaw v0.2.6 · Verified release”, beside a capture: The PersonalClaw inbox with a loop waiting on an answer and an agent request waiting on an approval."
+  },
+  "/release": {
+    "image": "/social/release.png",
+    "width": 1200,
+    "height": 630,
+    "alt": "The PersonalClaw mark and wordmark in dark ink on coral, with the title “Know exactly what this site describes.”, the line “This site describes PersonalClaw v0.2.6 and PersonalClawApps v0.2.2, and every product fact on it is built from their pinned revisions.”, and “PersonalClaw v0.2.6 · Verified release”, beside a capture: Home view in the PersonalClaw dashboard."
+  },
+  "/compare": {
+    "image": "/social/compare.png",
+    "width": 1200,
+    "height": 630,
+    "alt": "The PersonalClaw mark and wordmark in dark ink on coral, with the title “Every row checked against the release, including the ones that fail”, the line “Every row below names the file it was verified against in v0.2.6, the release this website publishes, pinned at c7305c85.”, and “PersonalClaw v0.2.6 · Verified release”, beside a capture: PersonalClaw agents view showing configured agent runtimes."
+  },
+  "/blog": {
+    "image": "/social/blog.png",
+    "width": 1200,
+    "height": 630,
+    "alt": "The PersonalClaw mark and wordmark in dark ink on coral, with the title “What shipped, and what did not.”, the line “Every post names the release its claims were verified against, and links the file that proves each one.”, and “PersonalClaw v0.2.6 · Verified release”, beside a capture: Loops view in the PersonalClaw dashboard."
+  },
+  "/blog/launch": {
+    "image": "/social/blog-launch.png",
+    "width": 1200,
+    "height": 630,
+    "alt": "The PersonalClaw mark and wordmark in dark ink on coral, with the title “A personal agent you can audit”, the line “Every claim in this post names the file that proves it, checked against v0.1.3, the tagged release this site published when it went up — including the claims that did not survive the check.”, and “Checked against PersonalClaw v0.1.3”, beside a capture: Loops view in the PersonalClaw dashboard."
+  },
+  "/registry": {
+    "image": "/social/registry.png",
+    "width": 1200,
+    "height": 630,
+    "alt": "The PersonalClaw mark and wordmark in dark ink on coral, with the title “See what an app asks for, first.”, the line “Every listing publishes the permissions its manifest declares and the verdict of its last supply-chain scan.”, and “PersonalClaw v0.2.6 · Verified release”, beside a capture: Apps view in the PersonalClaw dashboard."
+  },
+  "/docs": {
+    "image": "/social/docs.png",
+    "width": 1200,
+    "height": 630,
+    "alt": "The PersonalClaw mark and wordmark in dark ink on coral, with the title “Documentation”, the line “This documentation is generated from the tagged PersonalClaw release this site publishes, not written alongside it — so it describes the version you can actually install.”, and “PersonalClaw v0.2.6 · Verified release”, beside a capture: Knowledge view in the PersonalClaw dashboard."
+  }
+}

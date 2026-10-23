@@ -32,6 +32,9 @@ import { installerPackage, installerPython } from "../src/data/installer.mjs";
 import { docsIndex } from "../src/data/docs-index.mjs";
 import { registryArtifactExists, registryListing } from "../src/data/registry.mjs";
 import { fixtureAppNames, fixtureLeaks } from "./fixture-leaks.mjs";
+import { frameFor } from "../src/data/section-frame.mjs";
+import { pngSize, socialImageProblems, videoProblems } from "./social-image-check.mjs";
+import { FRAMES_MAP, FRAMES_STAMP, currentSpecs, staleFrames } from "./social-frames.mjs";
 
 const root = process.cwd();
 const distDir = path.resolve(root, process.env.DIST_DIR ?? "dist");
@@ -181,13 +184,34 @@ for (const filePath of contractedHtml) {
 // every shared docs link rendered as a bare text row) and NO JSON-LD at all, and the
 // per-listing registry pages were swept by a loop over a list that is EMPTY until the
 // pin moves — a metadata contract that passes because it measures nothing.
-const socialImageUrl = `${siteOrigin}${socialImagePath}`;
-// Measured from the artifact rather than compared against a second copy of the numbers:
-// a PNG's IHDR is bytes 16..24 of the file. A card whose declared dimensions do not match
-// its pixels is cropped by the consumer, and nothing else in the build would notice.
-const socialImageHeader = await readFile(path.join(distDir, socialImagePath.slice(1)));
-const socialImageWidth = String(socialImageHeader.readUInt32BE(16));
-const socialImageHeight = String(socialImageHeader.readUInt32BE(20));
+//
+// Each page's social image is its own frame, its section's, or the site's card (#97,
+// src/data/social-frames.ts). Every declared size is measured from the built file rather than
+// compared against a second copy of the numbers: an image whose declared dimensions do not
+// match its pixels is cropped by the consumer, and nothing else in the build would notice.
+const socialFrames = JSON.parse(await readFile(FRAMES_MAP, "utf8"));
+// The frames are committed, so a re-pin or a reworded headline leaves them behind until they are
+// rendered again. This build's pages and release are the inputs they must have been made of.
+for (const problem of staleFrames(await currentSpecs({ distDir }), {
+  stamp: JSON.parse(await readFile(FRAMES_STAMP, "utf8")),
+  map: socialFrames
+})) {
+  fail(`social frames: ${problem}. Run npm run render:social-frames and commit what it writes`);
+}
+const builtImageSizes = new Map();
+const builtImageSize = (imagePath) => builtImageSizes.get(imagePath);
+async function measureBuiltImage(imagePath) {
+  if (builtImageSizes.has(imagePath)) return;
+  const bytes = await readFile(path.join(distDir, imagePath.slice(1))).catch(() => undefined);
+  builtImageSizes.set(imagePath, pngSize(bytes));
+}
+const builtFileExists = new Map();
+async function measureBuiltFile(sitePath) {
+  if (builtFileExists.has(sitePath)) return;
+  builtFileExists.set(sitePath, await access(path.join(distDir, sitePath.slice(1))).then(() => true, () => false));
+}
+const framedPages = new Set();
+let videosChecked = 0;
 
 /** Absolute in-site URLs a BreadcrumbList claims; resolved after the sweep. */
 const breadcrumbItemUrls = new Map();
@@ -247,11 +271,7 @@ for (const outputPath of [...generatedHtml].sort()) {
     ['meta[property="og:site_name"]', "PersonalClaw"],
     ['meta[property="og:locale"]', "en_US"],
     ['meta[property="og:url"]', canonical],
-    ['meta[property="og:image"]', socialImageUrl],
-    ['meta[property="og:image:width"]', socialImageWidth],
-    ['meta[property="og:image:height"]', socialImageHeight],
-    ['meta[name="twitter:card"]', "summary_large_image"],
-    ['meta[name="twitter:image"]', socialImageUrl]
+    ['meta[name="twitter:card"]', "summary_large_image"]
   ];
   if (requiresDescription) {
     socialContract.push(
@@ -279,13 +299,53 @@ for (const outputPath of [...generatedHtml].sort()) {
       fail(`${routePath}: ${selector} "${value}" does not match the <title> "${title}"`);
     }
   }
-  // Alt text on the card, non-empty: a share preview is an image a screen reader has to
-  // describe, and the a11y gate cannot see a meta tag.
-  for (const selector of [
-    'meta[property="og:image:alt"]',
-    'meta[name="twitter:image:alt"]'
-  ]) {
-    if (!metaContent($, selector)) fail(`${routePath}: ${selector} must be non-empty`);
+  // The page's image: the frame the map gives it (with that frame's alt text) or the card,
+  // a PNG in the build at the size the page declares, with non-empty alt text, since a share
+  // preview is an image a screen reader has to describe and the a11y gate cannot see a meta tag.
+  const frame = frameFor(socialFrames, routePath);
+  if (frame) framedPages.add(routePath);
+  const head = {
+    image: metaContent($, 'meta[property="og:image"]'),
+    width: metaContent($, 'meta[property="og:image:width"]'),
+    height: metaContent($, 'meta[property="og:image:height"]'),
+    alt: metaContent($, 'meta[property="og:image:alt"]'),
+    twitterImage: metaContent($, 'meta[name="twitter:image"]'),
+    twitterAlt: metaContent($, 'meta[name="twitter:image:alt"]')
+  };
+  if (head.image?.startsWith(`${siteOrigin}/`)) await measureBuiltImage(head.image.slice(siteOrigin.length));
+  for (const problem of socialImageProblems({
+    route: routePath,
+    origin: siteOrigin,
+    head,
+    expected: frame ? { image: frame.image, alt: frame.alt } : { image: socialImagePath },
+    sizeOf: builtImageSize
+  })) {
+    fail(problem);
+  }
+
+  // Every video renders as its poster until a reader starts it, so the poster is the page's
+  // no-video fallback: it must be in the build, as must any captions the video names.
+  const videos = $("video")
+    .toArray()
+    .map((element) => {
+      const video = $(element);
+      // A loop with a still shows that image until it plays, in place of a poster.
+      const still = video.closest("[data-loop-video][data-still]").find("img").first();
+      return {
+        poster: video.attr("poster"),
+        still: still.length ? (still.attr("src") ?? still.attr("data-deferred-src")) : undefined,
+        preload: video.attr("preload"),
+        autoplay: video.attr("autoplay") !== undefined,
+        label: video.attr("aria-label")?.trim() || (video.attr("aria-labelledby") ? "labelled" : ""),
+        tracks: video.find("track[src]").toArray().map((track) => $(track).attr("src"))
+      };
+    });
+  for (const sitePath of videos.flatMap((video) => [video.poster, video.still, ...video.tracks]).filter((p) => p?.startsWith("/"))) {
+    await measureBuiltFile(sitePath);
+  }
+  videosChecked += videos.length;
+  for (const problem of videoProblems({ route: routePath, videos, exists: (sitePath) => builtFileExists.get(sitePath) === true })) {
+    fail(problem);
   }
   if (!metaContent($, 'meta[property="og:type"]')) {
     fail(`${routePath}: og:type must be set`);
@@ -384,6 +444,17 @@ if (headContractPages < HEAD_CONTRACT_PAGE_FLOOR) {
 
 for (const [itemUrl, sourceRoute] of breadcrumbItemUrls) {
   await validateInternalUrl(itemUrl, sourceRoute, "breadcrumb item");
+}
+
+// A frame is made for a page, so the page must exist: a frame whose route stopped building is
+// a share image nothing declares. And every file under /social is some page's frame: one no
+// record owns is a share image no stamp holds to its inputs.
+for (const route of Object.keys(socialFrames)) {
+  if (!framedPages.has(route)) fail(`src/data/social-frames.json has a frame for ${route}, which the build has no page for`);
+}
+const ownedFrames = new Set(Object.values(socialFrames).map((frame) => frame.image));
+for (const file of await readdir(path.join(distDir, "social")).catch(() => [])) {
+  if (!ownedFrames.has(`/social/${file}`)) fail(`/social/${file} is in the build, but no frame in src/data/social-frames.json is it`);
 }
 
 // Docs pages are generated from core, so their WORDS are not contracted — the head
@@ -1040,8 +1111,9 @@ if (failures.length > 0) {
   console.log(
     `Head contract: ${headContractPages} page(s) swept (floor ` +
       `${HEAD_CONTRACT_PAGE_FLOOR}); ${breadcrumbItemUrls.size} distinct breadcrumb ` +
-      `target(s) resolved; social card ${socialImageWidth}x${socialImageHeight} verified ` +
-      `against ${socialImagePath}; ${llmsIndexPath} + ${llmsFullPath} published and ` +
+      `target(s) resolved; ${framedPages.size} page(s) declare a frame and the rest the card, ` +
+      `${builtImageSizes.size} image size(s) measured; ${videosChecked} video(s) with a poster or still in the build; ` +
+      `${llmsIndexPath} + ${llmsFullPath} published and ` +
       `cross-checked against ${docsRoutePaths.length} docs route(s).`
   );
 }
