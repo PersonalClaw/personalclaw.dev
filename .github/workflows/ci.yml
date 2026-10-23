@@ -289,8 +289,32 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
 
+      # Chromium comes from Playwright's CDN, its build pinned by the lock, and apt is not
+      # touched unless the browser cannot start. `--with-deps` ran apt on every run, and the
+      # Ubuntu mirror hung there for up to 14 minutes (run 39980604594), taking the whole job's
+      # 15 with it. The hosted image carries Chromium's system libraries, which the next step
+      # checks; only if it fails do they install from apt, bounded, so a hung mirror fails in
+      # minutes and names itself.
       - name: Install Chromium
-        run: npx playwright install --with-deps chromium
+        timeout-minutes: 5
+        run: npx playwright install chromium
+
+      - name: Check that Chromium starts
+        id: chromium-starts
+        continue-on-error: true
+        timeout-minutes: 2
+        run: node -e "require('@playwright/test').chromium.launch().then((browser) => browser.close())"
+
+      - name: Install Chromium's system libraries
+        if: ${{ steps.chromium-starts.outcome == 'failure' }}
+        timeout-minutes: 6
+        run: |
+          echo "::warning::Chromium did not start on this runner image, so its system libraries install from apt"
+          if ! timeout 300 npx playwright install-deps chromium; then
+            echo "::error::Chromium's system libraries did not install within 5 minutes: the apt mirror is slow or down" >&2
+            exit 1
+          fi
+          node -e "require('@playwright/test').chromium.launch().then((browser) => browser.close())"
 
       - name: Download the shared build
         id: download
@@ -382,8 +406,32 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
 
+      # Chromium comes from Playwright's CDN, its build pinned by the lock, and apt is not
+      # touched unless the browser cannot start. `--with-deps` ran apt on every run, and the
+      # Ubuntu mirror hung there for up to 14 minutes (run 39980604594), taking the whole job's
+      # 15 with it. The hosted image carries Chromium's system libraries, which the next step
+      # checks; only if it fails do they install from apt, bounded, so a hung mirror fails in
+      # minutes and names itself.
       - name: Install Chromium
-        run: npx playwright install --with-deps chromium
+        timeout-minutes: 5
+        run: npx playwright install chromium
+
+      - name: Check that Chromium starts
+        id: chromium-starts
+        continue-on-error: true
+        timeout-minutes: 2
+        run: node -e "require('@playwright/test').chromium.launch().then((browser) => browser.close())"
+
+      - name: Install Chromium's system libraries
+        if: ${{ steps.chromium-starts.outcome == 'failure' }}
+        timeout-minutes: 6
+        run: |
+          echo "::warning::Chromium did not start on this runner image, so its system libraries install from apt"
+          if ! timeout 300 npx playwright install-deps chromium; then
+            echo "::error::Chromium's system libraries did not install within 5 minutes: the apt mirror is slow or down" >&2
+            exit 1
+          fi
+          node -e "require('@playwright/test').chromium.launch().then((browser) => browser.close())"
 
       - name: Download the shared build
         id: download
