@@ -53,7 +53,7 @@ const behind = post.data.verifiedAgainst !== pinned;
       <p class="post-meta">
         <time datetime={post.data.publishDate.toISOString().slice(0, 10)}>{readableDate}</time>{" "}
         <a class="verified" href="/release" data-blog-verified>
-          Verified against <span translate="no">{post.data.verifiedAgainst}</span>
+          <span>Verified against <span translate="no">{post.data.verifiedAgainst}</span></span>
         </a>
       </p>
 
@@ -136,16 +136,21 @@ const behind = post.data.verifiedAgainst !== pinned;
     color: var(--ink-soft);
   }
 
+  /* The date and the badge share one centre line, so the badge's 44 px box doesn't drop below the
+     date beside it. */
   .post-meta {
     display: flex;
     flex-wrap: wrap;
     gap: 0.4rem 0.9rem;
+    align-items: center;
     margin: 0 0 clamp(2.5rem, 5vw, 3.5rem);
     color: var(--ink-muted);
     font-family: var(--font-mono);
-    font-size: 0.875rem;
+    font-size: var(--fs-mono);
   }
 
+  /* One flex item inside: a text run straight in an inline-flex box loses its trailing space, which
+     glued "against" to the version. The inner span keeps the phrase one run. */
   .verified {
     display: inline-flex;
     min-height: 44px;
@@ -198,7 +203,10 @@ const behind = post.data.verifiedAgainst !== pinned;
     padding-left: 1.2rem;
   }
 
+  /* A verdict moves to the next line whole rather than breaking mid-phrase, and still wraps
+     inside itself when it is wider than the line (200% text on a 320 px screen). */
   .claim-verdict {
+    display: inline-block;
     color: var(--ink-muted);
     font-family: var(--font-mono);
     font-size: var(--fs-mono);
