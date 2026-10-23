@@ -414,3 +414,33 @@ export function faqParityProblems(html) {
   }
   return problems;
 }
+
+/**
+ * Whether a page carries the headline pattern (#98, settled 2026-10-14): one headline, and
+ * under it one factual support sentence (`[data-support]`) in the same section, one sentence
+ * long. tests/browser/support-sentence.spec.ts holds both to the first viewport.
+ *
+ * @param {string} html
+ * @param {{ route: string }} options
+ * @returns {string[]}
+ */
+export function supportSentenceProblems(html, { route }) {
+  const page = load(html);
+  const main = page("main").first();
+  if (main.length === 0) return [`${route} has no <main> to read its headline from`];
+  const headings = main.find("h1");
+  if (headings.length !== 1) return [`${route} has ${headings.length} h1 headlines, not one`];
+  const support = main.find("[data-support]");
+  if (support.length !== 1) return [`${route} has ${support.length} support sentences ([data-support]), not one`];
+  const problems = [];
+  const section = headings.first().closest("section, article").get(0);
+  if (!section || page(section).find("[data-support]").length !== 1) {
+    problems.push(`${route}'s support sentence is not in its headline's section`);
+  }
+  const text = support.first().text().replace(/\s+/g, " ").trim();
+  const sentences = text.split(/(?<=[.!?])\s+(?=[A-Z])/).filter((part) => part.trim() !== "");
+  if (sentences.length !== 1) {
+    problems.push(`${route}'s support sentence is ${sentences.length} sentences, not one: "${excerpt(text)}"`);
+  }
+  return problems;
+}

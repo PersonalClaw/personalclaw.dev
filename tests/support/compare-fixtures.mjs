@@ -82,7 +82,7 @@ export function comparePage(data, { rowId = (row) => row.id, extra = "", staleAs
     );
   return [
     '<!doctype html><html lang="en"><body><main id="main-content">',
-    "<h1>What it does</h1>",
+    "<section><h1>What it does</h1><p data-support>Every row names the file it was checked against.</p></section>",
     `<p data-capability-counts>${VERDICTS.map((verdict) => `<span data-capability-count="${verdict}">${counts[verdict]}</span>`).join(" ")}</p>`,
     `<section><h2 id="how-to-read">How to read a verdict</h2><dl>${VERDICTS.map((verdict) => `<div data-capability-legend-item="${verdict}"><dt>${verdict}</dt><dd></dd></div>`).join("")}</dl></section>`,
     ...groups,
@@ -98,6 +98,8 @@ export function productPage(sections, { header = "", footer = "" } = {}) {
     '<!doctype html><html lang="en"><body>',
     `<header>${header}</header>`,
     '<main id="main-content">',
+    // The headline and its one support sentence every hand-authored page carries (#98).
+    '<section><h1>Watch it do the work.</h1><p data-support>One run on one machine.</p></section>',
     ...sections,
     "</main>",
     `<footer>${footer}</footer>`,

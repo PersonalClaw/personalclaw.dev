@@ -29,10 +29,12 @@ const registryTreeUrl = `https://github.com/${source.repository}/tree/${source.c
         <h1 class="display">See what an app asks for, first.</h1>
       </div>
       <div class="intro-copy">
-        <p>
+        <p data-support>
           Every listing publishes the permissions its manifest declares and the
-          verdict of its last supply-chain scan. Both appear here unchanged, so the
-          decision happens before any code reaches your machine.
+          verdict of its last supply-chain scan.
+        </p>
+        <p>
+          Both appear here unchanged, so you decide before any code reaches your machine.
         </p>
         <a class="text-link" href={registryTreeUrl} target="_blank" rel="noreferrer">
           Read the registry and its listing policy
