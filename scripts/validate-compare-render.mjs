@@ -54,9 +54,11 @@ import { fileURLToPath } from "node:url";
 import { load } from "cheerio";
 import { declaredRowIdProblems, renderedRowIdProblems } from "./compare-row-ids.mjs";
 import { compareCitations, productClaimProblems } from "./product-claims.mjs";
+import { currentRows, ledgerProblems } from "./ledger.mjs";
 
 const repositoryRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const dataPath = join(repositoryRoot, "src", "data", "capabilities.json");
+const sourcesPath = join(repositoryRoot, "sources", "personalclaw.sources.json");
 const distDirectory = join(repositoryRoot, process.env.DIST_DIR ?? "dist");
 
 const failures = [];
@@ -75,9 +77,14 @@ const data = JSON.parse(readFileSync(dataPath, "utf8"));
 const rows = Array.isArray(data.rows) ? data.rows : [];
 const groups = Array.isArray(data.groups) ? data.groups : [];
 const version = data.release?.version;
+const pinnedCore = JSON.parse(readFileSync(sourcesPath, "utf8")).sources.core;
+const pin = { tag: pinnedCore.tag, commit: pinnedCore.commit };
+// Only a row verified at the pinned release is a current claim; the rest are known limits.
+const current = currentRows(rows, pin);
+const stale = rows.filter((row) => !current.includes(row));
 
 const declaredCounts = { yes: 0, partial: 0, no: 0 };
-for (const row of rows) {
+for (const row of current) {
   if (row?.verdict in declaredCounts) declaredCounts[row.verdict] += 1;
 }
 
@@ -127,6 +134,9 @@ if (declaredCounts.partial === 0) {
 // Every row can be linked by its capability key, and no two rows share one.
 for (const problem of declaredRowIdProblems(rows)) fail(problem);
 
+// Every row carries the ledger's fields, its release block is the pin, and its links agree.
+for (const problem of ledgerProblems(data, pin)) fail(`ledger: ${problem}`);
+
 // ---------------------------------------------------------------------------
 // The page renders every row, from its own data, sourced to the pin.
 // ---------------------------------------------------------------------------
@@ -149,8 +159,11 @@ if (!existsSync(pagePath)) {
         `An empty matrix from a populated data file is the exact failure this check ` +
         `exists for: the page is reading no data, or data it cannot parse.`
     );
-  } else if (rendered.length !== rows.length) {
-    fail(`/compare rendered ${rendered.length} rows, the data holds ${rows.length}`);
+  } else if (rendered.length !== current.length) {
+    fail(
+      `/compare rendered ${rendered.length} current rows, the ledger holds ${current.length} ` +
+        `verified at ${pin.tag}`
+    );
   }
 
   if (page("h1").length !== 1) {
@@ -158,12 +171,35 @@ if (!existsSync(pagePath)) {
   }
 
   for (const group of groups) {
-    if (page(`[data-capability-group="${group.id}"]`).length !== 1) {
-      fail(`/compare does not render group ${group.id}`);
+    const expected = current.some((row) => row.group === group.id) ? 1 : 0;
+    if (page(`[data-capability-group="${group.id}"]`).length !== expected) {
+      fail(`/compare ${expected ? "does not render" : "renders an empty"} group ${group.id}`);
     }
   }
 
-  for (const row of rows) {
+  // A row verified at an older release shows only as a known limit: its claim and the release
+  // it was last checked at, never its wording and never among the current rows.
+  for (const row of stale) {
+    if (page(`[data-capability-row="${row.id}"]`).length > 0) {
+      fail(
+        `/compare shows ${row.id} as a current claim, but it was last verified at ` +
+          `${row.verified_release} and the site pins ${pin.tag}`
+      );
+    }
+    const limit = page(`[data-capability-limit="${row.id}"]`);
+    if (limit.length !== 1) {
+      fail(`/compare does not list ${row.id} among the rows not checked again at ${pin.tag}`);
+    } else {
+      if (String(row.statement ?? "").trim() !== "" && limit.text().includes(String(row.statement).trim())) {
+        fail(`/compare shows ${row.id}'s wording though it was not verified at ${pin.tag}`);
+      }
+      if (!limit.text().includes(row.verified_release)) {
+        fail(`/compare lists ${row.id} as a known limit without the release it was last verified at`);
+      }
+    }
+  }
+
+  for (const row of current) {
     const node = page(`[data-capability-row="${row.id}"]`);
     if (node.length !== 1) {
       fail(`/compare does not render row ${row.id}`);
@@ -199,10 +235,10 @@ if (!existsSync(pagePath)) {
       if (href !== row.source_url) {
         fail(`/compare sources ${row.id} to ${href}, the data records ${row.source_url}`);
       }
-      if (!href.includes(`/blob/${version}/`)) {
+      if (!href.includes(`/blob/${pin.tag}/`)) {
         fail(
           `/compare sources ${row.id} to ${href}, which does not point into the pinned ` +
-            `release ${version}. A row sourced to a branch can be true in development and ` +
+            `release ${pin.tag}. A row sourced to a branch can be true in development and ` +
             `false in the release a reader can actually install.`
         );
       }
@@ -220,7 +256,7 @@ if (!existsSync(pagePath)) {
   // The headline counts are the first thing a reader believes, so they must come from the
   // same rows rather than being maintained beside them.
   for (const verdict of ["yes", "partial", "no"]) {
-    const shown = page(`[data-capability-count="${verdict}"] .count-n`).text().trim();
+    const shown = page(`[data-capability-count="${verdict}"]`).text().trim();
     if (shown !== String(declaredCounts[verdict])) {
       fail(
         `/compare advertises ${shown || "nothing"} "${verdict}" rows but the data holds ` +
@@ -255,8 +291,9 @@ if (failures.length > 0) {
   process.exitCode = 1;
 } else {
   console.log(
-    `Validated the capability matrix: ${rows.length} rows across ${groups.length} groups ` +
-      `rendered at /compare, every row sourced into ${version}, byte-equal to its ` +
+    `Validated the capability matrix: ${current.length} rows across ${groups.length} groups ` +
+      `rendered at /compare (${stale.length} more listed as not checked again at ${pin.tag}), ` +
+      `every row sourced into ${version}, carrying the ledger's fields, byte-equal to its ` +
       `declared claim and statement, and linked by its key alone — ` +
       `${declaredCounts.yes} holding, ` +
       `${declaredCounts.partial} narrower than stated, ${declaredCounts.no} not in this ` +

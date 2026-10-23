@@ -4,6 +4,7 @@ import { BoundaryViews } from "../components/BoundaryViews";
 import { releaseFacts } from "../data/release";
 import security from "../data/security.json";
 import capabilities from "../data/capabilities.json";
+import { ledgerRow } from "../data/capabilities.mjs";
 
 /*
  * EVERY CLAIM ON THIS PAGE IS A ROW IN src/data/security.json, read against core at the pinned
@@ -55,13 +56,13 @@ const checkedOn = new Date(`${security.checked_on}T12:00:00Z`).toLocaleDateStrin
 });
 
 // Each limit's link names where it goes, so no two links share a name and a destination differs.
-const compareClaims = Object.fromEntries(capabilities.rows.map((row) => [row.id, row.claim]));
-const compareVerdicts = Object.fromEntries(capabilities.rows.map((row) => [row.id, row.verdict]));
+// Each Compare row a limit names comes through the ledger, which refuses one not verified at the
+// pin or not listing /security among its surfaces.
 const limitSource = (limit: { compare?: string; href?: string; href_label?: string }) =>
   limit.compare
     ? {
         href: `/compare#${limit.compare}`,
-        label: `On Compare, ${statusLabels[compareVerdicts[limit.compare]].toLowerCase()}: “${compareClaims[limit.compare].replace(/\.$/, "")}”`
+        label: `On Compare, ${statusLabels[ledgerRow(limit.compare, "security").verdict].toLowerCase()}: “${ledgerRow(limit.compare, "security").claim.replace(/\.$/, "")}”`
       }
     : { href: limit.href ?? "/docs/security/limitations", label: limit.href_label ?? "The limitations page" };
 

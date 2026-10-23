@@ -178,7 +178,7 @@ The build runs Astro diagnostics before producing the static site in `dist/`.
 | `npm run validate:release-parity` | Checks the website version against the pinned + newest published core release, and the recorded release assets against the live release record (see [Release parity](#release-parity)) |
 | `npm run validate:registry` | Rebuilds `/registry` against fixture registries that carry listings and asserts what it renders |
 | `npm run validate:blog` | Asserts `/blog` renders one listing item per readable post, and that each post is published, contracted, and not an empty body |
-| `npm run validate:compare` | Refuses a `/compare` matrix that renders no rows, drifts from its data, sources a row to a branch instead of the pinned release, stops carrying the rows that do not hold, or gives a row an id other than its capability key (`/compare#telemetry`) or one another element shares; and refuses a `/product` section that talks about a row's subject without linking the row, a sentence that states a claim a row says does not hold, or a link to a row that does not exist |
+| `npm run validate:compare` | Refuses a `/compare` matrix that renders no rows, drifts from its data, sources a row to a branch instead of the pinned release, stops carrying the rows that do not hold, gives a row an id other than its capability key (`/compare#telemetry`) or one another element shares, lacks a ledger field, or shows a row not verified at the pinned release as a current claim; and refuses a `/product` section that talks about a row's subject without linking the row, a sentence that states a claim a row says does not hold, or a link to a row that does not exist |
 | `npm run validate:security` | Refuses a `/security` control that links no file or one outside the pinned release tag, a boundary table without one row per boundary in its five columns (boundary, responsibility, enforcement, evidence, known limit), known limits placed after the controls or not naming the release they were verified against, and a limit whose `/compare` row now holds, is gone, or whose limitations section does not exist |
 | `npm run validate:source-pins` | Refuses any hand-authored link into core, apps or the registry at a moving ref (`main`, `master`, `HEAD`, `latest`) — the same release-not-branch rule `validate:compare` applies to matrix rows, applied to page copy |
 | `npm run test:static` | Validates production and preview publication artifacts; with `-- --prebuilt`, tests a shared build instead of making one (see [One build per CI run](#one-build-per-ci-run)) |
@@ -393,6 +393,14 @@ and it is held to the release, not to the branch.
   scope serves a reader better than our characterisation of anyone else's.
 - **Corrections outrank the page.** A row that cannot be re-sourced gets removed rather than
   defended.
+- **One verification ledger.** `src/data/capabilities.json` is the ledger Compare, Home and
+  `/security` read. Each row carries its claim, its wording (`statement`), its evidence and
+  the evidence's type (`source_type`: a file at the tag, a release asset, an attestation, a
+  workflow run or a test), the core or apps commit it was read at, the release it was last
+  verified against (`verified_release`), and the pages that show it (`surfaces`). A row not
+  verified at the pinned release shows on `/compare` only as a known limit, with its claim
+  and the release it was last checked at. Home and `/security` refuse it at build time, so a
+  re-pin can't publish a claim nobody read again.
 
 The tag-not-branch half of that rule is **not** limited to `/compare` rows. `npm run
 validate:source-pins` applies it to every hand-authored link into core, apps or the

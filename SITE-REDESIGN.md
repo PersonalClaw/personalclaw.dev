@@ -87,7 +87,9 @@ shows real captures only. `cro` proposes A/B tests and popups, and the site runs
   2.8:1 and fails.
 - None of these: glow, purple or blue gradients, gradient text, all-caps eyebrows, numbered section
   labels, arrows glued to links, three equal cards, stat tiles, arrow chains, or a version label in
-  the hero.
+  the hero. The version-label ban covers the marketing heroes only (`/`, `/product` and `/apps`):
+  the proof pages (`/compare`, `/release` and `/security`'s limits) name the checked release in their
+  lede, because naming it is the claim.
 - One signature element, the System Window. Everything around it stays quiet.
 - No analytics, cookies or third-party scripts. Measure with public aggregates only.
 - Every video has a real, release-pinned poster, captions for narrative, muted loops that pause

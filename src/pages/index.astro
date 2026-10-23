@@ -7,7 +7,7 @@ import InstallPanel from "../components/InstallPanel.astro";
 import SystemWindow from "../components/SystemWindow.astro";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { BUILDERS_SNIPPET } from "../data/apps-snippet.mjs";
-import { capabilityMatrix } from "../data/capabilities.mjs";
+import { capabilityMatrix, ledgerRow } from "../data/capabilities.mjs";
 import { releaseFacts } from "../data/release";
 import { INSTALL_PANEL_ID } from "../data/site";
 import { trustRows } from "../data/trust.mjs";
@@ -25,11 +25,8 @@ const trust = trustRows(core);
 // The FAQ answers in the /compare rows' own words where a row exists, so an answer cannot say more
 // than the row the matrix checked at the pin.
 const matrix = capabilityMatrix();
-const row = (id: string) => {
-  const found = matrix.rows.find((candidate) => candidate.id === id);
-  if (!found) throw new Error(`src/pages/index.astro: /compare has no row "${id}"`);
-  return found;
-};
+// Refuses a row not verified at the pin, or one that doesn't list Home among its surfaces.
+const row = (id: string) => ledgerRow(id, "home", matrix);
 const models = releaseFacts.apps.categories.find((category) => category.name === "Models");
 if (!models) throw new Error("src/pages/index.astro: the pinned apps have no Models category");
 
