@@ -4,6 +4,7 @@ import inboxCapture from "../assets/inbox.png";
 import loopsCapture from "../assets/loops.png";
 import DeferredCapture from "../components/DeferredCapture.astro";
 import InstallPanel from "../components/InstallPanel.astro";
+import LoopVideo from "../components/LoopVideo.astro";
 import SystemWindow from "../components/SystemWindow.astro";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { BUILDERS_SNIPPET } from "../data/apps-snippet.mjs";
@@ -142,11 +143,13 @@ const latest = core.changelog.latest;
           <a class="text-link" href="/docs/guides/keyboard">Every key, in the keyboard guide</a>
         </div>
         <div class="feature-media">
-          <DeferredCapture
-            src={inboxCapture}
-            alt="The PersonalClaw inbox with a loop waiting on an answer and an agent request waiting on an approval"
-            sizes="(max-width: 900px) 92vw, 58vw"
-          />
+          <LoopVideo id="approve-enter" label="Approving from the keyboard: Tab to the waiting request, then Cmd Enter, and it is approved">
+            <DeferredCapture
+              src={inboxCapture}
+              alt="The PersonalClaw inbox with a loop waiting on an answer and an agent request waiting on an approval"
+              sizes="(max-width: 900px) 92vw, 58vw"
+            />
+          </LoopVideo>
         </div>
       </div>
     </div>

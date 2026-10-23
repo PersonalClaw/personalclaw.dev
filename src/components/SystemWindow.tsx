@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { mountLoopVideos } from "./loop-video.mjs";
 
 type View = {
   id: string;
@@ -10,6 +11,8 @@ type View = {
   sizes: string;
   width: number;
   height: number;
+  /** The loop the tab plays in place of its still (#95), as the loop player's markup. */
+  loop?: string;
 };
 
 // The selected view lives in the URL as `?view=<id>`, so a reload, back and forward, and a
@@ -17,6 +20,10 @@ type View = {
 // URL rather than adding a history entry: Back leaves the page, as it did, instead of stepping
 // through tabs. The first view is the default and leaves no parameter; a missing or unknown id
 // opens it.
+//
+// A tab with a loop shows it in place of its still. Every loop stays in the page and is only
+// hidden while its tab is not chosen, so leaving a tab pauses a playing loop (the player pauses
+// what is out of view) and never removes a source mid-request; coming back resumes it.
 const VIEW_PARAM = "view";
 
 function viewInUrl(views: View[]): number {
@@ -29,7 +36,10 @@ export function SystemWindow({ views }: { views: View[] }) {
   // The server renders the default view; the URL's is read once the island runs.
   const [activeIndex, setActiveIndex] = useState(0);
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const frameRef = useRef<HTMLDivElement | null>(null);
   const active = views[activeIndex];
+
+  useEffect(() => (frameRef.current ? mountLoopVideos(frameRef.current) : undefined), []);
 
   useEffect(() => {
     const follow = () => setActiveIndex(viewInUrl(views));
@@ -102,19 +112,31 @@ export function SystemWindow({ views }: { views: View[] }) {
         role="tabpanel"
         aria-labelledby={`tab-${active.id}`}
       >
-        <div className="system-frame">
-          <img
-            key={active.id}
-            className="system-image is-active"
-            src={active.src}
-            srcSet={active.srcSet}
-            sizes={active.sizes}
-            width={active.width}
-            height={active.height}
-            alt={`${active.label} view in the PersonalClaw dashboard`}
-            loading="eager"
-            fetchPriority={activeIndex === 0 ? "high" : "auto"}
-          />
+        <div className="system-frame" ref={frameRef}>
+          {views.map((view, index) =>
+            view.loop ? (
+              <div
+                key={`loop-${view.id}`}
+                className="system-loop"
+                hidden={index !== activeIndex}
+                dangerouslySetInnerHTML={{ __html: view.loop }}
+              />
+            ) : null
+          )}
+          {active.loop ? null : (
+            <img
+              key={active.id}
+              className="system-image is-active"
+              src={active.src}
+              srcSet={active.srcSet}
+              sizes={active.sizes}
+              width={active.width}
+              height={active.height}
+              alt={`${active.label} view in the PersonalClaw dashboard`}
+              loading="eager"
+              fetchPriority={activeIndex === 0 ? "high" : "auto"}
+            />
+          )}
         </div>
         <div className="system-caption">
           <p>{active.title}</p>

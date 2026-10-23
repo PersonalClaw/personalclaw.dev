@@ -72,7 +72,7 @@ const TOUR = Object.freeze({
 /** The problems the validator finds once *plant* changes a copy of the real manifest. */
 function problemsAfter(plant, extra) {
   const manifest = structuredClone(real);
-  manifest.videos = [...(manifest.videos ?? []), structuredClone(TOUR)];
+  manifest.videos = [structuredClone(TOUR), ...(manifest.videos ?? [])];
   const without = plant(manifest) ?? {};
   const dir = site(manifest, extra);
   try {

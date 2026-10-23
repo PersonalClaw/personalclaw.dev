@@ -246,5 +246,187 @@
       "status": "retired"
     }
   ],
-  "videos": []
+  "videos": [
+    {
+      "id": "hero-loop",
+      "kind": "loop",
+      "composition": "marketing/compositions/hero-loop/index.html",
+      "sources": [
+        "home-lanes",
+        "thread-turn",
+        "loops",
+        "approval-wait"
+      ],
+      "capturedAt": "0.2.6",
+      "durationSeconds": 10,
+      "posterAtSeconds": 0.6,
+      "crf": 24,
+      "width": 1280,
+      "height": 800,
+      "output": "public/media/hero-loop.mp4",
+      "poster": "public/media/hero-loop-poster.webp",
+      "captions": null,
+      "chapters": null,
+      "budgetBytes": 2000000,
+      "autoplay": "none",
+      "fallback": "The loop could not play. The Home tab's still stays: what waits on you.",
+      "audio": [],
+      "placements": [
+        {
+          "file": "src/components/SystemWindow.astro",
+          "kind": "hero-loop",
+          "caption": "The System Window's Home tab: Home, a chat working, a goal loop's report, an approval and done"
+        }
+      ],
+      "status": "shipping"
+    },
+    {
+      "id": "approve-enter",
+      "kind": "loop",
+      "composition": "marketing/compositions/approve-enter/index.html",
+      "sources": [
+        "approve-enter"
+      ],
+      "capturedAt": "0.2.6",
+      "durationSeconds": 4.4,
+      "posterAtSeconds": 0.6,
+      "crf": 24,
+      "width": 1280,
+      "height": 800,
+      "output": "public/media/approve-enter.mp4",
+      "poster": "public/media/approve-enter-poster.webp",
+      "captions": null,
+      "chapters": null,
+      "budgetBytes": 600000,
+      "autoplay": "none",
+      "fallback": "The loop could not play. The inbox still stays: a request waiting on your approval.",
+      "audio": [],
+      "placements": [
+        {
+          "file": "src/pages/index.astro",
+          "kind": "feature-loop",
+          "caption": "Delegation and control: approve from the keyboard"
+        }
+      ],
+      "status": "shipping"
+    },
+    {
+      "id": "loop-pause",
+      "kind": "loop",
+      "composition": "marketing/compositions/loop-pause/index.html",
+      "sources": [
+        "loop-pause"
+      ],
+      "capturedAt": "0.2.6",
+      "durationSeconds": 5,
+      "posterAtSeconds": 0.6,
+      "crf": 24,
+      "width": 1280,
+      "height": 800,
+      "output": "public/media/loop-pause.mp4",
+      "poster": "public/media/loop-pause-poster.webp",
+      "captions": null,
+      "chapters": null,
+      "budgetBytes": 600000,
+      "autoplay": "none",
+      "fallback": "The section's still and its text.",
+      "audio": [],
+      "placements": [
+        {
+          "file": "src/pages/index.astro",
+          "kind": "feature-loop",
+          "caption": "Delegation and control: delegate a goal, then pause the loop"
+        }
+      ],
+      "status": "new-needs-placement"
+    },
+    {
+      "id": "app-install",
+      "kind": "loop",
+      "composition": "marketing/compositions/app-install/index.html",
+      "sources": [
+        "app-install"
+      ],
+      "capturedAt": "0.2.6",
+      "durationSeconds": 5,
+      "posterAtSeconds": 0.6,
+      "crf": 24,
+      "width": 1280,
+      "height": 800,
+      "output": "public/media/app-install.mp4",
+      "poster": "public/media/app-install-poster.webp",
+      "captions": null,
+      "chapters": null,
+      "budgetBytes": 600000,
+      "autoplay": "none",
+      "fallback": "The loop could not play. The Apps tab's still stays: the app directory.",
+      "audio": [],
+      "placements": [
+        {
+          "file": "src/components/SystemWindow.astro",
+          "kind": "hero-loop",
+          "caption": "The System Window's Apps tab: an app's permissions and security scan, then installed"
+        }
+      ],
+      "status": "shipping"
+    }
+  ],
+  "clips": [
+    {
+      "id": "home-lanes",
+      "file": "marketing/.captures/clips/home-lanes.webm",
+      "width": 1440,
+      "height": 900,
+      "scenario": "Home showing what needs you, with at least one approval and one question waiting; held still about 4 s.",
+      "status": "shipping"
+    },
+    {
+      "id": "thread-turn",
+      "file": "marketing/.captures/clips/thread-turn.webm",
+      "width": 1440,
+      "height": 900,
+      "scenario": "One chat turn from the prompt sent to the reply finished: the agent orb thinking, then working under the tool's own label, then composing, then done, each with its status text; about 15 s.",
+      "status": "shipping"
+    },
+    {
+      "id": "loop-planning",
+      "file": "marketing/.captures/clips/loop-planning.webm",
+      "width": 1440,
+      "height": 900,
+      "scenario": "A goal loop's cockpit while it plans (\"Planning\") and then runs a cycle; about 8 s.",
+      "status": "new-needs-placement"
+    },
+    {
+      "id": "approval-wait",
+      "file": "marketing/.captures/clips/approval-wait.webm",
+      "width": 1440,
+      "height": 900,
+      "scenario": "A pending approval card with its \"!\" badge and \"Needs your approval\", held still; about 4 s.",
+      "status": "shipping"
+    },
+    {
+      "id": "approve-enter",
+      "file": "marketing/.captures/clips/approve-enter.webm",
+      "width": 1440,
+      "height": 900,
+      "scenario": "Tab to the pending approval card, press Cmd Enter, and it resolves; about 6 s.",
+      "status": "shipping"
+    },
+    {
+      "id": "loop-pause",
+      "file": "marketing/.captures/clips/loop-pause.webm",
+      "width": 1440,
+      "height": 900,
+      "scenario": "In a running loop's cockpit, press Pause, it settles paused, then Resume; about 6 s.",
+      "status": "new-needs-placement"
+    },
+    {
+      "id": "app-install",
+      "file": "marketing/.captures/clips/app-install.webm",
+      "width": 1440,
+      "height": 900,
+      "scenario": "In Apps, open one app that needs no key, read its consent dialog, install, and it shows installed; about 6 s.",
+      "status": "shipping"
+    }
+  ]
 }

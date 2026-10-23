@@ -1,14 +1,25 @@
 ---
 import { getImage } from "astro:assets";
+import manifest from "../../marketing/screenshots.manifest.json";
 import dashboard from "../assets/dashboard.png";
 import chat from "../assets/chat.png";
 import loops from "../assets/loops.png";
 import apps from "../assets/apps.png";
 import { productViews } from "../data/site";
+import { manifestLoopMarkup } from "./loop-video.mjs";
+import "./loop-video.css";
 import { SystemWindow } from "./SystemWindow";
 
 const images = [dashboard, chat, loops, apps];
 const widths = [480, 720, 960, 1280, 1600];
+
+// The tabs that play a loop (#95), by view id: the manifest's `videos` entry, and what it shows
+// for a screen reader. The other tabs keep their stills. Each loop is the site's one player
+// (./loop-video.mjs), poster first, so a tab asks for no video byte until its Play is pressed.
+const tabLoops: Record<string, { id: string; label: string }> = {
+  home: { id: "hero-loop", label: "PersonalClaw at work: Home, a chat working, a goal loop's report, an approval and done" },
+  apps: { id: "app-install", label: "Installing an app: its permissions and security scan, then installed" }
+};
 
 const views = await Promise.all(
   productViews.map(async (view, index) => {
@@ -19,13 +30,27 @@ const views = await Promise.all(
       )
     );
 
-    return {
-      ...view,
+    const shown = {
       src: variants[3].src,
       srcSet: variants.map((variant, variantIndex) => `${variant.src} ${widths[variantIndex]}w`).join(", "),
       sizes: "(max-width: 820px) 96vw, (max-width: 1440px) 56vw, 820px",
       width: source.width,
       height: source.height
+    };
+    // A tab's loop shows the tab's own still until it plays, so the first tab keeps Home's
+    // largest paint: the same responsive image, fetched first.
+    const loop = tabLoops[view.id];
+    const still = loop
+      ? `<img class="system-image is-active" src="${shown.src}" srcset="${shown.srcSet}" sizes="${shown.sizes}"` +
+        ` width="${shown.width}" height="${shown.height}" alt="${view.label} view in the PersonalClaw dashboard"` +
+        (index === 0 ? ` loading="eager" fetchpriority="high"` : ` loading="lazy"`) +
+        ` />`
+      : undefined;
+
+    return {
+      ...view,
+      ...shown,
+      loop: loop ? manifestLoopMarkup(manifest.videos ?? [], loop.id, loop.label, still) : undefined
     };
   })
 );

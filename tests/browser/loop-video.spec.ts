@@ -5,11 +5,12 @@ import { loopVideoMarkup } from "../../src/components/loop-video.mjs";
 import { monitorRuntime } from "./support";
 
 // The loop player (#94): src/components/loop-video.mjs, the one module every loop on the site
-// plays through (src/components/LoopVideo.astro). No page places a loop yet (#95 waits on the
-// renders), so this spec serves a page of its own on the site's origin: two loops, one waiting
-// for its play control and one allowed an idle hint, the module's own markup and script, and a
-// small VP9 clip the test browser can decode (tests/fixtures/loop-fixture.webm). The brand mark
-// stands in as each loop's poster.
+// plays through (src/components/LoopVideo.astro, and the System Window's tabs). The site's loops
+// are H.264, which the test browser cannot decode, so this spec serves a page of its own on the
+// site's origin: two loops, one waiting for its play control and one allowed an idle hint, the
+// module's own markup and script, and a small VP9 clip the test browser can decode
+// (tests/fixtures/loop-fixture.webm). The brand mark stands in as each loop's poster.
+// tests/browser/system-window-loops.spec.ts holds the System Window to the same player.
 //
 // Data saver has no Playwright emulation, so it is stubbed as `navigator.connection.saveData`.
 
@@ -17,13 +18,15 @@ const ROOT = process.cwd();
 const FIXTURE = "/__loop-video-fixture";
 const CLIP = "/media/loop-fixture.webm";
 const IDLE_CLIP = "/media/loop-fixture-idle.webm";
+const STILL_CLIP = "/media/loop-fixture-still.webm";
 const POSTER = "/brand/personalclaw-mark.svg";
 
 function fixturePage(): string {
-  const loop = (src: string, label: string, autoplay: string) =>
+  const loop = (src: string, label: string, autoplay: string, still?: string) =>
     loopVideoMarkup({
       src,
       poster: POSTER,
+      still,
       width: 160,
       height: 100,
       label,
@@ -31,12 +34,15 @@ function fixturePage(): string {
       fallback: "The still frame, and the text beside it."
     });
   const module = readFileSync(join(ROOT, "src/components/loop-video.mjs"), "utf8");
+  const css = readFileSync(join(ROOT, "src/components/loop-video.css"), "utf8");
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Loop fixture</title>
 <style>.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 .loop-video{position:relative;width:480px;margin:0}.loop-video video{display:block;width:100%;height:100%}
-.loop-toggle{position:absolute;right:8px;bottom:8px;min-width:44px;min-height:44px}.spacer{height:3000px}</style>
+.loop-toggle{position:absolute;right:8px;bottom:8px;min-width:44px;min-height:44px}.spacer{height:3000px}
+${css}</style>
 </head><body><main>
 <section id="waits">${loop(CLIP, "A loop that waits for its play control", "none")}</section>
+<section id="stills">${loop(STILL_CLIP, "A loop with a still of its own", "none", `<img src="${POSTER}" alt="" width="160" height="100" />`)}</section>
 <div class="spacer"></div>
 <section id="idles">${loop(IDLE_CLIP, "A loop allowed an idle hint", "idle-hint")}</section>
 </main><script type="module">${module}\nmountLoopVideos();</script></body></html>`;
@@ -47,7 +53,7 @@ async function serve(page: Page, options: { failClip?: boolean } = {}) {
   await page.route(`**${FIXTURE}`, (route) =>
     route.fulfill({ status: 200, contentType: "text/html", body: fixturePage() })
   );
-  await page.route(/\/media\/loop-fixture(-idle)?\.webm$/, (route) =>
+  await page.route(/\/media\/loop-fixture(-idle|-still)?\.webm$/, (route) =>
     options.failClip
       ? route.fulfill({ status: 404, contentType: "text/plain", body: "gone" })
       : route.fulfill({ status: 200, contentType: "video/webm", body: clip })
@@ -66,6 +72,7 @@ function mediaRequests(page: Page): Request[] {
 
 const waits = (page: Page) => page.locator("#waits [data-loop-video]");
 const idles = (page: Page) => page.locator("#idles [data-loop-video]");
+const stills = (page: Page) => page.locator("#stills [data-loop-video]");
 const playing = (figure: ReturnType<typeof waits>) =>
   figure.locator("video").evaluate((v: HTMLVideoElement) => !v.paused && v.currentTime > 0);
 
@@ -184,6 +191,29 @@ test.describe("a loop", () => {
       runtime.assertClean();
     });
   }
+
+  test("with a still, shows the still until it plays, and its video from then on, paused or not", async ({
+    page,
+    baseURL
+  }) => {
+    const runtime = monitorRuntime(page, baseURL!);
+    await serve(page);
+    await page.goto(FIXTURE);
+    const figure = stills(page);
+    const opacity = () => figure.locator("video").evaluate((v) => getComputedStyle(v).opacity);
+    await expect(figure).toHaveAttribute("data-still", "");
+    await expect(figure.locator("video")).not.toHaveAttribute("poster", /./);
+    await expect(figure.locator(":scope > img")).toBeVisible();
+    expect(await opacity(), "the video hides behind the still before it plays").toBe("0");
+
+    await figure.getByRole("button", { name: /^Play/ }).click();
+    await expect.poll(() => playing(figure)).toBe(true);
+    expect(await opacity(), "a playing loop shows its video").toBe("1");
+    await figure.getByRole("button", { name: /^Pause/ }).click();
+    await expect(figure.locator("video")).toHaveJSProperty("paused", true);
+    expect(await opacity(), "a paused loop keeps its frame, not the still").toBe("1");
+    runtime.assertClean();
+  });
 
   test("that fails keeps its poster and says it could not play", async ({ page }) => {
     await serve(page, { failClip: true });

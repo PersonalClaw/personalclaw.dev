@@ -1,0 +1,67 @@
+<!doctype html>
+<!--
+  A feature loop (#95): Install an app: open it in Apps, read its consent, and it shows installed.
+  One real recording of the released app (the `app-install` clip in
+  marketing/screenshots.manifest.json), staged into assets/ by `npm run render:videos`, five
+  seconds, silent. `data-media-start` is where the action begins in the recording, set from its
+  beat times when it is captured at the release. The recording is cut once: between the press of
+  Install and the installed card, the Store's list redraws and reads "No matching apps" for about
+  0.3 s, which says nothing about the install, so the loop skips it. It fades up from the theater's dark and back down
+  to it, so it repeats with no seam: a paused Web Animation the runtime seeks, on a root marked
+  `data-no-timeline` because no GSAP timeline is registered. Nothing loads from the network.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      html,
+      body {
+        margin: 0;
+        background: #121416;
+      }
+      #main {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+        background: #121416;
+      }
+      #frame {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+      }
+      #frame video {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="main" data-composition-id="main" data-no-timeline data-start="0" data-duration="5" data-width="1280" data-height="800">
+      <div id="frame">
+        <video id="consent" class="clip" src="assets/app-install.webm" muted playsinline
+          data-start="0" data-duration="3.4" data-media-start="12.1" data-track-index="1"></video>
+        <video id="installed" class="clip" src="assets/app-install.webm" muted playsinline
+          data-start="3.4" data-duration="1.6" data-media-start="15.85" data-track-index="2"></video>
+      </div>
+    </div>
+    <script>
+      // The runtime seeks every paused Web Animation to timeline time, so the frame fades up from
+      // the dark over 0.3 s and back down to it over the last 0.3 s.
+      const FADE = 0.3;
+      const DURATION = 5;
+      document.getElementById("frame").animate(
+        [
+          { opacity: 0, easing: "cubic-bezier(0.33, 1, 0.68, 1)" },
+          { opacity: 1, offset: FADE / DURATION },
+          { opacity: 1, offset: 1 - FADE / DURATION, easing: "cubic-bezier(0.32, 0, 0.67, 0)" },
+          { opacity: 0 }
+        ],
+        { duration: DURATION * 1000, fill: "both" }
+      ).pause();
+    </script>
+  </body>
+</html>

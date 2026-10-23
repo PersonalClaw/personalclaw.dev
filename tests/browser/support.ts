@@ -20,8 +20,9 @@ export async function settlePage(page: Page) {
 export async function settleSystemWindow(page: Page) {
   await page.locator(".system-window").evaluate(async (element) => {
     // Decode the freshly mounted panel image (React remounts it per tab via
-    // `key`), so the frame is painted before the shot.
-    const image = element.querySelector("img");
+    // `key`), so the frame is painted before the shot. A tab that plays a loop
+    // (#95) shows its still, and the hidden tabs' stills are skipped.
+    const image = [...element.querySelectorAll("img")].find((img) => img.offsetParent !== null);
     if (image) {
       image.loading = "eager";
       await image.decode().catch(() => undefined);

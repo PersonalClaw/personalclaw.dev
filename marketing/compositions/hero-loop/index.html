@@ -1,0 +1,104 @@
+<!doctype html>
+<!--
+  The hero loop (#95): the System Window's Home tab plays it, silent, ten seconds, on repeat.
+  Real recordings of the released app only, in the order a piece of work moves through it: Home
+  with what needs you, a thread whose agent orb thinks, works and composes, a goal loop's report,
+  an approval waiting with its badge, and the thread's done mark. Every state the orb shows is the
+  app's own status text in the same frame, so the loop never relies on the orb's motion alone.
+
+  Each beat is one clip (marketing/screenshots.manifest.json `clips`), staged into assets/ by
+  `npm run render:videos`. `data-media-start` is where the beat begins in its recording, set from
+  that recording's beat times when it is captured at the release. The goal loop's beat is the
+  `loops` shot, a still: its planning clip could not be recorded at 0.2.6, and the loop shows the
+  still rather than a recording of something else.
+
+  Motion: each beat fades up from the theater's dark and back down to it over 0.3 s, and the
+  thread eases into one slow punch-in. Both are paused Web Animations the runtime seeks to
+  timeline time, on a root marked `data-no-timeline` because no GSAP timeline is registered.
+  Nothing loads from the network. The loop starts and ends on the same dark, so it repeats with no
+  seam; its poster is taken at 0.6 s, on Home.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      html,
+      body {
+        margin: 0;
+        background: #121416;
+      }
+      #main {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+        background: #121416;
+      }
+      .frame {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        transform-origin: 50% 50%;
+      }
+      .frame video,
+      .frame img {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="main" data-composition-id="main" data-no-timeline data-start="0" data-duration="10" data-width="1280" data-height="800">
+      <div class="frame" id="home-frame" data-beat-start="0" data-beat-end="2">
+        <video id="home" class="clip" src="assets/home-lanes.webm" muted playsinline
+          data-start="0" data-duration="2" data-media-start="4.54" data-track-index="1"></video>
+      </div>
+      <div class="frame" id="thread-frame" data-beat-start="2" data-beat-end="5.6" data-punch-in="1.06">
+        <video id="thread" class="clip" src="assets/thread-turn.webm" muted playsinline
+          data-start="2" data-duration="3.6" data-media-start="22.6" data-track-index="2"></video>
+      </div>
+      <div class="frame" id="loop-frame" data-beat-start="5.6" data-beat-end="7.4">
+        <img id="loop" class="clip" src="assets/loops.png" alt=""
+          data-start="5.6" data-duration="1.8" data-track-index="3" />
+      </div>
+      <div class="frame" id="approval-frame" data-beat-start="7.4" data-beat-end="8.8">
+        <video id="approval" class="clip" src="assets/approval-wait.webm" muted playsinline
+          data-start="7.4" data-duration="1.4" data-media-start="5.38" data-track-index="4"></video>
+      </div>
+      <div class="frame" id="done-frame" data-beat-start="8.8" data-beat-end="10">
+        <video id="done" class="clip" src="assets/thread-turn.webm" muted playsinline
+          data-start="8.8" data-duration="1.2" data-media-start="27.8" data-track-index="5"></video>
+      </div>
+    </div>
+    <script>
+      // The runtime seeks every paused Web Animation to timeline time: each beat fades up from the
+      // dark over its first 0.3 s and back down over its last, and the thread eases into its
+      // punch-in. Animation times are document time, so each beat's start is its delay.
+      const FADE = 0.3;
+      const EASE_OUT = "cubic-bezier(0.33, 1, 0.68, 1)";
+      const EASE_IN = "cubic-bezier(0.32, 0, 0.67, 0)";
+      for (const frame of document.querySelectorAll(".frame")) {
+        const start = Number(frame.dataset.beatStart);
+        const length = Number(frame.dataset.beatEnd) - start;
+        const timing = { delay: start * 1000, duration: length * 1000, fill: "both" };
+        frame.animate(
+          [
+            { opacity: 0, easing: EASE_OUT },
+            { opacity: 1, offset: FADE / length },
+            { opacity: 1, offset: 1 - FADE / length, easing: EASE_IN },
+            { opacity: 0 }
+          ],
+          timing
+        ).pause();
+        if (frame.dataset.punchIn) {
+          frame.animate(
+            [{ transform: "scale(1)" }, { transform: `scale(${frame.dataset.punchIn})` }],
+            { ...timing, easing: EASE_OUT }
+          ).pause();
+        }
+      }
+    </script>
+  </body>
+</html>
