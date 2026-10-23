@@ -158,8 +158,8 @@ const scan = fields(["scanVerdict", "scanTime", "findings", "scanner"]);
           {fields(["hosts"]).map((entry) => <FieldRow entry={entry} />)}
         </dl>
         <p class="reach-note" data-reach-note>
-          Its own code has no host list at this release: the hosts above are the ones it names for
-          the programs, servers and sources it starts or fetches, not everything it can reach.
+          Its own code has no host list at this release: any hosts it names are for the programs,
+          servers and sources it starts or fetches, not everything it can reach.
           Its own network permission is a declaration, not a fence.
         </p>
       </section>
