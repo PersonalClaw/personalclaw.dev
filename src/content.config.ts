@@ -23,7 +23,11 @@ const blog = defineCollection({
     title: z.string().min(1),
     description: z.string().min(1),
     publishDate: z.date(),
-    verifiedAgainst: z.string().min(1)
+    verifiedAgainst: z.string().min(1),
+    // The verification ledger's rows (src/data/capabilities.json) this post's claims are, by id.
+    // The callout shows each as /compare holds it now, or as a known limit when the ledger has
+    // not verified it at the pinned release.
+    claims: z.array(z.string().min(1)).default([])
   })
 });
 

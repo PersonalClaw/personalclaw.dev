@@ -68,7 +68,8 @@
       "verified_release": "v0.2.6",
       "surfaces": [
         "compare",
-        "home"
+        "home",
+        "blog"
       ]
     },
     {
@@ -152,7 +153,8 @@
       "verified_release": "v0.2.6",
       "surfaces": [
         "compare",
-        "security"
+        "security",
+        "blog"
       ]
     },
     {
@@ -168,7 +170,8 @@
       "core": "c7305c85853549d871c404fefa976c0de6a1c06e",
       "verified_release": "v0.2.6",
       "surfaces": [
-        "compare"
+        "compare",
+        "blog"
       ]
     },
     {
@@ -217,7 +220,8 @@
       "core": "c7305c85853549d871c404fefa976c0de6a1c06e",
       "verified_release": "v0.2.6",
       "surfaces": [
-        "compare"
+        "compare",
+        "blog"
       ]
     },
     {
@@ -234,7 +238,8 @@
       "verified_release": "v0.2.6",
       "surfaces": [
         "compare",
-        "security"
+        "security",
+        "blog"
       ]
     },
     {
@@ -283,7 +288,8 @@
       "core": "c7305c85853549d871c404fefa976c0de6a1c06e",
       "verified_release": "v0.2.6",
       "surfaces": [
-        "compare"
+        "compare",
+        "blog"
       ]
     },
     {
@@ -317,7 +323,8 @@
       "verified_release": "v0.2.6",
       "surfaces": [
         "compare",
-        "security"
+        "security",
+        "blog"
       ]
     },
     {

@@ -3,6 +3,7 @@ title: "A personal agent you can audit"
 description: "Every claim in this post names the file that proves it, checked against v0.1.3, the tagged release this site published when it went up — including the claims that did not survive the check."
 publishDate: 2026-08-26
 verifiedAgainst: "v0.1.3"
+claims: ["license", "provider_agnostic", "egress_default_deny", "single_chokepoint", "audit_log", "dep_scan_gate", "credentials_failclosed"]
 ---
 
 ## The pitch, in one paragraph
@@ -25,7 +26,7 @@ the post. The site has published newer releases since, and this post is not re-c
 against them: [what holds at the release the site publishes now](/compare) is on /compare,
 one sourced row per claim.
 
-### Receipts
+### Receipts: the pitch
 
 - [`LICENSE`](https://github.com/PersonalClaw/PersonalClaw/blob/v0.1.3/LICENSE) — MIT
 - [`pyproject.toml`](https://github.com/PersonalClaw/PersonalClaw/blob/v0.1.3/pyproject.toml) — `version = "0.1.3"`, `requires-python = ">=3.12"`
@@ -44,7 +45,7 @@ instead of the offending repository. Apps extend the system through the fourteen
 types this release declares: `action`, `agent`, `channel`, `inbox`, `knowledge`, `memory`,
 `model`, `notification`, `prompt`, `search`, `skills`, `task`, `tool` and `workflow`.
 
-### Receipts
+### Receipts: provider names
 
 - [The provider boundary](/docs/architecture/provider-boundary) — the rule, its in-core exceptions, and the case study of how Slack left core
 - [`tests/test_apps_import_boundary.py`](https://github.com/PersonalClaw/PersonalClaw/blob/v0.1.3/tests/test_apps_import_boundary.py) — the import lint, plus a per-file variant so a failure names the file
@@ -106,7 +107,7 @@ is marked `secret=True`") and filed under `security` in the snapshot manifest. T
 aspirational for infrastructure that does not exist. Grep it yourself rather than taking
 the sentence.
 
-### Receipts
+### Receipts: where the network goes
 
 - [`net/guard.py`](https://github.com/PersonalClaw/PersonalClaw/blob/v0.1.3/src/personalclaw/net/guard.py) — `evaluate`, the order, the classification, the address pinning
 - [`net/policy.py`](https://github.com/PersonalClaw/PersonalClaw/blob/v0.1.3/src/personalclaw/net/policy.py) — the profiles, `egress_policy_for_tier`, and the operator union in `egress_policy_for`
@@ -125,7 +126,7 @@ previous entry's hash, so the chain is tamper-evident rather than merely append-
 Retention defaults to 365 days. It is a local file in your PersonalClaw home, and nothing
 ships it anywhere.
 
-### Receipts
+### Receipts: the audit trail
 
 - [`sel.py`](https://github.com/PersonalClaw/PersonalClaw/blob/v0.1.3/src/personalclaw/sel.py) — the HMAC chain, the `prev_hash` field, the 365-day default
 
@@ -146,7 +147,7 @@ finding there blocks nothing. If you read "we run pip-audit" elsewhere as "vulne
 dependencies cannot merge", that inference does not hold here — and the code says so in a
 comment rather than hiding it.
 
-### Receipts
+### Receipts: gates and reports
 
 - [`.github/workflows/full.yml`](https://github.com/PersonalClaw/PersonalClaw/blob/v0.1.3/.github/workflows/full.yml) — the `matrix` job, and the `audit` job's own comment
 - [`tests/test_supply_chain_scanner.py`](https://github.com/PersonalClaw/PersonalClaw/blob/v0.1.3/tests/test_supply_chain_scanner.py) and [`tests/test_supply_chain_gates.py`](https://github.com/PersonalClaw/PersonalClaw/blob/v0.1.3/tests/test_supply_chain_gates.py)
@@ -168,7 +169,7 @@ engine lands and consumes `tool_grants`; until then the profile decides approval
 that field would deny nothing. Naming which of two plausible mechanisms is actually
 holding the line, in the file, is the shape of receipt worth trusting.
 
-### Receipts
+### Receipts: failing closed
 
 - [`auth/modes.py`](https://github.com/PersonalClaw/PersonalClaw/blob/v0.1.3/src/personalclaw/auth/modes.py) — `LOCAL_TOKEN` by default, loopback forced under `none`
 - [`auth/credentials.py`](https://github.com/PersonalClaw/PersonalClaw/blob/v0.1.3/src/personalclaw/auth/credentials.py) — "Failure posture is FAIL-CLOSED"
@@ -187,7 +188,7 @@ yet. At this release it lists two things:
 Both are real constraints on what you should let this software do unattended today. They
 are listed, with reasons, rather than deferred to a changelog nobody reads.
 
-### Receipts
+### Receipts: the limitations page
 
 - [Security limitations](/docs/security/limitations) — the two, with reasons
 - [Threat model](/docs/security/threat-model) and [security architecture](/docs/architecture/security)
@@ -229,7 +230,7 @@ enforcement points are named in the files that hold them, and whose unfinished e
 written down where you can find them before they surprise you — that is what is on offer,
 at 0.1.3, honestly labelled.
 
-### Receipts
+### Receipts: who should wait
 
 - [`README.md`](https://github.com/PersonalClaw/PersonalClaw/blob/v0.1.3/README.md) — installation, and the pre-1.0 heads-up
 - [CLI reference](/docs/reference/cli) and [getting started](/docs/guides/getting-started)

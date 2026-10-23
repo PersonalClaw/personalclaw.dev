@@ -22,12 +22,15 @@ const readableDate = new Intl.DateTimeFormat("en-GB", {
 >
   <section class="writing">
     <div class="narrow">
-      <p class="kicker">Writing</p>
       <h1 class="section-title">What shipped, and what did not.</h1>
       <p class="lede">
         Every post names the release its claims were verified against, and links the file
         that proves each one. When a claim holds in development but not in the released
         version this site publishes, the post says so instead of rounding up.
+      </p>
+      <p class="feed">
+        <a href="/blog/rss.xml">Follow the RSS feed</a> in your own reader. There is no
+        newsletter.
       </p>
 
       {
@@ -40,18 +43,22 @@ const readableDate = new Intl.DateTimeFormat("en-GB", {
           <ul class="post-list">
             {posts.map((post) => (
               <li class="post-item" data-blog-entry={post.id}>
-                <a class="post-link" href={`/blog/${post.id}`}>
-                  <span class="post-title" data-blog-title>{post.data.title}</span>
-                  <span class="post-meta">
-                    <time datetime={post.data.publishDate.toISOString().slice(0, 10)}>
-                      {readableDate.format(post.data.publishDate)}
-                    </time>
-                    <span class="verified" translate="no">
-                      Verified against {post.data.verifiedAgainst}
-                    </span>
-                  </span>
-                  <span class="post-description">{post.data.description}</span>
-                </a>
+                {/* The post's link is its title alone, so its name doesn't run the date,
+                    the badge and the description together (B4 in docs/site-audit.md). */}
+                <h2>
+                  <a class="post-link" href={`/blog/${post.id}`} data-blog-title>
+                    {post.data.title}
+                  </a>
+                </h2>
+                <p class="post-meta">
+                  <time datetime={post.data.publishDate.toISOString().slice(0, 10)}>
+                    {readableDate.format(post.data.publishDate)}
+                  </time>{" "}
+                  <a class="verified" href="/release" data-blog-verified>
+                    Verified against <span translate="no">{post.data.verifiedAgainst}</span>
+                  </a>
+                </p>
+                <p class="post-description">{post.data.description}</p>
               </li>
             ))}
           </ul>
@@ -88,28 +95,51 @@ const readableDate = new Intl.DateTimeFormat("en-GB", {
     list-style: none;
   }
 
-  .post-item + .post-item {
-    margin-top: 1rem;
+  .feed {
+    margin: -1.5rem 0 clamp(2.5rem, 5vw, 3.5rem);
+    color: var(--ink-muted);
   }
 
-  .post-link {
+  .feed a,
+  .verified {
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
+    color: var(--coral-bright);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.3em;
+  }
+
+  .post-item {
     display: grid;
-    gap: 0.55rem;
+    gap: 0.35rem;
     padding: clamp(1.4rem, 3vw, 1.9rem);
     border: 1px solid var(--line);
     border-radius: 8px;
     background: var(--surface);
   }
 
-  .post-link:hover {
-    border-color: var(--line-strong);
+  .post-item + .post-item {
+    margin-top: 1rem;
   }
 
-  .post-title {
+  .post-item h2 {
+    margin: 0;
+    font-size: var(--fs-title);
+    font-weight: var(--fw-title);
+    line-height: var(--lh-title);
+  }
+
+  .post-link {
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
     color: var(--ink);
-    font-size: clamp(1.4rem, 2.5vw, 2rem);
-    font-weight: 500;
-    line-height: 1.15;
+  }
+
+  .post-link:hover {
+    color: var(--coral-bright);
   }
 
   .post-meta {
@@ -121,8 +151,9 @@ const readableDate = new Intl.DateTimeFormat("en-GB", {
     font-size: 0.875rem;
   }
 
-  .verified {
-    color: var(--coral-bright);
+  .post-meta,
+  .post-description {
+    margin: 0;
   }
 
   .post-description {

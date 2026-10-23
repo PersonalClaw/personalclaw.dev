@@ -1,7 +1,8 @@
 ---
-import { ArrowLeft } from "lucide-react";
 import { getCollection, render } from "astro:content";
 import BaseLayout from "../../layouts/BaseLayout.astro";
+import { capabilityMatrix, verdictPresentation } from "../../data/capabilities.mjs";
+import { GITHUB_URL } from "../../data/site";
 
 export async function getStaticPaths() {
   const posts = await getCollection("blog");
@@ -17,6 +18,21 @@ const readableDate = new Intl.DateTimeFormat("en-GB", {
   year: "numeric",
   timeZone: "UTC"
 }).format(post.data.publishDate);
+
+// The claims a post names, as the verification ledger holds them now. A row the ledger has not
+// verified at the pinned release shows as a known limit: the claim and when it was last checked,
+// never a verdict a reader could take as current.
+const matrix = capabilityMatrix();
+const pinned = matrix.pin.tag;
+const claims = post.data.claims.map((id) => {
+  const row = matrix.rows.find((candidate) => candidate.id === id);
+  if (!row) throw new Error(`${post.id}: names the claim "${id}", which the ledger does not hold`);
+  if (!row.surfaces.includes("blog")) {
+    throw new Error(`${post.id}: the ledger row "${id}" does not list blog among its surfaces`);
+  }
+  return row;
+});
+const behind = post.data.verifiedAgainst !== pinned;
 ---
 
 <BaseLayout
@@ -30,18 +46,56 @@ const readableDate = new Intl.DateTimeFormat("en-GB", {
 >
   <article class="post">
     <div class="narrow">
-      <a class="text-link back-link" href="/blog">
-        <ArrowLeft size={17} aria-hidden="true" /> All posts
-      </a>
+      <a class="text-link back-link" href="/blog">All posts</a>
 
-      <p class="kicker">Writing</p>
       <h1 class="section-title">{post.data.title}</h1>
       <p class="post-meta">
-        <time datetime={post.data.publishDate.toISOString().slice(0, 10)}>{readableDate}</time>
-        <span class="verified" translate="no">
-          Verified against {post.data.verifiedAgainst}
-        </span>
+        <time datetime={post.data.publishDate.toISOString().slice(0, 10)}>{readableDate}</time>{" "}
+        <a class="verified" href="/release" data-blog-verified>
+          Verified against <span translate="no">{post.data.verifiedAgainst}</span>
+        </a>
       </p>
+
+      <aside class="callout" aria-labelledby="checked-title" data-blog-callout>
+        <h2 id="checked-title">How this post was checked</h2>
+        <p>
+          Every claim in it names the file that proves it in{" "}
+          <span translate="no">{post.data.verifiedAgainst}</span>, the release it was checked
+          against.
+          {behind && (
+            <>
+              {" "}This site now publishes <span translate="no">{pinned}</span>, and the post
+              has not been checked again against it.
+            </>
+          )}
+        </p>
+        {claims.length > 0 && (
+          <>
+            <p>What its claims are at <span translate="no">{pinned}</span>, from /compare:</p>
+            <ul class="claims">
+              {claims.map((row) =>
+                row.current ? (
+                  <li data-blog-claim={row.id}>
+                    <a href={`/compare#${row.id}`}>{row.claim}</a>{" "}
+                    <span class="claim-verdict">{verdictPresentation(row.verdict).label}</span>
+                  </li>
+                ) : (
+                  <li data-blog-claim-limit={row.id}>
+                    <a href={`/compare#${row.id}`}>{row.claim}</a>{" "}
+                    <span class="claim-verdict">
+                      last checked at <span translate="no">{row.verifiedRelease}</span>
+                    </span>
+                  </li>
+                )
+              )}
+            </ul>
+          </>
+        )}
+        <p>
+          A claim here that is wrong, or that no longer holds, is a defect.{" "}
+          <a href={`${GITHUB_URL}/issues`} target="_blank" rel="noreferrer">Report it</a>
+        </p>
+      </aside>
 
       <div class="post-body">
         <Content />
@@ -86,7 +140,61 @@ const readableDate = new Intl.DateTimeFormat("en-GB", {
   }
 
   .verified {
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
     color: var(--coral-bright);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.3em;
+  }
+
+  /* The verification callout: what was checked, against which release, and where corrections
+     go. Surface fill and a line, the site's card treatment, because it is a compact fact. */
+  .callout {
+    max-width: 68ch;
+    margin: 0 0 clamp(2.5rem, 5vw, 3.5rem);
+    padding: 1.25rem 1.4rem;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--ink-soft);
+  }
+
+  .callout h2 {
+    margin: 0 0 0.6rem;
+    color: var(--ink);
+    font-size: var(--fs-label);
+    font-weight: 650;
+  }
+
+  .callout p {
+    margin: 0 0 0.75rem;
+  }
+
+  .callout p:last-child {
+    margin-bottom: 0;
+  }
+
+  .callout a {
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
+    color: var(--coral-bright);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.3em;
+  }
+
+  .claims {
+    margin: 0 0 0.75rem;
+    padding-left: 1.2rem;
+  }
+
+  .claim-verdict {
+    color: var(--ink-muted);
+    font-family: var(--font-mono);
+    font-size: var(--fs-mono);
   }
 
   /* The prose block. Two rules here are load-bearing rather than decorative:
