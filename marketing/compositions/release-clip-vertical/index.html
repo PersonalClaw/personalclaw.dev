@@ -1,0 +1,191 @@
+<!doctype html>
+<!--
+  The 0.2.6 release clip (#97), vertical, 720 x 1280, 20 s.
+  Written by `npm run release-clip` from the "release-clip-vertical" entry's brief in
+  marketing/screenshots.manifest.json: edit the brief, never this file
+  (tests/release-clip.test.mjs fails a composition the brief no longer yields).
+
+  A title card with the release, one line of its changelog over each capture it names, and an end
+  card naming /release. Real captures and the source mark only, nothing drawn in their place. The
+  fades are paused Web Animations the runtime seeks, on a root marked data-no-timeline.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      @font-face {
+        font-family: "DM Sans";
+        font-weight: 100 1000;
+        src: url("assets/fonts/dm-sans.woff2") format("woff2");
+      }
+      html,
+      body {
+        margin: 0;
+        background: #121416;
+      }
+      #main {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+        background: #121416;
+        color: #f2f1ed;
+        font-family: "DM Sans", sans-serif;
+      }
+      .card {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+      }
+      .card svg {
+        width: 120px;
+        height: 120px;
+        margin-bottom: 28px;
+      }
+      .card p {
+        margin: 0;
+      }
+      .name {
+        font-size: 44px;
+        font-weight: 500;
+      }
+      .release {
+        margin: 6px 0 14px;
+        color: #ff6b5b;
+        font-size: 150px;
+        font-weight: 300;
+        line-height: 1;
+        letter-spacing: -0.02em;
+      }
+      .date,
+      .note {
+        color: #c4c4bf;
+        font-size: 34px;
+      }
+      .url {
+        margin-top: 10px;
+        color: #ff6b5b;
+        font-size: 48px;
+        font-weight: 500;
+      }
+      .beat {
+        position: absolute;
+        inset: 0;
+      }
+      .line {
+        position: absolute;
+        top: 250px;
+        right: 56px;
+        left: 56px;
+        margin: 0;
+        font-size: 58px;
+        font-weight: 450;
+        line-height: 1.12;
+        text-align: center;
+        text-wrap: balance;
+      }
+      .window {
+        position: absolute;
+        top: 600px;
+        left: 40px;
+        width: 640px;
+        height: 400px;
+        overflow: hidden;
+        border: 1px solid #3b3e41;
+        border-radius: 14px;
+        background: #171819;
+      }
+      .footer {
+        position: absolute;
+        right: 0;
+        bottom: 120px;
+        left: 0;
+        margin: 0;
+        color: #92938f;
+        font-size: 30px;
+        text-align: center;
+      }
+      .window video,
+      .window img {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="main" data-composition-id="main" data-no-timeline data-start="0" data-duration="20" data-width="720" data-height="1280">
+      <div id="title" class="card" data-part-start="0">
+        <svg viewBox="0 0 512 512" aria-hidden="true"><path fill="#ff6b5b" d="M256 16C106 76 46 226 46 226c0 45 60 90 90 90 90 0 180-195 135-285l-15-15zm45 15c30 60 0 135 0 135 120 30 120 180 75 330 75-75 90-150 90-210 0-90-15-225-165-255z" /></svg>
+        <p class="name">PersonalClaw</p>
+        <p class="release">0.2.6</p>
+        <p class="date">Released 22 October 2026</p>
+      </div>
+      <div class="beat" data-line="1">
+        <p id="line-1" class="clip line" data-start="3.5" data-duration="4.5" data-track-index="2">Home is what needs you.</p>
+        <div class="window">
+          <video id="capture-1" class="clip" src="assets/home-lanes.webm" muted playsinline data-start="3.5" data-duration="4.5" data-media-start="4.54" data-track-index="2"></video>
+        </div>
+        <p class="footer">PersonalClaw 0.2.6</p>
+      </div>
+      <div class="beat" data-line="2">
+        <p id="line-2" class="clip line" data-start="8" data-duration="4.5" data-track-index="3">Everything waiting on you is one list.</p>
+        <div class="window">
+          <video id="capture-2" class="clip" src="assets/approval-wait.webm" muted playsinline data-start="8" data-duration="4.5" data-media-start="5.38" data-track-index="3"></video>
+        </div>
+        <p class="footer">PersonalClaw 0.2.6</p>
+      </div>
+      <div class="beat" data-line="3">
+        <p id="line-3" class="clip line" data-start="12.5" data-duration="4.5" data-track-index="4">Loops and code sessions read like chats.</p>
+        <div class="window">
+          <img id="capture-3" class="clip" src="assets/loops.png" alt="" data-start="12.5" data-duration="4.5" data-track-index="4" />
+        </div>
+        <p class="footer">PersonalClaw 0.2.6</p>
+      </div>
+      <div id="end" class="card" data-part-start="17">
+        <svg viewBox="0 0 512 512" aria-hidden="true"><path fill="#ff6b5b" d="M256 16C106 76 46 226 46 226c0 45 60 90 90 90 90 0 180-195 135-285l-15-15zm45 15c30 60 0 135 0 135 120 30 120 180 75 330 75-75 90-150 90-210 0-90-15-225-165-255z" /></svg>
+        <p class="note">Every change in 0.2.6, with its source:</p>
+        <p class="url">personalclaw.dev/release</p>
+      </div>
+    </div>
+    <script>
+      // The runtime seeks every paused Web Animation to timeline time: each part fades up from the
+      // theater's dark over 0.3 s and down over its last 0.3 s, and each capture eases into a slow
+      // punch-in. Animation times are document time, so each part's start is its delay.
+      const FADE = 0.3;
+      const fade = (element, start, length, first) =>
+        element
+          .animate(
+            [
+              { opacity: first ? 1 : 0 },
+              { opacity: 1, offset: first ? 0 : FADE / length },
+              { opacity: 1, offset: 1 - FADE / length },
+              { opacity: 0 }
+            ],
+            { delay: start * 1000, duration: length * 1000, fill: "both" }
+          )
+          .pause();
+      fade(document.getElementById("title"), 0, 3.5, true);
+      for (const beat of document.querySelectorAll(".beat")) {
+        const line = beat.querySelector(".line");
+        const start = Number(line.dataset.start);
+        fade(beat, start, 4.5, false);
+        beat
+          .querySelector(".window")
+          .animate([{ transform: "scale(1)" }, { transform: "scale(1.035)" }], {
+            delay: start * 1000,
+            duration: 4.5 * 1000,
+            easing: "cubic-bezier(0.33, 1, 0.68, 1)",
+            fill: "both"
+          })
+          .pause();
+      }
+      fade(document.getElementById("end"), 17, 3, false);
+    </script>
+  </body>
+</html>

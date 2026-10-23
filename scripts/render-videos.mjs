@@ -17,8 +17,9 @@
 //      encodes, since many FFmpeg builds carry no WebP encoder;
 //   5. moves the output and the poster to the entry's `output` and `poster`, prints the sizes,
 //      and fails over the entry's `budgetBytes`;
-//   6. for a composition cut into beats (the tour, #96), writes the entry's `captions` and
-//      `chapters` tracks from the beats' words and times (scripts/tour-tracks.mjs).
+//   6. for an entry with a chapters track (the tour, #96), writes its `captions` and `chapters`
+//      tracks from its composition's beats (scripts/tour-tracks.mjs). A release clip's captions
+//      are written with its composition, by `npm run release-clip`.
 //
 // It fails before rendering anything when FFmpeg, ffprobe or cwebp is not on PATH, or when the pinned
 // Hyperframes CLI is not already in npx's cache: fetching it is a supply-chain step the
@@ -54,6 +55,9 @@ export const HYPERFRAMES_ENV = Object.freeze({
   HYPERFRAMES_NO_AUTO_INSTALL: "1",
   HYPERFRAMES_SKIP_SKILLS: "1"
 });
+
+/** The site's DM Sans, which a composition that sets type stages as assets/fonts/dm-sans.woff2. */
+const DM_SANS = "node_modules/@fontsource-variable/dm-sans/files/dm-sans-latin-wght-normal.woff2";
 
 /** How far an output's duration may stray from its entry's, in seconds. */
 const DURATION_SLACK = 0.1;
@@ -202,6 +206,11 @@ export function main(argv, repoRoot = root) {
     try {
       cpSync(composition, work, { recursive: true });
       mkdirSync(join(work, "assets"), { recursive: true });
+      // A composition that sets type in the site's DM Sans gets the site's own copy of it.
+      if (readFileSync(join(work, "index.html"), "utf8").includes("assets/fonts/dm-sans.woff2")) {
+        mkdirSync(join(work, "assets", "fonts"), { recursive: true });
+        copyFileSync(join(repoRoot, DM_SANS), join(work, "assets", "fonts", "dm-sans.woff2"));
+      }
       for (const source of sourceFiles(manifest, video)) {
         const from = join(repoRoot, source.file);
         if (!existsSync(from)) {
@@ -257,11 +266,10 @@ export function main(argv, repoRoot = root) {
       for (const rel of [video.output, video.poster]) mkdirSync(dirname(join(repoRoot, rel)), { recursive: true });
       renameSync(rendered, join(repoRoot, video.output));
       renameSync(poster, join(repoRoot, video.poster));
-      const html = readFileSync(join(composition, "index.html"), "utf8");
-      if (html.includes('class="beat"')) {
-        const beats = beatsOf(html);
+      if (video.chapters) {
+        const beats = beatsOf(readFileSync(join(composition, "index.html"), "utf8"));
         if (video.captions) writeFileSync(join(repoRoot, video.captions), captionsTrack(beats));
-        if (video.chapters) writeFileSync(join(repoRoot, video.chapters), chaptersTrack(beats));
+        writeFileSync(join(repoRoot, video.chapters), chaptersTrack(beats));
       }
       console.log(
         `${video.id}: ${video.output} ${size} bytes (budget ${video.budgetBytes}), ${lasts.toFixed(2)} s; ` +

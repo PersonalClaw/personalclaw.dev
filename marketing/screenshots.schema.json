@@ -266,6 +266,36 @@
           }
         },
         "placements": { "type": "array", "items": { "$ref": "#/$defs/placement" } },
+        "use": {
+          "enum": ["site", "social"],
+          "description": "site (the default): the site plays it, so a shipping entry has placements. social: rendered for short-form channels only, played nowhere on the site."
+        },
+        "brief": {
+          "type": "object",
+          "description": "A release clip's brief (#97): `npm run release-clip` writes its composition and captions from it.",
+          "required": ["release", "date", "highlights", "shareCopy"],
+          "additionalProperties": false,
+          "properties": {
+            "release": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+            "date": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$", "description": "The release's date, as its changelog heading gives it." },
+            "highlights": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 4,
+              "items": {
+                "type": "object",
+                "required": ["text", "source"],
+                "additionalProperties": false,
+                "properties": {
+                  "text": { "type": "string", "minLength": 1, "maxLength": 60, "description": "One line, in the release changelog's own words." },
+                  "source": { "type": "string", "description": "The clip or shot it plays over, one of the video's sources." },
+                  "mediaStart": { "type": "number", "minimum": 0, "description": "Where in that clip the line's capture begins, in seconds: its beat's start in the take. 1 when absent." }
+                }
+              }
+            },
+            "shareCopy": { "type": "string", "minLength": 1, "description": "What a post of the clip says, held to the same words as the clip." }
+          }
+        },
         "status": { "type": "string", "enum": ["shipping", "new-needs-placement", "retired"] }
       }
     }

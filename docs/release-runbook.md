@@ -93,6 +93,10 @@ created), because every step below verifies against the published tag.
      leaves it stale, and `validate:build` names the frame. Commit
      `public/social/`, `src/data/social-frames.json` and
      `marketing/social-card/frames-stamp.json`. No video render is involved;
+   - the release clip (#97): write the brief of the `release-clip` entries from the
+     release's changelog, `npm run release-clip`, `npm run render:videos`, and review
+     every frame against the app at the tag; the vertical cut goes out with its share
+     copy;
    - security content synchronized from core's threat model and limitations;
    - any page section describing capabilities the release added;
    - the builders band's `app.json` on `/apps` (`BUILDERS_SNIPPET` in
