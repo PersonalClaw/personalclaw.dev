@@ -88,7 +88,7 @@ test("the download command can be copied without a pointer", async ({
   const install = page.locator(".home-hero").getByRole("button", { name: "Install PersonalClaw" });
   await tabTo(page, install);
   await page.keyboard.press("Enter");
-  const copy = page.locator("#install-panel .copy-button").first();
+  const copy = page.locator("#install-panel [data-install-steps] .copy-button").first();
   await expect(copy).toHaveAccessibleName("Copy download command");
   await tabTo(page, copy);
   await page.keyboard.press("Enter");

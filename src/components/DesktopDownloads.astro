@@ -1,0 +1,363 @@
+---
+// The desktop app's downloads: the pinned release's own files, never "latest" (Home's install
+// panel, /release). Every file, size and SHA-256 comes from scripts/desktop-downloads.mjs, which
+// reads the release record, and scripts/validate-build.mjs fails a page that shows anything else.
+//
+// The static page lists every download, Mac first. Where the section sits after other install
+// steps (`macFirstBefore`), a Mac visitor's browser moves it before them; that is the one thing the
+// script does. It sends nothing and asks for nothing. It tells a Mac from its platform, and nothing
+// tells Apple silicon from Intel, so the Mac download says it is for Apple silicon, and an Intel
+// Mac gets its own dmg only when the release has one.
+import { CopyCommand } from "./CopyCommand";
+import { desktopDownloads } from "../../scripts/desktop-downloads.mjs";
+import { releaseFacts } from "../data/release";
+
+interface Props {
+  /** The heading's level: 3 inside the install panel and under /release's section head. */
+  level: 2 | 3;
+  /** Where "Use the install script" goes when the release has no Intel dmg. */
+  intelHref: string;
+  /** A selector the section moves before on a Mac. */
+  macFirstBefore?: string;
+}
+
+const { level, intelHref, macFirstBefore } = Astro.props;
+const { source, release } = releaseFacts.core;
+const downloads = release && source.tag ? desktopDownloads({ repository: source.repository, tag: source.tag, assets: release.assets }) : null;
+const Heading: "h2" | "h3" = level === 2 ? "h2" : "h3";
+const titleId = `desktop-downloads-title-${level}`;
+const macGuide = "/docs/guides/desktop#macos--dmg-not-notarized-and-one-approval-on-first-launch";
+const linuxGuide = "/docs/guides/desktop#linux--appimage-and-deb-unsigned";
+const linux = downloads ? [downloads.appimage, downloads.deb].flatMap((download) => (download ? [download] : [])) : [];
+---
+
+{
+  downloads && (downloads.mac || linux.length > 0) && (
+    <section
+      class:list={["desktop-downloads", `desktop-downloads-${level}`, { "desktop-downloads-panel": macFirstBefore }]}
+      aria-labelledby={titleId}
+      data-desktop-downloads
+      data-mac-first={macFirstBefore}
+    >
+      <Heading id={titleId} class="desktop-title">
+        Desktop app <span class="desktop-tag">Experimental</span>
+      </Heading>
+      <p class="desktop-lede">
+        Built by core's CI and attached to the <span translate="no">{source.tag}</span> release. There is
+        no in-app update: a new version is a download you install over the old one.
+      </p>
+      <p class="desktop-note desktop-rows">
+        On Compare: <a href="/compare#desktop_app">what it is</a>
+        <span aria-hidden="true">·</span>
+        <a href="/compare#desktop_experimental">why it is experimental</a>
+      </p>
+
+      {downloads.mac && (
+        <div class="desktop-platform">
+          <a
+            class="button button-primary desktop-download"
+            href={downloads.mac.url}
+            data-desktop-download="mac"
+            data-size={downloads.mac.size}
+            data-sha256={downloads.mac.sha256}
+          >
+            <span class="desktop-download-title">Download for Mac</span>
+            <span class="desktop-download-meta">
+              Apple silicon<span class="sr-only">,</span>
+              <span aria-hidden="true"> · </span>
+              {downloads.mac.megabytes}<span class="sr-only">,</span>
+            </span>
+            <span class="desktop-download-file" translate="no">{downloads.mac.name}</span>
+          </a>
+          {downloads.intel ? (
+            <a
+              class="desktop-file"
+              href={downloads.intel.url}
+              data-desktop-download="intel"
+              data-size={downloads.intel.size}
+              data-sha256={downloads.intel.sha256}
+            >
+              Intel Mac<span class="sr-only">:</span>
+              <span class="desktop-file-meta">
+                <span translate="no">{downloads.intel.name}</span>, {downloads.intel.megabytes}
+              </span>
+            </a>
+          ) : (
+            <p class="desktop-note" data-desktop-intel-fallback>
+              Intel Mac? <a href={intelHref}>Use the install script</a>
+            </p>
+          )}
+          <p class="desktop-note">
+            Ad-hoc signed, not notarized: macOS asks you to approve it once.{" "}
+            <a href={macGuide}>How to approve it</a>
+          </p>
+          <dl class="desktop-sum">
+            <dt>SHA-256</dt>
+            <dd>
+              <code class="desktop-digest" data-desktop-sha256={downloads.mac.name}>{downloads.mac.sha256}</code>
+            </dd>
+          </dl>
+          <div data-desktop-check={downloads.mac.name}>
+            <CopyCommand command={downloads.mac.check} label="Check command for the Mac download" client:visible />
+          </div>
+          <p class="desktop-note">
+            Run it where the file is. It prints <code translate="no">{downloads.mac.name}: OK</code>.
+          </p>
+          {downloads.intel && (
+            <details class="desktop-sums">
+              <summary>The Intel dmg's checksum</summary>
+              <code class="desktop-digest" data-desktop-sha256={downloads.intel.name}>{downloads.intel.sha256}</code>
+              <div data-desktop-check={downloads.intel.name}>
+                <CopyCommand command={downloads.intel.check} label="Check command for the Intel Mac download" client:visible />
+              </div>
+            </details>
+          )}
+        </div>
+      )}
+
+      {linux.length > 0 && (
+        <div class="desktop-platform">
+          <p class="desktop-platform-name">Linux, x86-64</p>
+          <ul class="desktop-files">
+            {linux.map((download) => (
+              <li>
+                <a
+                  class="desktop-file"
+                  href={download.url}
+                  data-desktop-download={download.kind}
+                  data-size={download.size}
+                  data-sha256={download.sha256}
+                >
+                  {download.label}
+                  <span class="sr-only">:</span>
+                  <span class="desktop-file-meta">
+                    <span translate="no">{download.name}</span>, {download.megabytes}
+                  </span>
+                </a>
+              </li>
+            ))}
+          </ul>
+          <p class="desktop-note">
+            Unsigned. <a href={linuxGuide}>Installing them</a>
+          </p>
+          <details class="desktop-sums">
+            <summary>Their checksums</summary>
+            {linux.map((download) => (
+              <div class="desktop-sum-row">
+                <span class="desktop-sum-name" translate="no">{download.name}</span>
+                <code class="desktop-digest" data-desktop-sha256={download.name}>{download.sha256}</code>
+                <div data-desktop-check={download.name}>
+                  <CopyCommand command={download.check} label={`Check command for the ${download.label} download`} client:visible />
+                </div>
+              </div>
+            ))}
+            <p class="desktop-note">On Linux, <code>sha256sum -c</code> takes the same line.</p>
+          </details>
+        </div>
+      )}
+    </section>
+  )
+}
+
+<script>
+  // A Mac visitor gets the desktop downloads first. Nothing is sent and nothing is stored: the
+  // browser's own platform report decides, and an iPad, which reports a Mac's user agent with a
+  // touch screen, is not a Mac. Nothing here can tell Apple silicon from Intel, so it does not try.
+  const platform = (navigator as Navigator & { userAgentData?: { platform?: string } }).userAgentData?.platform;
+  const mac = platform ? platform === "macOS" : /Macintosh|Mac OS X/.test(navigator.userAgent) && navigator.maxTouchPoints <= 1;
+  if (mac) {
+    for (const section of document.querySelectorAll<HTMLElement>("[data-desktop-downloads][data-mac-first]")) {
+      const target = document.querySelector(section.dataset.macFirst ?? "");
+      if (target && target !== section) target.before(section);
+      section.dataset.macFirstApplied = "";
+    }
+  }
+</script>
+
+<style>
+  .desktop-downloads {
+    display: grid;
+    gap: 0.9rem;
+  }
+
+  /* In the install panel a rule sets it off from the script's steps. */
+  .desktop-downloads-panel {
+    padding-top: 1.4rem;
+    border-top: 1px solid var(--line);
+  }
+
+  /* On a Mac the section comes before the install steps, so its rule goes below it instead. */
+  .desktop-downloads-panel[data-mac-first-applied] {
+    padding-top: 0;
+    padding-bottom: 1.4rem;
+    border-top: 0;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 1.4rem;
+  }
+
+  .desktop-title {
+    display: flex;
+    margin: 0;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    align-items: center;
+  }
+
+  .desktop-downloads-3 .desktop-title {
+    font-size: var(--fs-label);
+    font-weight: 650;
+  }
+
+  .desktop-tag {
+    padding: 0.1rem 0.55rem;
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+    color: var(--ink-soft);
+    font-size: var(--fs-label);
+    font-weight: 500;
+  }
+
+  .desktop-lede,
+  .desktop-note {
+    max-width: 68ch;
+    margin: 0;
+    color: var(--ink-soft);
+  }
+
+  /* The panel styles its own links, and its styles stop at this component, so the section carries
+     the same ones: coral, underlined, and a 44 px target. */
+  .desktop-lede a,
+  .desktop-note a {
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
+    color: var(--coral-bright);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+    vertical-align: middle;
+  }
+
+  .desktop-platform {
+    display: grid;
+    gap: 0.6rem;
+    justify-items: start;
+  }
+
+  .desktop-download {
+    display: inline-grid;
+    min-height: 44px;
+    padding-block: 0.55rem;
+    gap: 0.1rem;
+    text-align: left;
+  }
+
+  .desktop-download-title {
+    font-weight: 650;
+  }
+
+  .desktop-download-file,
+  .desktop-file-meta {
+    font-family: var(--font-mono);
+    font-size: var(--fs-mono);
+    overflow-wrap: anywhere;
+  }
+
+  .desktop-download-meta,
+  .desktop-download-file {
+    font-weight: 500;
+  }
+
+  .desktop-rows {
+    display: flex;
+    flex-wrap: wrap;
+    column-gap: 0.5rem;
+    align-items: center;
+  }
+
+  .desktop-platform-name {
+    margin: 0;
+    color: var(--ink);
+    font-weight: 650;
+  }
+
+  .desktop-files {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    gap: 0.2rem;
+    list-style: none;
+  }
+
+  .desktop-file {
+    display: inline-flex;
+    min-height: 44px;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.2rem 0.6rem;
+    color: var(--coral-bright);
+    font-weight: 600;
+  }
+
+  .desktop-file-meta {
+    color: var(--ink-soft);
+    font-weight: 400;
+  }
+
+  .desktop-sum {
+    display: grid;
+    margin: 0;
+    grid-template-columns: 6.5rem minmax(0, 1fr);
+    gap: 0.75rem;
+  }
+
+  .desktop-sum dt {
+    color: var(--ink-muted);
+    font-size: var(--fs-label);
+  }
+
+  .desktop-sum dd {
+    margin: 0;
+  }
+
+  .desktop-digest {
+    display: block;
+    color: var(--ink);
+    font-family: var(--font-mono);
+    font-size: var(--fs-mono);
+    overflow-wrap: anywhere;
+  }
+
+  .desktop-platform > div,
+  .desktop-sums {
+    width: 100%;
+  }
+
+  .desktop-sums summary {
+    width: fit-content;
+    min-height: 44px;
+    padding-block: 0.6rem;
+    color: var(--coral-bright);
+    cursor: pointer;
+    font-weight: 650;
+  }
+
+  .desktop-sum-row {
+    display: grid;
+    margin-bottom: 0.9rem;
+    gap: 0.3rem;
+  }
+
+  .desktop-sum-name {
+    color: var(--ink-soft);
+    font-family: var(--font-mono);
+    font-size: var(--fs-mono);
+  }
+
+  @media (max-width: 560px) {
+    .desktop-sum {
+      grid-template-columns: 1fr;
+      gap: 0.15rem;
+    }
+  }
+</style>
