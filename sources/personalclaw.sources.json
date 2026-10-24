@@ -5,60 +5,60 @@
   "sources": {
     "core": {
       "repository": "PersonalClaw/PersonalClaw",
-      "commit": "c7305c85853549d871c404fefa976c0de6a1c06e",
-      "tag": "v0.2.6",
-      "installSha256": "95ec5e33a0a078b57ba926292c536a6bd6f098295c505b8b2b5d83013add6f9b",
-      "installCommit": "c7305c85853549d871c404fefa976c0de6a1c06e",
+      "commit": "27daa8d20056fbe25ecaed6b8450e4e98aa398c4",
+      "tag": "v0.2.7",
+      "installSha256": "5439b1d0cc712e5f36a265a758915675daaabbe5678fe0f82c931e9c8f5bccfc",
+      "installCommit": "27daa8d20056fbe25ecaed6b8450e4e98aa398c4",
       "releaseAssets": [
         {
-          "name": "PersonalClaw-0.2.6-arm64.dmg",
-          "size": 222005580,
-          "sha256": "a204dc6103b6e1c717887938378c2b5905a1f239d7be1c7c74fb1b59dadf8653"
+          "name": "PersonalClaw-0.2.7-arm64.dmg",
+          "size": 222099695,
+          "sha256": "47037384902c9fa630ba67993cb4fc53a52d9fb473a5c49ab37c46adf53cdd5d"
         },
         {
-          "name": "personalclaw-0.2.6-py3-none-any.whl",
-          "size": 19844219,
-          "sha256": "97227eec153c14919949e8af475b45ea9abbc8cd77171dfe05996280d99a1abc"
+          "name": "personalclaw-0.2.7-py3-none-any.whl",
+          "size": 19852679,
+          "sha256": "590fa054f841b0abcdc438c38babf4b83e836f5ba3113fc950695e3bd1d50e21"
         },
         {
-          "name": "PersonalClaw-0.2.6.AppImage",
-          "size": 253364411,
-          "sha256": "5b9186a6a8cd71ae9aa1702f969d7f070acdb3b56525bcd17b26d6b1d70121b0"
+          "name": "PersonalClaw-0.2.7.AppImage",
+          "size": 253450814,
+          "sha256": "13db87b4ad3917f090b37e06b2a03d27a3b23eda9bd796e33a6db500fbd452bd"
         },
         {
-          "name": "personalclaw-0.2.6.tar.gz",
-          "size": 29181803,
-          "sha256": "06bdbf500f298af1478291a25c0f4c5b98b1a277f3cf13607a293e7e046649bd"
+          "name": "personalclaw-0.2.7.tar.gz",
+          "size": 29244437,
+          "sha256": "2934254fbae3cdca64fb02d75611869161e912ee7bee8e8613d0f5c9e34929a0"
         },
         {
-          "name": "personalclaw-desktop_0.2.6_amd64.deb",
-          "size": 207480912,
-          "sha256": "1f341b159449f5796d4b26b070b42220a0ff0aa1c710cadc310cd47c9c806b3d"
+          "name": "personalclaw-desktop_0.2.7_amd64.deb",
+          "size": 207558360,
+          "sha256": "a3683859f729a3b92a0b262aa5958c12444c1dbcde3a6fbb3716d6975156b413"
         },
         {
           "name": "personalclaw-gateway-amd64.spdx.json",
-          "size": 8680742,
-          "sha256": "ba7f50495399873f7ccbb7d6d9c40ae8baf06a436092cca9e85a15b3a55d3656"
+          "size": 8680725,
+          "sha256": "f3aef05cc3c36a7e0598712e9ec0031b2255c4ce6ed781a323b4ac9910597119"
         },
         {
           "name": "personalclaw-gateway-arm64.spdx.json",
-          "size": 8632878,
-          "sha256": "8fade689c0dd5d8614cc86f0d9ac41f98a6fb70ba6838e09bad35382fa857f41"
+          "size": 8632861,
+          "sha256": "b97647933abbced0e6f7a25d613ed44da1010e81490c4c032d68c5ebbb86e4ec"
         },
         {
           "name": "personalclaw-web-amd64.spdx.json",
           "size": 1232761,
-          "sha256": "821539dd5f3a9a79b2a2e06f98488ea83c37f9b55e5bedb45ab21ba78e510d4a"
+          "sha256": "9ce1c9e0668e11ad3c48028480ce486459d2405ec8cfec492b2b3c69f38c87c4"
         },
         {
           "name": "personalclaw-web-arm64.spdx.json",
           "size": 1232833,
-          "sha256": "a77e3c152b0cf2dd31bbc28a9e33293d2492944e27040180ae2388ae0a167742"
+          "sha256": "5e2ca4289408d0d062b65b82b0aae166e815c2612717c0be464f069e4ff55dcc"
         },
         {
           "name": "personalclaw-wheel.spdx.json",
           "size": 619060,
-          "sha256": "2ec27938411331dae67e9c9c5faa0dfabc5db66945f06e346158e77f6e3047fb"
+          "sha256": "cb14acb272a20413d5dc704b7a61d5784a2669c036e6c86ae17dc1cdfa8bfb8c"
         }
       ]
     },

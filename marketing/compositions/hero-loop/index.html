@@ -2,15 +2,16 @@
 <!--
   The hero loop (#95): the System Window's Home tab plays it, silent, ten seconds, on repeat.
   Real recordings of the released app only, in the order a piece of work moves through it: Home
-  with what needs you, a thread whose agent orb thinks, works and composes, a goal loop's report,
-  an approval waiting with its badge, and the thread's done mark. Every state the orb shows is the
-  app's own status text in the same frame, so the loop never relies on the orb's motion alone.
+  with what needs you, a thread whose agent thinks and reads a file, a goal loop's report, an
+  approval waiting with its badge, and the thread's done mark. Every state the orb shows is the
+  app's own status text in the same frame (at 0.2.7, the turn's status row above the composer), so
+  the loop never relies on the orb's motion alone.
 
   Each beat is one clip (marketing/screenshots.manifest.json `clips`), staged into assets/ by
   `npm run render:videos`. `data-media-start` is where the beat begins in its recording, set from
   that recording's beat times when it is captured at the release. The goal loop's beat is the
-  `loops` shot, a still: its planning clip could not be recorded at 0.2.6, and the loop shows the
-  still rather than a recording of something else.
+  `loops` shot, a still: its planning clip has not been placed, and the loop shows the still rather
+  than a recording of something else.
 
   Motion: each beat fades up from the theater's dark and back down to it over 0.3 s, and the
   thread eases into one slow punch-in. Both are paused Web Animations the runtime seeks to
@@ -53,11 +54,11 @@
     <div id="main" data-composition-id="main" data-no-timeline data-start="0" data-duration="10" data-width="1280" data-height="800">
       <div class="frame" id="home-frame" data-beat-start="0" data-beat-end="2">
         <video id="home" class="clip" src="assets/home-lanes.webm" muted playsinline
-          data-start="0" data-duration="2" data-media-start="4.54" data-track-index="1"></video>
+          data-start="0" data-duration="2" data-media-start="7" data-track-index="1"></video>
       </div>
       <div class="frame" id="thread-frame" data-beat-start="2" data-beat-end="5.6" data-punch-in="1.06">
         <video id="thread" class="clip" src="assets/thread-turn.webm" muted playsinline
-          data-start="2" data-duration="3.6" data-media-start="22.6" data-track-index="2"></video>
+          data-start="2" data-duration="3.6" data-media-start="31" data-track-index="2"></video>
       </div>
       <div class="frame" id="loop-frame" data-beat-start="5.6" data-beat-end="7.4">
         <img id="loop" class="clip" src="assets/loops.png" alt=""
@@ -65,11 +66,11 @@
       </div>
       <div class="frame" id="approval-frame" data-beat-start="7.4" data-beat-end="8.8">
         <video id="approval" class="clip" src="assets/approval-wait.webm" muted playsinline
-          data-start="7.4" data-duration="1.4" data-media-start="5.38" data-track-index="4"></video>
+          data-start="7.4" data-duration="1.4" data-media-start="5.47" data-track-index="4"></video>
       </div>
       <div class="frame" id="done-frame" data-beat-start="8.8" data-beat-end="10">
         <video id="done" class="clip" src="assets/thread-turn.webm" muted playsinline
-          data-start="8.8" data-duration="1.2" data-media-start="27.8" data-track-index="5"></video>
+          data-start="8.8" data-duration="1.2" data-media-start="51" data-track-index="5"></video>
       </div>
     </div>
     <script>
