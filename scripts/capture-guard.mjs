@@ -11,7 +11,7 @@
 
 /** What no frame may show. */
 export const DENY = Object.freeze([
-  { what: "a host path", pattern: /\/Users\/|\/home\/[a-z]|PersonalClawWork|capture-026/ },
+  { what: "a host path", pattern: /\/Users\/|\/home\/[a-z]|PersonalClawWork|capture-0\d\d/ },
   { what: "the account name", pattern: /golani/i },
   { what: "the model provider", pattern: /bedrock|us\.anthropic\.|aws[_ -]?(profile|region|access)/i },
   { what: "a key", pattern: /AKIA[0-9A-Z]{12,}|sk-[A-Za-z0-9_-]{16,}|-----BEGIN [A-Z ]*PRIVATE KEY/ }
@@ -65,7 +65,8 @@ export function denied(text) {
  * - a skeleton: a class naming `skeleton` or `shimmer` as one of its parts (`store-skeleton-row`),
  *   or Tailwind's `animate-pulse` on its own (a `motion-safe:animate-pulse` running-state dot is
  *   not one);
- * - text saying it is loading: "Loading…", "Reconnecting…".
+ * - text saying it is loading: "Loading…", "Reconnecting…", and the status bar's "Connecting to
+ *   gateway…" (a shot taken before the dashboard's socket is up).
  * Only what is inside the viewport and not hidden counts. A spinner alone is not a mark: the app
  * spins one beside a tool call waiting on its approval, which is a state a shot shows on purpose.
  */
@@ -95,7 +96,7 @@ export function loadingOnScreen() {
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
   for (let node = walker.nextNode(); node; node = walker.nextNode()) {
     const text = node.textContent ?? "";
-    if (/\b(Loading|Reconnecting)\b[^\n]{0,60}?(…|\.\.\.)/.test(text) && node.parentElement && shown(node.parentElement)) {
+    if (/\b(Loading|Reconnecting|Connecting)\b[^\n]{0,60}?(…|\.\.\.)/.test(text) && node.parentElement && shown(node.parentElement)) {
       found.push(`"${text.trim().slice(0, 40)}"`);
     }
   }

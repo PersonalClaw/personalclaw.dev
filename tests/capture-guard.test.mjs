@@ -10,6 +10,7 @@ test("a host path, the account name, the provider and a key each fail a take, by
   for (const [text, what] of [
     ["REPORT.md at /Users/someone/projects", "a host path"],
     ["~/PersonalClawWork/capture-026/home", "a host path"],
+    ["cd capture-027/workspace", "a host path"],
     ["signed in as golani", "the account name"],
     ["on us.anthropic.claude-sonnet", "the model provider"],
     ["Amazon Bedrock", "the model provider"],
