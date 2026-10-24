@@ -3,9 +3,11 @@
 // check it, read it, then run it. Home's "Install PersonalClaw" buttons open this panel with the
 // popover API, which needs no script: Escape and a click outside close it, and focus goes back to
 // the button that opened it. The checksum and the script are read at build time from the file /install
-// serves, and scripts/validate-build.mjs fails a build whose panel and /install disagree.
+// serves, and scripts/validate-build.mjs fails a build whose panel and /install disagree. The
+// desktop app is the second path, after the steps (before them on a Mac): components/DesktopDownloads.
 import { X } from "lucide-react";
 import { CopyCommand } from "./CopyCommand";
+import DesktopDownloads from "./DesktopDownloads.astro";
 import { installerPython, installerScript, installerSha256 } from "../data/installer.mjs";
 import { releaseFacts } from "../data/release";
 import { INSTALL_DOWNLOAD_COMMAND, INSTALL_PANEL_ID, INSTALL_RUN_COMMAND } from "../data/site";
@@ -40,7 +42,7 @@ const checkCommand = `echo "${sha256}  install" | shasum -a 256 -c`;
       <X size={19} aria-hidden="true" />
     </button>
   </div>
-  <ol class="install-steps">
+  <ol class="install-steps" id={`${INSTALL_PANEL_ID}-steps`} data-install-steps>
     <li>
       <h3>Download the installer</h3>
       <p>This saves a file named <code>install</code> in the current folder. It runs nothing.</p>
@@ -100,7 +102,19 @@ const checkCommand = `echo "${sha256}  install" | shasum -a 256 -c`;
       </p>
     </li>
   </ol>
+  <DesktopDownloads level={3} intelHref={`#${INSTALL_PANEL_ID}-steps`} macFirstBefore="[data-install-steps]" />
 </div>
+
+<script>
+  // A link to /#install-panel opens the panel, as its buttons do: /release sends an Intel Mac here.
+  import { INSTALL_PANEL_ID } from "../data/site";
+  const open = () => {
+    const panel = document.getElementById(INSTALL_PANEL_ID);
+    if (location.hash === `#${INSTALL_PANEL_ID}` && panel && !panel.matches(":popover-open")) panel.showPopover();
+  };
+  open();
+  window.addEventListener("hashchange", open);
+</script>
 
 <style>
   .install-panel {

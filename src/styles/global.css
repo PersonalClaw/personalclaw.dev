@@ -671,7 +671,8 @@ h3 {
 
 .command-line {
   display: block;
-  white-space: nowrap;
+  /* `pre`, not `nowrap`: a checksum line needs its two spaces as typed (`<sha>  <file>`). */
+  white-space: pre;
 }
 
 .command-block .prompt {

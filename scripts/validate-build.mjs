@@ -28,6 +28,7 @@ import {
 import { BUILDERS_SNIPPET, appManifestProblems } from "../src/data/apps-snippet.mjs";
 import { runsDownloadUnseen } from "./install-commands.mjs";
 import { releasePageProblems } from "./release-assets.mjs";
+import { desktopDownloadProblems } from "./desktop-downloads.mjs";
 import { installerPackage, installerPython } from "../src/data/installer.mjs";
 import { releaseClipEntry, releaseSlotProblems, slotWords } from "../src/data/release-slot.mjs";
 import { docsIndex } from "../src/data/docs-index.mjs";
@@ -769,6 +770,16 @@ if (!home$.text().includes(releaseFacts.core.versionLabel)) {
     fail(`/: the install panel must show the installer's SHA-256 once (found ${shownDigest.length})`);
   } else if (shownDigest.text().trim() !== digest) {
     fail(`/: the install panel shows SHA-256 ${shownDigest.text().trim()}, but /install is ${digest}`);
+  }
+  // The desktop app is the panel's second path, and /release lists the same files: each one the
+  // pinned release's own asset, at its tag, with its recorded size and SHA-256
+  // (scripts/desktop-downloads.mjs). validate:release-parity holds that record to GitHub's.
+  if (releaseFacts.channel === "released") {
+    const core = sourceManifest.sources.core;
+    const release = { repository: core.repository, tag: core.tag, assets: core.releaseAssets ?? [] };
+    for (const [page, $] of [["/", home$], ["/release", release$]]) {
+      for (const problem of desktopDownloadProblems($, page, release)) fail(problem);
+    }
   }
   const shownScript = home$("[data-install-script]");
   if (shownScript.length !== 1) {

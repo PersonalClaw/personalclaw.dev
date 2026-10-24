@@ -453,7 +453,25 @@
       "core": "c7305c85853549d871c404fefa976c0de6a1c06e",
       "verified_release": "v0.2.6",
       "surfaces": [
-        "compare"
+        "compare",
+        "home"
+      ]
+    },
+    {
+      "id": "desktop_experimental",
+      "group": "capabilities",
+      "claim": "The desktop app is a finished part of the release.",
+      "verdict": "no",
+      "statement": "Core's README calls the Electron desktop shell experimental at this release. Every release attaches an Apple-silicon dmg, ad-hoc signed and not notarized, and an x86-64 Linux AppImage and deb, unsigned, all built by CI, and the shell has no auto-update channel. The run modes the README lists beside it are a local process, Docker Compose and a systemd or launchd service.",
+      "source_label": "README.md, run modes",
+      "source_url": "https://github.com/PersonalClaw/PersonalClaw/blob/v0.2.6/README.md#L325-L328",
+      "source_type": "file",
+      "retrieved": "2026-10-23",
+      "core": "c7305c85853549d871c404fefa976c0de6a1c06e",
+      "verified_release": "v0.2.6",
+      "surfaces": [
+        "compare",
+        "home"
       ]
     },
     {

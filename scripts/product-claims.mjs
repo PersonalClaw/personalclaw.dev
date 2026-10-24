@@ -63,6 +63,7 @@ export const CLAIM_TOPICS = Object.freeze({
   app_sandbox: ["sandbox", "sandboxed"],
   dep_scan_gate: ["pip-audit", "npm audit", "vulnerable dependency", "vulnerable dependencies"],
   desktop_app: ["desktop app", "desktop application"],
+  desktop_experimental: ["stable desktop", "finished desktop", "production-ready desktop", "desktop app is stable"],
   retrieval: ["RAG", "semantic search", "vector search", "embeddings"],
   sso_auth: ["single sign-on", "SSO", "SAML", "OIDC"],
   webhooks: ["webhook"],

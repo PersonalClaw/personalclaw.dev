@@ -2,6 +2,7 @@
 import { Boxes, Check, Clock3, Code2, FileCheck2, GitCommit, Tag } from "lucide-react";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { CopyCommand } from "../components/CopyCommand";
+import DesktopDownloads from "../components/DesktopDownloads.astro";
 import ReleaseClip from "../components/ReleaseClip.astro";
 import { releaseFacts } from "../data/release";
 import sourceManifest from "../../sources/personalclaw.sources.json";
@@ -216,6 +217,17 @@ const describes =
       </section>
     )
   }
+
+  {/* The desktop app's files from the same release, each with its size and SHA-256. An Intel Mac
+      without its own dmg is sent to Home's install panel (#install-panel opens it). */}
+  <section class="section desktop-section section-rule" aria-labelledby="desktop-title">
+    <div class="shell">
+      <div class="section-head">
+        <h2 id="desktop-title">The desktop app, from the same release.</h2>
+      </div>
+      <DesktopDownloads level={3} intelHref="/#install-panel" />
+    </div>
+  </section>
 
   <section class="section source-section section-rule">
     <div class="shell">

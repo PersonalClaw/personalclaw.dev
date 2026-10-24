@@ -241,8 +241,9 @@ test("copy command writes the complete download command", async ({
   await openPage(page, "/");
   await page.locator(".home-hero").getByRole("button", { name: "Install PersonalClaw" }).click();
 
-  // The download step only downloads: nothing on Home copies a pipe into a shell.
-  const copy = page.locator("#install-panel .copy-button").first();
+  // The download step only downloads: nothing on Home copies a pipe into a shell. The script's
+  // steps, not the panel's first copy button: on a Mac the desktop downloads come first.
+  const copy = page.locator("#install-panel [data-install-steps] .copy-button").first();
   await expect(copy).toHaveAccessibleName("Copy download command");
   await copy.click();
   await expect(copy).toHaveAccessibleName("Download command copied");
