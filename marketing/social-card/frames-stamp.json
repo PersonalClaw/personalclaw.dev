@@ -9,8 +9,8 @@
       "png": "a423babb16b2b55b9551dee65c86774bc9389360d275a91f4b1345235de9b07f"
     },
     "/apps": {
-      "inputs": "637c63797dc88b12089c763271778570b956d512be026095bfae01d302ab7137",
-      "png": "d838745732b45fc8ba6ed816e9b340c454e5520a7a987de1f4cb4660397fb642"
+      "inputs": "516650e77966074d136d8dc2ab879b716af063fa2bccea8c519240d5f082f53e",
+      "png": "63fea9c00460733e33665c1a74db1a2e700caae893fc4dceaf74183091f48739"
     },
     "/security": {
       "inputs": "08e4b9163e80238a595bc959cb7ea8f6f816d517873deef6c28d4bbb56b3e5f9",
@@ -33,8 +33,8 @@
       "png": "7e65ca226fc8cfd4aa4422df95681fcedc7c760ba079728029a8fd86988fbeaf"
     },
     "/registry": {
-      "inputs": "f4d3b777e80ffe62b14d4f70c9f8c63fad0f2cf04dfc24605afac460866471e2",
-      "png": "c0aa6c698c200a49b41d109a41a4c8073175d473854d24950eff993d45b3b930"
+      "inputs": "e04b9e608cfeaf72a2a5fcd56404395c783dcd1f9c51736eca076c4d9485885d",
+      "png": "05cfa518ecb02325df3377d8f8666789364c70e98ded5b96e0ee66a8b72e80f8"
     },
     "/docs": {
       "inputs": "a976cef91386755fb15fd407545cbde6d5cde79567cfffb38eeca7bb577b8996",
