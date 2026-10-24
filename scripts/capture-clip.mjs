@@ -9,13 +9,15 @@
 // by whoever owns the home it changes. It records 1440 x 900, dark, with 1.5 s before and after
 // the beat, into marketing/.captures/clips/<id>.webm, and writes <id>.beat.json with where the
 // beat starts. Before and after the hold it checks the text on screen against the deny list
-// (scripts/capture-guard.mjs) and deletes the take when any of it shows.
+// (scripts/capture-guard.mjs) and deletes the take when any of it shows. A view still loading is
+// refused the same way: the hold waits up to 30 s for no skeleton, `aria-busy` or "Loading…" on
+// screen, and the take is deleted if one is there before or after it.
 
 import { mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
-import { denied, textOnScreen } from "./capture-guard.mjs";
+import { denied, loadingOnScreen, settled, textOnScreen } from "./capture-guard.mjs";
 
 const repoRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const outDir = join(repoRoot, "marketing", ".captures", "clips");
@@ -75,7 +77,11 @@ try {
   const check = async (when) => {
     const found = denied(await page.evaluate(textOnScreen));
     if (found.length) throw new Error(`${id} shows ${found.join(", ")} ${when}: fix the home, then record again`);
+    const loading = await page.evaluate(loadingOnScreen);
+    if (loading.length) throw new Error(`${id} is still loading ${when} (${loading.slice(0, 4).join(", ")}): record again`);
   };
+  const loading = await settled(page, 30000);
+  if (loading.length) throw new Error(`${id} never finished loading (${loading.slice(0, 4).join(", ")}): record again`);
   await check("before its hold");
   await page.waitForTimeout(LEAD * 1000);
   start = Number(((Date.now() - recording) / 1000).toFixed(2));

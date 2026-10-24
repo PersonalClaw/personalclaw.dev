@@ -10,22 +10,30 @@
 // interaction, done first; this only photographs the result.
 //
 //   PERSONALCLAW_TOKEN=… node scripts/capture-app-shots.mjs --base http://127.0.0.1:10001 [--only chat,loops]
+//     [--out <dir>] [--settle <ms>] [--loading-wait <ms>]
 //
 // The gateway keeps its own sign-in: the browser signs in the way the link `personalclaw token`
 // prints does (`/?token=…`), with the token taken from PERSONALCLAW_TOKEN and never printed. A
 // gateway run with its auth switched off needs no token.
 //
-// Every shot is written to marketing/.captures/<id>.png for review BEFORE anything is copied
-// into src/assets/ — a screenshot that silently replaces a good one is worse than a missing
-// one, so promotion is a separate, deliberate step.
+// Every shot is written to marketing/.captures/<id>.png (or --out) for review BEFORE anything is
+// copied into src/assets/ — a screenshot that silently replaces a good one is worse than a
+// missing one, so promotion is a separate, deliberate step.
+//
+// A view still loading is never written. Before each still, the script waits (--loading-wait,
+// 30 s by default) for the screen to show no skeleton, no `aria-busy="true"` and no "Loading…"
+// (scripts/capture-guard.mjs), and for the shot's own `ready` mark when it has one. A shot that
+// does not settle in that time is refused: no PNG, and the run exits 1. A fixed settle time alone
+// is how the Store shot once shipped its catalog's skeleton. --settle replaces every shot's settle
+// time; tests/browser/capture-guard.spec.ts uses it with a planted page.
 
 import { mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
+import { settled } from "./capture-guard.mjs";
 
 const repoRoot = dirname(dirname(fileURLToPath(import.meta.url)));
-const outDir = join(repoRoot, "marketing", ".captures");
 
 // The manifest's spec: 8:5, at least 1200x750. Captured at 1.5x that (1800x1125) so the
 // largest responsive variant never upscales, then Astro derives the smaller WebPs.
@@ -42,10 +50,15 @@ const only = argOf("only", "")
   .split(",")
   .map((s) => s.trim())
   .filter(Boolean);
+const outDir = argOf("out", join(repoRoot, "marketing", ".captures"));
+const settleOverride = args.includes("--settle") ? Number(argOf("settle", "")) : null;
+const loadingWait = Number(argOf("loading-wait", "30000"));
 
 // path: where the view lives. settle: extra ms for animation/data to land. prep: optional
 // in-page setup (open a tab, apply a filter) done through the real UI, never by URL hacking
-// a state the user can't reach.
+// a state the user can't reach. ready: what the view shows once its data is in, for a view
+// whose failure looks settled (the Store's "Couldn't load your Store catalog" carries no
+// loading mark).
 const SHOTS = [
   // The dashboard is a HASH-routed SPA (`useHashRoute`): `#/route/sub`. Path-style URLs all
   // resolve to the dashboard, which would have produced 13 copies of the same shot.
@@ -82,9 +95,15 @@ const SHOTS = [
   },
   { id: "triggers", hash: "#/triggers", settle: 2400 },
   // The Store is a tab of the Capabilities destination (0.2.4), still the Apps page's store view;
-  // `#/settings/apps` is the Store-sources settings. The catalog loads after the page, so it gets
-  // longer to settle than a local list.
-  { id: "apps", hash: "#/apps?view=store", settle: 6000 },
+  // `#/settings/apps` is the Store-sources settings. The catalog loads after the page, from the
+  // Store's git sources, and a cold first fetch can outlast the Store's own 8 s wait; the shot is
+  // ready once a listing's Install button shows (not "Install from URL").
+  {
+    id: "apps",
+    hash: "#/apps?view=store",
+    settle: 6000,
+    ready: (page) => page.getByRole("button", { name: /^Install\b/ }).filter({ hasNotText: "URL" }).first(),
+  },
   { id: "agents", hash: "#/agents", settle: 2600 },
   // Memory left Settings for Library's Memory tab in 0.2.4; `#/settings/memory` now redirects.
   {
@@ -141,6 +160,7 @@ page.on("console", (msg) => {
 page.on("pageerror", (err) => problems.push(`pageerror: ${String(err).slice(0, 160)}`));
 
 let failures = 0;
+const refusedShots = [];
 let loaded = false;
 for (const shot of wanted) {
   const before = problems.length;
@@ -162,7 +182,7 @@ for (const shot of wanted) {
     }, shot.hash);
     await page.reload({ waitUntil: "domcontentloaded", timeout: 60000 });
   }
-  await page.waitForTimeout(shot.settle);
+  await page.waitForTimeout(settleOverride ?? shot.settle);
   // After the reload the status line says it is connecting until the gateway's socket is back;
   // a still of that moment shows a transient banner, not the view.
   await page
@@ -249,6 +269,24 @@ for (const shot of wanted) {
   if (leaks[0]) problems.push(`leak: a home-directory path is visible (${leaks[0]} text run(s))`);
   if (leaks[1]) problems.push(`leak: CAPTURE_FORBID matches visible text (${leaks[1]} text run(s))`);
 
+  // Refuse a view still loading: no PNG is written for it, and the run fails.
+  let refused = null;
+  if (shot.ready) {
+    await shot
+      .ready(page)
+      .waitFor({ state: "visible", timeout: loadingWait })
+      .catch(() => (refused = "its data never showed (the shot's ready mark)"));
+  }
+  if (!refused) {
+    const loading = await settled(page, loadingWait);
+    if (loading.length) refused = `still loading after ${loadingWait} ms: ${loading.slice(0, 4).join(", ")}`;
+  }
+  if (refused) {
+    console.log(`refused  ${shot.id.padEnd(20)} ${shot.hash}  ✗ ${refused}`);
+    refusedShots.push(shot.id);
+    continue;
+  }
+
   const file = join(outDir, `${shot.id}.png`);
   await page.screenshot({ path: file, fullPage: false });
 
@@ -260,7 +298,7 @@ for (const shot of wanted) {
 
 await browser.close();
 
-console.log(`\n${wanted.length} shot(s) → marketing/.captures/`);
+console.log(`\n${wanted.length - refusedShots.length} of ${wanted.length} shot(s) written`);
 if (failures) {
   console.log(
     `${failures} view(s) logged console errors or a leak — inspect those before promoting ` +
@@ -268,3 +306,10 @@ if (failures) {
   );
 }
 console.log("Review each PNG, then promote deliberately into src/assets/.");
+if (refusedShots.length) {
+  console.error(
+    `${refusedShots.length} shot(s) refused, still loading: ${refusedShots.join(", ")}. Nothing was ` +
+      `written for them; wait for the view (or fix the gateway), then capture again.`
+  );
+  process.exit(1);
+}
