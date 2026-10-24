@@ -154,15 +154,20 @@ test("a clip that plays into its take's loading stretch fails, and one that stop
 
 test("the manifest fails a shipping composition that cuts into a marked loading stretch", () => {
   const html = readFileSync(join(root, "marketing/compositions/tour/index.html"), "utf8");
+  // Home's clip as the composition cuts it, and a stretch planted in its middle.
+  const home = html.match(/<video id="home"[^>]*data-duration="([\d.]+)" data-media-start="([\d.]+)"/);
+  assert.ok(home, "the tour composition has its home clip");
+  const [from, to] = [Number(home[2]), Number((Number(home[2]) + Number(home[1])).toFixed(2))];
+  const planted = [Math.floor(from) + 2, Math.floor(from) + 3];
   const problems = problemsAfter(
     (manifest) => {
       const tour = manifest.clips.find((entry) => entry.id === "tour");
-      tour.loading = [...(tour.loading ?? []), [2, 3]];
+      tour.loading = [...(tour.loading ?? []), planted];
     },
     { "marketing/compositions/tour/index.html": html }
   );
   assert.ok(
-    problems.includes('video "tour": clip "home" plays tour from 1.41 to 10.41 s, into its loading stretch at 2–3 s'),
+    problems.includes(`video "tour": clip "home" plays tour from ${from} to ${to} s, into its loading stretch at ${planted[0]}–${planted[1]} s`),
     problems.join("\n")
   );
 });

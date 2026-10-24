@@ -16,14 +16,14 @@ const HAND_CHECKED = [
     id: "sbom",
     claim: "The release attaches SBOMs for the wheel and both container images.",
     evidence: "Release assets",
-    verified: "v0.2.6",
+    verified: "v0.2.7",
     link: (core) => ({ href: core.source.tagUrl ?? core.source.commitUrl, label: `The ${core.versionLabel} release` })
   },
   {
     id: "threat-model",
     claim: "A threat model maps each control to the OWASP Agentic Top 10.",
     evidence: "Threat model",
-    verified: "v0.2.6",
+    verified: "v0.2.7",
     link: () => ({
       href: "/docs/security/threat-model#owasp-agentic-security-asi-top-10-mapping",
       label: "The OWASP mapping"

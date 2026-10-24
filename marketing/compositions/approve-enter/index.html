@@ -2,7 +2,7 @@
 <!--
   A feature loop (#95): Approve with the keyboard: Tab to the waiting approval, press Cmd Enter, and it resolves.
   One real recording of the released app (the `approve-enter` clip in
-  marketing/screenshots.manifest.json), staged into assets/ by `npm run render:videos`, 4.4
+  marketing/screenshots.manifest.json), staged into assets/ by `npm run render:videos`, 4.1
   seconds, silent: from the request in view with keyboard focus on it, through Cmd Enter, to
   "approved". The Tabs before it walk the sidebar and the thread, so the loop starts where focus
   reaches the request. `data-media-start` is where the action begins in the recording, set from its
@@ -40,17 +40,17 @@
     </style>
   </head>
   <body>
-    <div id="main" data-composition-id="main" data-no-timeline data-start="0" data-duration="4.4" data-width="1280" data-height="800">
+    <div id="main" data-composition-id="main" data-no-timeline data-start="0" data-duration="4.1" data-width="1280" data-height="800">
       <div id="frame">
         <video id="action" class="clip" src="assets/approve-enter.webm" muted playsinline
-          data-start="0" data-duration="4.4" data-media-start="10.95" data-track-index="1"></video>
+          data-start="0" data-duration="4.1" data-media-start="10.95" data-track-index="1"></video>
       </div>
     </div>
     <script>
       // The runtime seeks every paused Web Animation to timeline time, so the frame fades up from
       // the dark over 0.3 s and back down to it over the last 0.3 s.
       const FADE = 0.3;
-      const DURATION = 4.4;
+      const DURATION = 4.1;
       document.getElementById("frame").animate(
         [
           { opacity: 0, easing: "cubic-bezier(0.33, 1, 0.68, 1)" },

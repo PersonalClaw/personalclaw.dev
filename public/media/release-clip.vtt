@@ -6,20 +6,20 @@ them from the clip's brief in marketing/screenshots.manifest.json; edit them the
 
 1
 00:00:00.000 --> 00:00:03.500
-PersonalClaw 0.2.6, released 22 October 2026.
+PersonalClaw 0.2.7, released 23 October 2026.
 
 2
 00:00:03.500 --> 00:00:08.000
-Home is what needs you.
+A running turn's status sits at the bottom of the chat.
 
 3
 00:00:08.000 --> 00:00:12.500
-Everything waiting on you is one list.
+The animated orb at the head of the reply is gone.
 
 4
 00:00:12.500 --> 00:00:17.000
-Loops and code sessions read like chats.
+No upgrade step is needed.
 
 5
 00:00:17.000 --> 00:00:20.000
-Every change in 0.2.6, with its source: personalclaw.dev/release.
+Every change in 0.2.7, with its source: personalclaw.dev/release.

@@ -1,7 +1,7 @@
 {
   "$schema": "./screenshots.schema.json",
   "schemaVersion": 1,
-  "targetRelease": "0.2.6",
+  "targetRelease": "0.2.7",
   "capture": {
     "instance": "A scratch home, never the install's own: seed core's demo home into it and run a gateway on a free loopback port (PERSONALCLAW_HOME=/tmp/pc-showcase personalclaw gateway --seed demo-home --seed-replace --port 10021 --no-open --json-ready), as core's docs/screenshots/CAPTURE.md describes. The seed carries projects, tasks, knowledge documents and markdown memory, and binds no model, so install a model app and bind chat (and embedding and speech-to-text, so no surface waits on a model) before any turn. Chat, the approval, the loop, the skill proposal, the artifacts and the memory records are the product of real turns on that model, a few short ones; nothing is staged. Then photograph each appView with scripts/capture-app-shots.mjs, which signs its browser in with the gateway's token.",
     "theme": "dark",
@@ -254,8 +254,8 @@
       "sources": [
         "tour"
       ],
-      "capturedAt": "0.2.6",
-      "durationSeconds": 78.23,
+      "capturedAt": "0.2.7",
+      "durationSeconds": 76.69,
       "posterAtSeconds": 2,
       "crf": 29,
       "width": 1280,
@@ -288,7 +288,7 @@
         "loops",
         "approval-wait"
       ],
-      "capturedAt": "0.2.6",
+      "capturedAt": "0.2.7",
       "durationSeconds": 10,
       "posterAtSeconds": 0.6,
       "crf": 24,
@@ -318,8 +318,8 @@
       "sources": [
         "approve-enter"
       ],
-      "capturedAt": "0.2.6",
-      "durationSeconds": 4.4,
+      "capturedAt": "0.2.7",
+      "durationSeconds": 4.1,
       "posterAtSeconds": 0.6,
       "crf": 24,
       "width": 1280,
@@ -378,7 +378,7 @@
       "sources": [
         "app-install"
       ],
-      "capturedAt": "0.2.6",
+      "capturedAt": "0.2.7",
       "durationSeconds": 4.66,
       "posterAtSeconds": 0.6,
       "crf": 24,
@@ -406,11 +406,10 @@
       "kind": "narrative",
       "composition": "marketing/compositions/release-clip/index.html",
       "sources": [
-        "home-lanes",
-        "approval-wait",
-        "loops"
+        "thread-turn",
+        "home-lanes"
       ],
-      "capturedAt": "0.2.6",
+      "capturedAt": "0.2.7",
       "durationSeconds": 20,
       "posterAtSeconds": 1.5,
       "crf": 28,
@@ -434,25 +433,26 @@
       ],
       "use": "site",
       "brief": {
-        "release": "0.2.6",
-        "date": "2026-10-22",
+        "release": "0.2.7",
+        "date": "2026-10-23",
         "highlights": [
           {
-            "text": "Home is what needs you.",
+            "text": "A running turn's status sits at the bottom of the chat.",
+            "source": "thread-turn",
+            "mediaStart": 30.6
+          },
+          {
+            "text": "The animated orb at the head of the reply is gone.",
+            "source": "thread-turn",
+            "mediaStart": 48.7
+          },
+          {
+            "text": "No upgrade step is needed.",
             "source": "home-lanes",
-            "mediaStart": 4.54
-          },
-          {
-            "text": "Everything waiting on you is one list.",
-            "source": "approval-wait",
-            "mediaStart": 5.38
-          },
-          {
-            "text": "Loops and code sessions read like chats.",
-            "source": "loops"
+            "mediaStart": 7
           }
         ],
-        "shareCopy": "PersonalClaw 0.2.6 is the app's redesign: Home is what needs you, and everything waiting on you is one list. Every change, with its source: https://personalclaw.dev/release"
+        "shareCopy": "PersonalClaw 0.2.7 is a polish release before 0.3.0: a running turn's status now sits at the bottom of the chat, just above the composer, and no upgrade step is needed. Every change, with its source: https://personalclaw.dev/release"
       },
       "status": "shipping"
     },
@@ -461,11 +461,10 @@
       "kind": "narrative",
       "composition": "marketing/compositions/release-clip-vertical/index.html",
       "sources": [
-        "home-lanes",
-        "approval-wait",
-        "loops"
+        "thread-turn",
+        "home-lanes"
       ],
-      "capturedAt": "0.2.6",
+      "capturedAt": "0.2.7",
       "durationSeconds": 20,
       "posterAtSeconds": 1.5,
       "crf": 26,
@@ -482,25 +481,26 @@
       "placements": [],
       "use": "social",
       "brief": {
-        "release": "0.2.6",
-        "date": "2026-10-22",
+        "release": "0.2.7",
+        "date": "2026-10-23",
         "highlights": [
           {
-            "text": "Home is what needs you.",
+            "text": "A running turn's status sits at the bottom of the chat.",
+            "source": "thread-turn",
+            "mediaStart": 30.6
+          },
+          {
+            "text": "The animated orb at the head of the reply is gone.",
+            "source": "thread-turn",
+            "mediaStart": 48.7
+          },
+          {
+            "text": "No upgrade step is needed.",
             "source": "home-lanes",
-            "mediaStart": 4.54
-          },
-          {
-            "text": "Everything waiting on you is one list.",
-            "source": "approval-wait",
-            "mediaStart": 5.38
-          },
-          {
-            "text": "Loops and code sessions read like chats.",
-            "source": "loops"
+            "mediaStart": 7
           }
         ],
-        "shareCopy": "PersonalClaw 0.2.6 is the app's redesign: Home is what needs you, and everything waiting on you is one list. Every change, with its source: https://personalclaw.dev/release"
+        "shareCopy": "PersonalClaw 0.2.7 is a polish release before 0.3.0: a running turn's status now sits at the bottom of the chat, just above the composer, and no upgrade step is needed. Every change, with its source: https://personalclaw.dev/release"
       },
       "status": "shipping"
     }
@@ -519,7 +519,8 @@
       "file": "marketing/.captures/clips/thread-turn.webm",
       "width": 1440,
       "height": 900,
-      "scenario": "One chat turn from the prompt sent to the reply finished: the agent orb thinking, then working under the tool's own label, then composing, then done, each with its status text; about 15 s.",
+      "scenario": "One chat turn from the prompt sent to the reply finished: the turn's status row above the composer, its orb and its turning word while the agent thinks and reads a file, then the reply and its done mark; about 45 s on a local model.",
+      "loading": [[0.23, 2.77]],
       "status": "shipping"
     },
     {
@@ -535,7 +536,7 @@
       "file": "marketing/.captures/clips/approval-wait.webm",
       "width": 1440,
       "height": 900,
-      "scenario": "A pending approval card with its \"!\" badge and \"Needs your approval\", held still; about 4 s.",
+      "scenario": "A pending approval card, and the turn's status row with its \"!\" badge and \"Needs your OK\", held still; about 4 s.",
       "status": "shipping"
     },
     {
@@ -544,6 +545,7 @@
       "width": 1440,
       "height": 900,
       "scenario": "Tab to the pending approval card, press Cmd Enter, and it resolves; about 6 s.",
+      "loading": [[0.25, 3.03]],
       "status": "shipping"
     },
     {
@@ -560,7 +562,7 @@
       "width": 1440,
       "height": 900,
       "scenario": "In Apps, open one app that needs no key, read its consent dialog, install, and it shows installed; about 6 s.",
-      "loading": [[0, 9.8], [10.1, 12.84], [15.5, 15.85]],
+      "loading": [[0.23, 2.78], [8.45, 9.7], [11.86, 13.5]],
       "status": "shipping"
     },
     {
@@ -569,7 +571,7 @@
       "width": 1440,
       "height": 810,
       "scenario": "Core's demo click-path at the release (docs/demo/CLICKPATH.md, docs/demo/capture_demo.mjs), end to end: Home, Chat, Approval, Loops, Knowledge, Artifacts and back to Home, about 85 s, with each beat's start time recorded for the composition's data-media-start.",
-      "loading": [[57.36, 57.84], [61.48, 61.68], [68.48, 68.8], [71.32, 71.64]],
+      "loading": [[0.41, 2.73], [10.44, 10.54], [42.5, 43.11], [44.62, 44.72], [57.41, 57.71], [61.56, 61.66], [68.45, 68.75], [71.29, 71.6]],
       "status": "shipping"
     }
   ]

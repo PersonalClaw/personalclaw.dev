@@ -5,10 +5,11 @@
   marketing/screenshots.manifest.json), staged into assets/ by `npm run render:videos`, 4.66
   seconds, silent. `data-media-start` is where the action begins in the recording, set from its
   beat times when it is captured at the release. The loop starts once the consent shows: before it,
-  the dialog reads "Checking DuckDuckGo and what it gets" with a spinner. The recording is cut once:
-  between the press of Install and the installed card, the Store's list redraws and reads "No
-  matching apps" for about 0.3 s, which says nothing about the install, so the loop skips it. Both
-  are marked as the clip's `loading` in the manifest, and validate:marketing-manifest fails a cut
+  the dialog reads "Checking DuckDuckGo and what it gets" with a spinner. The take holds the consent
+  for about 2 s before Install is pressed, and the recording is cut once: from the press to the
+  installed card, Install spins and then the Store's list redraws and reads "No matching apps" for
+  about 0.2 s, which says nothing about the install, so the loop skips it. All three are marked as
+  the clip's `loading` in the manifest, and validate:marketing-manifest fails a cut
   into either (scripts/clip-loading.mjs). It fades up from the theater's dark and back down
   to it, so it repeats with no seam: a paused Web Animation the runtime seeks, on a root marked
   `data-no-timeline` because no GSAP timeline is registered. Nothing loads from the network.
@@ -46,9 +47,9 @@
     <div id="main" data-composition-id="main" data-no-timeline data-start="0" data-duration="4.66" data-width="1280" data-height="800">
       <div id="frame">
         <video id="consent" class="clip" src="assets/app-install.webm" muted playsinline
-          data-start="0" data-duration="2.66" data-media-start="12.84" data-track-index="1"></video>
+          data-start="0" data-duration="2.05" data-media-start="9.75" data-track-index="1"></video>
         <video id="installed" class="clip" src="assets/app-install.webm" muted playsinline
-          data-start="2.66" data-duration="2" data-media-start="15.85" data-track-index="2"></video>
+          data-start="2.05" data-duration="2.61" data-media-start="13.55" data-track-index="2"></video>
       </div>
     </div>
     <script>
