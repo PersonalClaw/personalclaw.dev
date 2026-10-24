@@ -28,6 +28,7 @@ test("the loading check finds a skeleton, a busy region and Loading…, and noth
   expect(await marks('<div role="status" aria-busy="true" style="height:40px">rows</div>')).toEqual(["busy div[role=status]"]);
   expect(await marks("<p>Loading…</p>")).toEqual(['"Loading…"']);
   expect(await marks("<p>Reconnecting...</p>")).toEqual(['"Reconnecting..."']);
+  expect(await marks("<footer>Connecting to gateway…</footer>")).toEqual(['"Connecting to gateway…"']);
 
   expect(await marks('<div class="animate-pulse" style="display:none;width:200px;height:16px"></div>')).toEqual([]);
   expect(await marks('<div class="skeleton" style="position:absolute;top:4000px;width:200px;height:16px"></div>')).toEqual([]);
@@ -35,6 +36,7 @@ test("the loading check finds a skeleton, a busy region and Loading…, and noth
   expect(await marks('<span class="motion-safe:animate-pulse" style="display:inline-block;width:10px;height:10px"></span>')).toEqual([]);
   expect(await marks('<input class="placeholder:text-gray-400" placeholder="Search the Store">')).toEqual([]);
   expect(await marks("<p>65 apps from one source</p>")).toEqual([]);
+  expect(await marks("<footer>Gateway connected</footer>")).toEqual([]);
 });
 
 /** A Store as the shot sees it: listings with an Install button, and optionally a skeleton. */
