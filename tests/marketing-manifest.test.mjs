@@ -12,6 +12,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 
+import { loadingCuts } from "../scripts/clip-loading.mjs";
 import { manifestProblems } from "../scripts/validate-marketing-manifest.mjs";
 
 const root = new URL("..", import.meta.url).pathname;
@@ -135,3 +136,41 @@ test("a release clip /release plays ships only for the release the site describe
   });
   assert.ok(!waiting.some((p) => /plays on \/release/.test(p)), "a brief for the next release may wait unshipped");
 });
+
+// A take cannot keep a view's load off camera, so each clip marks where its take shows one, and
+// no composition may cut into it (scripts/clip-loading.mjs).
+const clip = (id, start, duration, mediaStart) =>
+  `<video id="${id}" class="clip" src="assets/tour.webm" data-start="${start}" data-duration="${duration}" data-media-start="${mediaStart}"></video>`;
+
+test("a clip that plays into its take's loading stretch fails, and one that stops at its edge passes", () => {
+  const windows = { tour: [[57.36, 57.84]] };
+  // The knowledge beat as main cut it, from 56.43 s for 12 s: through the Library's spinner.
+  assert.deepEqual(loadingCuts(clip("knowledge", 51.9, 12, 56.43), windows), [
+    'clip "knowledge" plays tour from 56.43 to 68.43 s, into its loading stretch at 57.36–57.84 s'
+  ]);
+  assert.deepEqual(loadingCuts(clip("loops", 41, 11.77, 45.53) + clip("knowledge", 52.77, 3.58, 57.84), windows), []);
+  assert.deepEqual(loadingCuts(clip("knowledge", 0, 3, 57.84), { other: [[57.36, 57.84]] }), [], "another clip's stretch");
+});
+
+test("the manifest fails a shipping composition that cuts into a marked loading stretch", () => {
+  const html = readFileSync(join(root, "marketing/compositions/tour/index.html"), "utf8");
+  const problems = problemsAfter(
+    (manifest) => {
+      const tour = manifest.clips.find((entry) => entry.id === "tour");
+      tour.loading = [...(tour.loading ?? []), [2, 3]];
+    },
+    { "marketing/compositions/tour/index.html": html }
+  );
+  assert.ok(
+    problems.includes('video "tour": clip "home" plays tour from 1.41 to 10.41 s, into its loading stretch at 2–3 s'),
+    problems.join("\n")
+  );
+});
+
+test("a loading stretch that does not end after it starts fails", () => {
+  const problems = problemsAfter((manifest) => {
+    manifest.clips.find((entry) => entry.id === "app-install").loading = [[5, 5]];
+  });
+  assert.ok(problems.some((problem) => /app-install" marks a loading stretch that does not end after it starts: 5–5 s/.test(problem)), problems.join("\n"));
+});
+

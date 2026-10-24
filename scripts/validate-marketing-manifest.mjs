@@ -28,6 +28,7 @@ import { readdirSync, readFileSync, existsSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import Ajv2020 from "ajv/dist/2020.js";
+import { loadingCuts, windowProblems } from "./clip-loading.mjs";
 
 const siteRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 
@@ -130,7 +131,10 @@ export function manifestProblems(repositoryRoot = siteRoot) {
   for (const clip of clips) {
     if (clipIds.has(clip.id) || shotIds.has(clip.id)) problems.push(`duplicate source id: ${clip.id}`);
     clipIds.add(clip.id);
+    problems.push(...windowProblems(clip));
   }
+  // Each clip's loading stretches, which no composition may cut into (scripts/clip-loading.mjs).
+  const loadingWindows = Object.fromEntries(clips.map((clip) => [clip.id, clip.loading ?? []]));
   const videoIds = new Set();
   const mediaReferenced = new Set();
   for (const video of videos) {
@@ -174,6 +178,12 @@ export function manifestProblems(repositoryRoot = siteRoot) {
     }
     if (video.kind === "narrative" && !video.captions) {
       problems.push(`video "${video.id}" is narrative but has no captions track`);
+    }
+    const composition = video.composition ? join(repositoryRoot, video.composition) : null;
+    if (composition && existsSync(composition)) {
+      for (const cut of loadingCuts(readFileSync(composition, "utf8"), loadingWindows)) {
+        problems.push(`video "${video.id}": ${cut}`);
+      }
     }
     for (const rel of files) {
       if (!existsSync(join(repositoryRoot, rel))) {

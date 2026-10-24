@@ -10,7 +10,9 @@ import { load } from "cheerio";
 
 /**
  * The composition's beats, in order: each one's times, its caption, and its chapter if it is one.
- * The beats run end to end from 0 to the composition's length, or this throws.
+ * A beat runs from its first clip's start to its last clip's end, and its clips play back to back
+ * (a beat cut around a view's load is two clips). The beats run end to end from 0 to the
+ * composition's length, or this throws.
  *
  * @param {string} html the composition's index.html
  * @returns {{ chapter: string | null, title: string | null, caption: string, start: number, end: number }[]}
@@ -22,14 +24,25 @@ export function beatsOf(html) {
     .toArray()
     .map((element) => {
       const beat = page(element);
-      const clip = beat.find("video.clip").first();
-      const start = Number(clip.attr("data-start"));
-      const duration = Number(clip.attr("data-duration"));
+      const clips = beat
+        .find("video.clip")
+        .toArray()
+        .map((clip) => ({ start: Number(page(clip).attr("data-start")), duration: Number(page(clip).attr("data-duration")) }));
+      const start = clips[0]?.start;
       const caption = String(beat.attr("data-caption") ?? "").replace(/\s+/g, " ").trim();
       const chapter = beat.attr("data-chapter") ?? null;
       const title = beat.attr("data-title") ?? null;
       const named = chapter ?? `the beat at ${start} s`;
-      if (!Number.isFinite(start) || !(duration > 0)) throw new Error(`${named} has no timed clip`);
+      if (clips.length === 0 || clips.some((clip) => !Number.isFinite(clip.start) || !(clip.duration > 0))) {
+        throw new Error(`${named} has no timed clip`);
+      }
+      for (const [index, clip] of clips.entries()) {
+        const before = clips[index - 1];
+        if (before && Math.abs(clip.start - (before.start + before.duration)) > 1e-6) {
+          throw new Error(`${named} has a clip at ${clip.start} s, not where the one before it ends (${before.start + before.duration} s)`);
+        }
+      }
+      const duration = clips.at(-1).start + clips.at(-1).duration - start;
       if (!caption) throw new Error(`${named} has no data-caption`);
       if (chapter !== null && !/^[a-z][a-z-]*$/.test(chapter)) throw new Error(`chapter id "${chapter}" is not a lower-case slug`);
       if (chapter !== null && !title) throw new Error(`chapter ${chapter} has no data-title`);

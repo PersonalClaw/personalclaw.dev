@@ -60,6 +60,25 @@ test("beats with a gap, a missing caption, an untitled chapter or a short end al
   assert.throws(() => beatsOf(root([ok[0], [4, 2, "Again.", "home", "Home"]], 6)), /share a chapter id/);
 });
 
+test("a beat cut in two runs from its first clip to its last, and its clips play back to back", () => {
+  const two = (clips, caption, chapter, title) =>
+    `<div class="beat" data-chapter="${chapter}" data-title="${title}" data-caption="${caption}">` +
+    clips.map(([start, duration]) => `<video class="clip" data-start="${start}" data-duration="${duration}"></video>`).join("") +
+    "</div>";
+  const html = (second) =>
+    `<div data-composition-id="main" data-duration="6">${two([[0, 2]], "Home.", "home", "Home")}` +
+    `${two(second, "Search.", "knowledge", "Knowledge")}</div>`;
+  const beats = beatsOf(html([[2, 1.5], [3.5, 2.5]]));
+  assert.deepEqual(
+    beats.map((beat) => [beat.chapter, beat.start, beat.end]),
+    [
+      ["home", 0, 2],
+      ["knowledge", 2, 6]
+    ]
+  );
+  assert.throws(() => beatsOf(html([[2, 1.5], [3.7, 2.3]])), /knowledge has a clip at 3.7 s, not where the one before it ends \(3.5 s\)/);
+});
+
 test("a chapter runs until the next one starts, and the last one to the end", () => {
   const beats = beatsOf(root([[0, 4, "Home.", "home", "Home"], [4, 3, "Chat.", "chat", "Chat"], [7, 2, "Close."]], 9));
   assert.equal(

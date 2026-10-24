@@ -21,6 +21,14 @@
 // home's own folders, the model provider or anything shaped like a key. A failed take's video is
 // deleted, so a frame that leaks one is never kept. Review every frame before it is used anyway.
 //
+// A take cannot keep a view's load off camera: every navigation records the moment before the
+// view has its data. So it logs them. Through the take it reads the screen every 100 ms for a
+// skeleton, `aria-busy` or "Loading…" (scripts/capture-guard.mjs), and writes each stretch that
+// showed one into tour.beats.json as `loading`, in seconds from the first frame. Copy them into
+// the `tour` clip's `loading` in the marketing manifest: validate:marketing-manifest fails a
+// composition that cuts into one (scripts/clip-loading.mjs). A beat still loading when its guard
+// runs fails the take.
+//
 // The synthetic pointer, the glide and the beat runner follow core's docs/demo/capture_demo.mjs
 // (MIT), since Playwright's screencast draws no cursor.
 
@@ -28,7 +36,7 @@ import { mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
-import { denied, textOnScreen } from "./capture-guard.mjs";
+import { denied, loadingOnScreen, settled, textOnScreen } from "./capture-guard.mjs";
 
 const repoRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const outDir = join(repoRoot, "marketing", ".captures", "clips");
@@ -133,10 +141,15 @@ async function route(hash, settle = 1600) {
   await page.waitForTimeout(settle);
 }
 
-/** Fail the take if the screen shows anything the deny list names (scripts/capture-guard.mjs). */
-async function guard(beat) {
+/**
+ * Fail the take if the screen shows anything the deny list names, or is still loading after
+ * `wait` ms (scripts/capture-guard.mjs).
+ */
+async function guard(beat, wait = 0) {
   const found = denied(await page.evaluate(textOnScreen));
   if (found.length) throw new Error(`the ${beat} beat shows ${found.join(", ")}: fix the home, then record again`);
+  const loading = wait ? await settled(page, wait) : await page.evaluate(loadingOnScreen);
+  if (loading.length) throw new Error(`the ${beat} beat is still loading (${loading.slice(0, 4).join(", ")}): record again`);
 }
 
 // The click-path's beats, at its per-beat budgets (CLICKPATH.md: 9, 14, 18, 14, 12, 12, 4 s).
@@ -260,6 +273,22 @@ const recording = Date.now();
 const starts = {};
 /** Where a beat that opens under a mask is first shown, when that is after its start. */
 const shown = {};
+/** Each stretch of the take that showed a loading state, as [from, to] seconds. */
+const loading = [];
+let open = null;
+const at = () => Number(((Date.now() - recording) / 1000).toFixed(2));
+const sampler = setInterval(() => {
+  page
+    .evaluate(loadingOnScreen)
+    .then((found) => {
+      if (found.length && open === null) open = at();
+      if (!found.length && open !== null) {
+        loading.push([open, at()]);
+        open = null;
+      }
+    })
+    .catch(() => {});
+}, 100);
 let failure = null;
 try {
   await page.goto(`${base}/#/dashboard`, { waitUntil: "domcontentloaded", timeout: 60000 });
@@ -269,7 +298,7 @@ try {
     const t0 = Date.now();
     starts[beat.id] = Number(((t0 - recording) / 1000).toFixed(2));
     await beat.act();
-    await guard(beat.id);
+    await guard(beat.id, 10000);
     const rest = beat.seconds * 1000 - (Date.now() - t0);
     if (rest > 0) await dwell(rest);
     else console.warn(`! ${beat.id} overran its ${beat.seconds} s by ${-rest} ms`);
@@ -279,6 +308,8 @@ try {
 } catch (error) {
   failure = error;
 }
+clearInterval(sampler);
+if (open !== null) loading.push([open, at()]);
 const video = page.video();
 await context.close();
 await browser.close();
@@ -291,5 +322,5 @@ if (failure) {
 }
 const webm = join(outDir, "tour.webm");
 renameSync(await video.path(), webm);
-writeFileSync(join(outDir, "tour.beats.json"), `${JSON.stringify({ base, starts, shown }, null, 2)}\n`);
+writeFileSync(join(outDir, "tour.beats.json"), `${JSON.stringify({ base, starts, shown, loading }, null, 2)}\n`);
 console.log(`Recorded ${webm} and tour.beats.json. Review every frame before the composition uses it.`);
