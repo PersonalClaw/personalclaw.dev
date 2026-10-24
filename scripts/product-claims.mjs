@@ -100,6 +100,23 @@ function mentions(text, term) {
   return ` ${text} `.includes(` ${folded} `) || ` ${text} `.includes(` ${folded}s `);
 }
 
+/**
+ * The /compare rows a piece of copy talks about, by their CLAIM_TOPICS words, each with the first
+ * word it uses for the row. A page that quotes copy it did not write (/release quotes the pinned
+ * changelog) cites these rows beside the quote, as the rule above asks of any section.
+ *
+ * @param {string} text
+ * @param {Readonly<Record<string, readonly string[]>>} [topics]
+ * @returns {Array<{ row: string, word: string }>}
+ */
+export function topicsIn(text, topics = CLAIM_TOPICS) {
+  const folded = fold(text);
+  return Object.entries(topics).flatMap(([row, words]) => {
+    const word = words.find((candidate) => mentions(folded, candidate));
+    return word === undefined ? [] : [{ row, word }];
+  });
+}
+
 /** The row an href cites, when it is a link to /compare#<row> on this site; else null. */
 function citedRow(href) {
   let url;

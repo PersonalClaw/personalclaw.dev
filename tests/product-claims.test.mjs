@@ -18,7 +18,8 @@ import {
   CLAIM_TOPICS,
   compareCitations,
   productClaimProblems,
-  staleClaimTopics
+  staleClaimTopics,
+  topicsIn
 } from "../scripts/product-claims.mjs";
 import {
   comparePage,
@@ -277,4 +278,16 @@ test("validate-compare-render fails a build with no /product page", () => {
   const run = compareRun({ data, page: comparePage(data), product: null });
   assert.equal(run.status, 1, run.stdout);
   assert.match(run.stderr, /\/product was not published/);
+});
+
+test("quoted copy names the rows its words touch, once each, by the first word it uses", () => {
+  assert.deepEqual(
+    topicsIn("The gateway image, its agent CLIs and the desktop app take security fixes. No upgrade step is needed."),
+    [{ row: "desktop_app", word: "desktop app" }]
+  );
+  assert.deepEqual(topicsIn("Two webhooks, a desktop application and a webhook."), [
+    { row: "desktop_app", word: "desktop application" },
+    { row: "webhooks", word: "webhook" }
+  ]);
+  assert.deepEqual(topicsIn("A running turn's status sits at the bottom of the chat."), []);
 });

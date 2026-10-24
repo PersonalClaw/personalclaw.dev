@@ -5,6 +5,7 @@ import { CopyCommand } from "../components/CopyCommand";
 import DesktopDownloads from "../components/DesktopDownloads.astro";
 import ReleaseClip from "../components/ReleaseClip.astro";
 import { releaseFacts } from "../data/release";
+import { topicsIn } from "../../scripts/product-claims.mjs";
 import sourceManifest from "../../sources/personalclaw.sources.json";
 
 const isReleased = releaseFacts.channel === "released";
@@ -15,6 +16,11 @@ const baselineHighlights =
   releaseFacts.core.changelog.currentVersion.sections.flatMap(
     (section) => section.items
   ).slice(0, 6);
+// The baseline entry is core's words, quoted. A /compare row they talk about (0.2.7's summary names
+// the desktop app) is cited beside them, as every section that talks about a row is (validate:compare).
+const baselineTopics = topicsIn(
+  [releaseFacts.core.changelog.currentVersion.summary, ...baselineHighlights].join(" ")
+);
 const changelogUrl = `${releaseFacts.core.source.repositoryUrl}/blob/${releaseFacts.core.source.commit}/CHANGELOG.md`;
 // Where a failed check goes: core's security policy at the pinned commit.
 const securityPolicyUrl = `${releaseFacts.core.source.repositoryUrl}/blob/${releaseFacts.core.source.commit}/SECURITY.md`;
@@ -416,6 +422,17 @@ const describes =
           <ul class="baseline-list">
             {baselineHighlights.map((item) => <li>{item}</li>)}
           </ul>
+          {baselineTopics.length > 0 && (
+            <p class="change-cites">
+              Checked against the release on /compare:{" "}
+              {baselineTopics.map(({ row, word }, index) => (
+                <>
+                  {index > 0 && ", "}
+                  <a class="text-link" href={`/compare#${row}`}>{word}</a>
+                </>
+              ))}
+            </p>
+          )}
         </article>
       </div>
     </div>
@@ -960,6 +977,12 @@ const describes =
     color: var(--ink-muted);
     font-size: var(--fs-label);
     line-height: 1.7;
+  }
+
+  .change-cites {
+    margin: 0.4rem 0 0;
+    color: var(--ink-muted);
+    font-size: var(--fs-label);
   }
 
   .change-group h4 {
