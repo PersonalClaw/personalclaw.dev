@@ -23,15 +23,16 @@
 // A view still loading is never written. Before each still, the script waits (--loading-wait,
 // 30 s by default) for the screen to show no skeleton, no `aria-busy="true"` and no "Loading…"
 // (scripts/capture-guard.mjs), and for the shot's own `ready` mark when it has one. A shot that
-// does not settle in that time is refused: no PNG, and the run exits 1. A fixed settle time alone
-// is how the Store shot once shipped its catalog's skeleton. --settle replaces every shot's settle
-// time; tests/browser/capture-guard.spec.ts uses it with a planted page.
+// does not settle in that time is refused: no PNG, and the run exits 1. So is a shot whose top bar
+// says "Chat provider not answering". A fixed settle time alone is how the Store shot once shipped
+// its catalog's skeleton. --settle replaces every shot's settle time;
+// tests/browser/capture-guard.spec.ts uses it with a planted page.
 
 import { mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
-import { settled } from "./capture-guard.mjs";
+import { PROVIDER_DOWN, settled, textOnScreen } from "./capture-guard.mjs";
 
 const repoRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 
@@ -280,6 +281,10 @@ for (const shot of wanted) {
   if (!refused) {
     const loading = await settled(page, loadingWait);
     if (loading.length) refused = `still loading after ${loadingWait} ms: ${loading.slice(0, 4).join(", ")}`;
+  }
+  // The top bar says so when chat has no model answering, on every page: start the home's model first.
+  if (!refused && PROVIDER_DOWN.test(await page.evaluate(textOnScreen))) {
+    refused = "the top bar says the chat provider is not answering";
   }
   if (refused) {
     console.log(`refused  ${shot.id.padEnd(20)} ${shot.hash}  ✗ ${refused}`);

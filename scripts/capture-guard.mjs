@@ -9,12 +9,16 @@
 // (loadingOnScreen, settled): the Store shot once shipped its catalog's skeleton, three grey rows
 // and no apps, because a fixed settle time ran out before a slow first fetch did.
 
+/** The top bar's word that chat has no model answering: a frame showing it shows a broken home. */
+export const PROVIDER_DOWN = /Chat provider not answering/;
+
 /** What no frame may show. */
 export const DENY = Object.freeze([
   { what: "a host path", pattern: /\/Users\/|\/home\/[a-z]|PersonalClawWork|capture-0\d\d/ },
   { what: "the account name", pattern: /golani/i },
   { what: "the model provider", pattern: /bedrock|us\.anthropic\.|aws[_ -]?(profile|region|access)/i },
-  { what: "a key", pattern: /AKIA[0-9A-Z]{12,}|sk-[A-Za-z0-9_-]{16,}|-----BEGIN [A-Z ]*PRIVATE KEY/ }
+  { what: "a key", pattern: /AKIA[0-9A-Z]{12,}|sk-[A-Za-z0-9_-]{16,}|-----BEGIN [A-Z ]*PRIVATE KEY/ },
+  { what: "a chat provider not answering", pattern: PROVIDER_DOWN }
 ]);
 
 /** The text on screen, run in the page: inside the viewport, and inside every ancestor that clips it. */

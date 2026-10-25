@@ -3,12 +3,12 @@
 // its owner may read, and refuses a frame that shows a capture folder.
 
 import assert from "node:assert/strict";
-import { chmodSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 
-import { CLIPS, leaksIn, parseArgs, readToken } from "../scripts/capture-action-clip.mjs";
+import { CLIPS, keepTake, leaksIn, parseArgs, permissionsIn, readToken } from "../scripts/capture-action-clip.mjs";
 import { denied } from "../scripts/capture-guard.mjs";
 
 const named = ["--base", "http://127.0.0.1:10240", "--token-file", "/tmp/t", "--out", "/tmp/o"];
@@ -75,4 +75,52 @@ test("a frame that shows a capture folder fails the take, by the deny list every
   for (const text of ["~/work/capture-030/home", "/tmp/capture-031/takes/thread-turn.webm", "cd capture-027/workspace"]) {
     assert.match(leaksIn(text).join(), /a host path/, text);
   }
+});
+
+test("a take is kept with a video, a beat, no failure and nothing denied, and its folder goes either way", () => {
+  const out = mkdtempSync(join(tmpdir(), "action-clip-out-"));
+  const take = (changes = {}) => {
+    const folder = join(out, ".take-thread-turn");
+    mkdirSync(folder, { recursive: true });
+    const path = join(folder, "page@1.webm");
+    writeFileSync(path, "video");
+    return { path, failure: null, leaks: [], beat: "4.20", id: "thread-turn", out, loading: [[0.23, 2.77]], ...changes };
+  };
+  try {
+    assert.equal(keepTake(take()), true);
+    assert.equal(readFileSync(join(out, "thread-turn.webm"), "utf8"), "video");
+    assert.deepEqual(JSON.parse(readFileSync(join(out, "thread-turn.beat.json"), "utf8")), {
+      id: "thread-turn",
+      start: 4.2,
+      loading: [[0.23, 2.77]]
+    });
+    assert.equal(existsSync(join(out, ".take-thread-turn")), false);
+
+    for (const [why, changes] of [
+      ["no video", { path: null }],
+      ["a failure", { failure: new Error("the turn asked for approval") }],
+      ["something denied on screen", { leaks: ['a host path ("/Users/…")'] }],
+      ["no beat", { beat: null }]
+    ]) {
+      rmSync(join(out, "thread-turn.webm"), { force: true });
+      rmSync(join(out, "thread-turn.beat.json"), { force: true });
+      assert.equal(keepTake(take(changes)), false, why);
+      assert.deepEqual(readdirSync(out), [], `${why}: nothing is kept, and the take's folder is gone`);
+    }
+  } finally {
+    rmSync(out, { recursive: true, force: true });
+  }
+});
+
+test("a chat's approvals are read from its transcript's permission rows, answered or waiting", () => {
+  const session = {
+    messages: [
+      { role: "user", content: "That makes sense. Go ahead and fix it." },
+      { role: "permission", content: "edit_file", cls: JSON.stringify({ request_id: "r1", resolved: "approved" }) },
+      { role: "permission", content: "edit_file", cls: JSON.stringify({ request_id: "r2" }) },
+      { role: "permission", content: "edit_file", cls: "not a record" }
+    ]
+  };
+  assert.deepEqual(permissionsIn(session), [{ request_id: "r1", resolved: "approved" }, { request_id: "r2" }, {}]);
+  assert.deepEqual(permissionsIn({}), []);
 });
