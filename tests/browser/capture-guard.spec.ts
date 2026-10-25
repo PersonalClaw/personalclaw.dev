@@ -15,6 +15,7 @@ import { loadingOnScreen } from "../../scripts/capture-guard.mjs";
 // 2. The shot itself, scripts/capture-app-shots.mjs run against a planted page: a skeleton that
 //    never clears fails the shot and writes no PNG, one that clears is shot, and a Store whose
 //    catalog never arrives (no loading mark, no listing) is refused by the shot's ready mark.
+//    So is a Store whose top bar says "Chat provider not answering".
 
 test("the loading check finds a skeleton, a busy region and Loading…, and nothing else", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "desktop", "a DOM check, the same in every project");
@@ -40,8 +41,19 @@ test("the loading check finds a skeleton, a busy region and Loading…, and noth
 });
 
 /** A Store as the shot sees it: listings with an Install button, and optionally a skeleton. */
-const store = ({ skeleton, clearsAfter, listings = true }: { skeleton: boolean; clearsAfter?: number; listings?: boolean }) =>
+const store = ({
+  skeleton,
+  clearsAfter,
+  listings = true,
+  providerDown = false
+}: {
+  skeleton: boolean;
+  clearsAfter?: number;
+  listings?: boolean;
+  providerDown?: boolean;
+}) =>
   `<!doctype html><html><body style="background:#121416;color:#eee">
+  ${providerDown ? '<header><button type="button">Chat provider not answering</button></header>' : ""}
   <h1>Store</h1>
   ${listings ? '<div><h3>DuckDuckGo</h3><button type="button">Install</button></div>' : "<p>Couldn't load your Store catalog</p>"}
   ${skeleton ? '<div id="rows" role="status" aria-busy="true"><div class="animate-pulse" style="width:600px;height:60px;background:#2a2c2e"></div></div>' : ""}
@@ -51,7 +63,8 @@ const store = ({ skeleton, clearsAfter, listings = true }: { skeleton: boolean; 
 const pages: Record<string, string> = {
   "/stuck/": store({ skeleton: true }),
   "/settles/": store({ skeleton: true, clearsAfter: 700 }),
-  "/no-catalog/": store({ skeleton: false, listings: false })
+  "/no-catalog/": store({ skeleton: false, listings: false }),
+  "/provider-down/": store({ skeleton: false, providerDown: true })
 };
 
 let server: Server;
@@ -101,7 +114,7 @@ function shoot(path: string, out: string) {
   });
 }
 
-test("a planted skeleton fails the shot, a view that settles is shot, and a missing catalog is refused", async ({}, testInfo) => {
+test("a planted skeleton fails the shot, a view that settles is shot, and a missing catalog or a provider not answering is refused", async ({}, testInfo) => {
   test.skip(testInfo.project.name !== "desktop", "it runs the capture script, which opens its own browser");
   test.setTimeout(90_000);
   const out = mkdtempSync(join(tmpdir(), "capture-guard-"));
@@ -114,6 +127,11 @@ test("a planted skeleton fails the shot, a view that settles is shot, and a miss
     const missing = await shoot("/no-catalog/", out);
     expect(missing.code, missing.output).toBe(1);
     expect(missing.output).toMatch(/refused\s+apps .*its data never showed/);
+    expect(existsSync(join(out, "apps.png"))).toBe(false);
+
+    const down = await shoot("/provider-down/", out);
+    expect(down.code, down.output).toBe(1);
+    expect(down.output).toMatch(/refused\s+apps .*the top bar says the chat provider is not answering/);
     expect(existsSync(join(out, "apps.png"))).toBe(false);
 
     const settles = await shoot("/settles/", out);

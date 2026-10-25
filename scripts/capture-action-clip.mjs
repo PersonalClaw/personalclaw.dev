@@ -13,7 +13,8 @@
 // - app-install searches the Store for DuckDuckGo, opens its consent, holds it 2 s, installs it,
 //   and holds until the app is installed. The install downloads the app.
 // - approve-enter tabs to the pending edit_file approval in --chat and answers it with ⌘Enter, so
-//   it is recorded last.
+//   it is recorded last. The take is kept only once the chat's transcript records the approval
+//   approved and its card is gone.
 // - loop-planning presses Start on --loop and holds until its first cycle is working;
 //   loop-pause presses Pause, then Resume.
 // So point it only at a scratch home's gateway: it refuses an address that is not loopback, and
@@ -114,6 +115,44 @@ export function readToken(path) {
   const token = readFileSync(path, "utf8").trim();
   if (!token) throw new Error(`${path} is empty`);
   return token;
+}
+
+/**
+ * The approvals a chat's transcript records, from its session as the gateway serves it: each
+ * `permission` row's record, `{ request_id, resolved, … }`, where `resolved` is how it was answered
+ * and is absent while it waits.
+ *
+ * @param {{ messages?: { role?: string, cls?: unknown }[] }} session
+ */
+export function permissionsIn(session) {
+  return (session.messages ?? [])
+    .filter((m) => m.role === "permission")
+    .map((m) => {
+      try {
+        const record = typeof m.cls === "string" ? JSON.parse(m.cls) : m.cls;
+        return record && typeof record === "object" ? record : {};
+      } catch {
+        return {};
+      }
+    });
+}
+
+/**
+ * Keep a take, or discard it. It is kept only with a video, a beat, no failure and nothing denied
+ * on screen: the video becomes <out>/<id>.webm beside <out>/<id>.beat.json, `{ id, start,
+ * loading }`. Either way the take's own folder, <out>/.take-<id>, is removed. Returns whether it
+ * was kept.
+ *
+ * @param {{ path: string | null, failure: unknown, leaks: string[], beat: string | null, id: string, out: string, loading: number[][] }} take
+ */
+export function keepTake({ path, failure, leaks, beat, id, out, loading }) {
+  const keep = Boolean(path) && !failure && leaks.length === 0 && beat !== null;
+  if (keep) {
+    renameSync(path, join(out, `${id}.webm`));
+    writeFileSync(join(out, `${id}.beat.json`), `${JSON.stringify({ id, start: Number(beat), loading }, null, 2)}\n`);
+  }
+  rmSync(join(out, `.take-${id}`), { recursive: true, force: true });
+  return keep;
 }
 
 async function main() {
@@ -291,6 +330,11 @@ async function main() {
     } else if (id === "approve-enter") {
       await go(`#/chat/${encodeURIComponent(options.chat)}`, 3500);
       const card = await ready(page.getByRole("group", { name: /Permission needed to run edit_file/ }), "edit_file's approval");
+      // The transcript's own record of it: the take is kept only once that record says it was answered.
+      const waiting = async () =>
+        permissionsIn(await api("GET", `/api/chat/sessions/${encodeURIComponent(options.chat)}`));
+      const pending = (await waiting()).filter((p) => p.request_id && !p.resolved).at(-1);
+      if (!pending) throw new Error("the chat's transcript records no approval waiting");
       await card.scrollIntoViewIfNeeded();
       await page.waitForTimeout(800);
       if (!rehearse) beat = at();
@@ -304,7 +348,15 @@ async function main() {
       else {
         await page.waitForTimeout(700);
         await page.keyboard.press("Meta+Enter");
-        await card.waitFor({ state: "detached", timeout: 30000 }).catch(() => {});
+        const answered = async () => (await waiting()).find((p) => p.request_id === pending.request_id)?.resolved;
+        await until("the approval's answer", async () => Boolean(await answered()), 30).catch(() => {
+          throw new Error("⌘Enter did not answer the approval: its record still waits");
+        });
+        const how = await answered();
+        if (how !== "approved") throw new Error(`⌘Enter answered the approval "${how}", not "approved"`);
+        await card.waitFor({ state: "detached", timeout: 30000 }).catch(() => {
+          throw new Error("⌘Enter did not answer the approval: its card is still there");
+        });
         await page.waitForTimeout(2500);
       }
     }
@@ -330,14 +382,9 @@ async function main() {
     return;
   }
   const path = video ? await video.path() : null;
-  const keep = path && !failure && leaks.length === 0 && beat !== null;
-  if (keep) {
-    renameSync(path, join(out, `${id}.webm`));
-    writeFileSync(join(out, `${id}.beat.json`), `${JSON.stringify({ id, start: Number(beat), loading }, null, 2)}\n`);
+  if (keepTake({ path, failure, leaks, beat, id, out, loading })) {
     console.log(`Recorded ${join(out, `${id}.webm`)}; its beat starts at ${beat} s. Review every frame.`);
-  }
-  rmSync(tmp, { recursive: true, force: true });
-  if (!keep) {
+  } else {
     if (failure) console.error(String(failure.message ?? failure));
     console.error(`The take is discarded (${leaks.length ? `it showed ${leaks.join(", ")}` : failure ? "it failed" : "no beat"}); nothing was kept.`);
     process.exit(1);

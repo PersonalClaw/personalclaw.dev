@@ -5,7 +5,7 @@ import test from "node:test";
 
 import { denied } from "../scripts/capture-guard.mjs";
 
-test("a host path, the account name, the provider and a key each fail a take, by name", () => {
+test("a host path, the account name, the provider, a key and a provider not answering each fail a take, by name", () => {
   assert.deepEqual(denied("Needs you: an approval, a loop's question"), []);
   for (const [text, what] of [
     ["REPORT.md at /Users/someone/projects", "a host path"],
@@ -14,6 +14,7 @@ test("a host path, the account name, the provider and a key each fail a take, by
     ["signed in as golani", "the account name"],
     ["on us.anthropic.claude-sonnet", "the model provider"],
     ["Amazon Bedrock", "the model provider"],
+    ["Chat provider not answering", "a chat provider not answering"],
     // Assembled here, so this file holds nothing shaped like a key.
     [`AKIA${"X".repeat(16)}`, "a key"],
     [`sk-${"x".repeat(20)}`, "a key"]
