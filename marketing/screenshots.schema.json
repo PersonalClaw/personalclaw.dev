@@ -159,7 +159,7 @@
         },
         "loading": {
           "type": "array",
-          "description": "Where the take shows a view still loading (a spinner, skeleton rows, aria-busy, \"Loading…\", an empty list before its data), as [from, to] seconds from its first frame: measured from its frames, or copied from the `loading` scripts/capture-tour.mjs writes into tour.beats.json. validate:marketing-manifest fails a composition clip that plays into one (scripts/clip-loading.mjs).",
+          "description": "Where the take shows a view still loading (a spinner, skeleton rows, aria-busy, \"Loading…\", an empty list before its data), as [from, to] seconds from its first frame: measured from its frames, or copied from the `loading` scripts/capture-tour.mjs writes into tour.beats.json and scripts/capture-action-clip.mjs into <id>.beat.json. validate:marketing-manifest fails a composition clip that plays into one (scripts/clip-loading.mjs).",
           "items": {
             "type": "array",
             "prefixItems": [{ "type": "number", "minimum": 0 }, { "type": "number", "minimum": 0 }],
