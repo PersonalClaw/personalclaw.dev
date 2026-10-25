@@ -1,5 +1,5 @@
 // What no frame of a recorded clip may show, and how a recorder checks the screen for it
-// (scripts/capture-tour.mjs, scripts/capture-clip.mjs).
+// (scripts/capture-tour.mjs, scripts/capture-clip.mjs, scripts/capture-action-clip.mjs).
 //
 // The check reads only the text on screen: inside the viewport and inside every ancestor that
 // clips it, so text a pane has scrolled away (a report's last lines) does not fail a take that

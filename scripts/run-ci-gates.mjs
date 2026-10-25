@@ -56,6 +56,7 @@ export const unitTests = {
     "tests/sheet-render-check.test.mjs",
     "tests/registry-sheets.test.mjs",
     "tests/capture-guard.test.mjs",
+    "tests/capture-action-clip.test.mjs",
     "tests/social-frames.test.mjs",
     "tests/social-image-check.test.mjs",
     "tests/release-slot.test.mjs",

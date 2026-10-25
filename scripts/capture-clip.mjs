@@ -5,13 +5,13 @@
 //
 // A held clip shows one view, still, for its beat: the gateway's own screen with the work it
 // already holds, the cursor off-screen. It reads and writes nothing else: no turn, no answer, no
-// setting. A clip that needs an action (a chat turn, a key press, an install) is recorded by hand
-// by whoever owns the home it changes. It records 1440 x 900, dark, with 1.5 s before and after
-// the beat, into marketing/.captures/clips/<id>.webm, and writes <id>.beat.json with where the
-// beat starts. Before and after the hold it checks the text on screen against the deny list
-// (scripts/capture-guard.mjs) and deletes the take when any of it shows. A view still loading is
-// refused the same way: the hold waits up to 30 s for no skeleton, `aria-busy` or "Loading…" on
-// screen, and the take is deleted if one is there before or after it.
+// setting. A clip that needs an action (a chat turn, a key press, an install) is recorded with
+// scripts/capture-action-clip.mjs, by whoever owns the home it changes. It records 1440 x 900,
+// dark, with 1.5 s before and after the beat, into marketing/.captures/clips/<id>.webm, and writes
+// <id>.beat.json with where the beat starts. Before and after the hold it checks the text on
+// screen against the deny list (scripts/capture-guard.mjs) and deletes the take when any of it
+// shows. A view still loading is refused the same way: the hold waits up to 30 s for no skeleton,
+// `aria-busy` or "Loading…" on screen, and the take is deleted if one is there before or after it.
 
 import { mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
