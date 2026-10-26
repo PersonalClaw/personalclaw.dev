@@ -91,8 +91,8 @@ const versionAt = (text) => {
 
 /**
  * What the compatibility field must say of an app needing no missing feature, from its raw floor:
- * none or one at or below the release works, one above it is named, and one core cannot read is
- * refused.
+ * none or one at or below the release works, one above it is named, and one this check cannot read
+ * as MAJOR.MINOR.PATCH is said to be one the site cannot compare (core reads any PEP 440 version).
  *
  * @param {unknown} floor the manifest's `minPersonalClawVersion`, as written
  * @param {string} tag the release the sheet is read at
@@ -102,7 +102,7 @@ function floorWords(floor, tag) {
   if (!written) return `Works with PersonalClaw ${tag}`;
   const want = versionAt(written);
   const have = versionAt(tag);
-  if (!want || !have) return `Its version floor, ${written}, cannot be read, so PersonalClaw ${tag} refuses it`;
+  if (!want || !have) return `Its version floor, ${written}, is not a version this site can compare with ${tag}`;
   const index = want.findIndex((part, i) => part !== have[i]);
   const above = index !== -1 && want[index] > have[index];
   return above ? `Needs PersonalClaw ${written} or later, above ${tag}` : `Works with PersonalClaw ${tag}`;

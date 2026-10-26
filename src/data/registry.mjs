@@ -550,7 +550,9 @@ function compatibilityWords(compatibility, release) {
   if (compatibility.reason === "floor-above") {
     return `Needs PersonalClaw ${compatibility.floor} or later, above ${release.tag}`;
   }
-  return `Its version floor, ${compatibility.floor}, cannot be read, so PersonalClaw ${release.tag} refuses it`;
+  // Read as this site reads a floor (MAJOR.MINOR.PATCH at its start). Core reads any PEP 440
+  // version, so this says what the site cannot tell, not what core does with it.
+  return `Its version floor, ${compatibility.floor}, is not a version this site can compare with ${release.tag}`;
 }
 
 function signerWords(signer) {
@@ -582,9 +584,11 @@ function firstPartySheet(facts, artifact) {
     description: facts.description,
     verdict: FIRST_PARTY_SCAN,
     state: incompatible ? "incompatible" : "available",
-    blockedBecause: incompatible
-      ? `This app cannot be installed or switched on with PersonalClaw ${release.tag}: ${compatibilityWords(facts.compatibility, release).toLowerCase()}. PersonalClaw refuses it, so this sheet gives no steps to enable it.`
-      : null,
+    blockedBecause: !incompatible
+      ? null
+      : facts.compatibility.reason.startsWith("unreadable")
+        ? `This sheet cannot say whether PersonalClaw ${release.tag} installs this app: ${compatibilityWords(facts.compatibility, release).toLowerCase()}. So it gives no steps to enable it.`
+        : `This app cannot be installed or switched on with PersonalClaw ${release.tag}: ${compatibilityWords(facts.compatibility, release).toLowerCase()}. PersonalClaw refuses it, so this sheet gives no steps to enable it.`,
     facts: [
       field("permissions", "Permissions", permissions, NOT_DECLARED),
       field("network", "Its own network permission", facts.network === "not-declared" ? null : NETWORK_WORDS[facts.network], NOT_DECLARED),

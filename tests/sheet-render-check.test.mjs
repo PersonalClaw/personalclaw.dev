@@ -70,12 +70,12 @@ test("a first-party sheet that shows what its manifest says passes, and each fie
   }
 });
 
-test("a first-party floor is read from the raw manifest: at or below the release works, above it is named, unreadable is refused", () => {
+test("a first-party floor is read from the raw manifest: at or below the release works, above it is named, unreadable is said to be", () => {
   const withFloor = (floor) => JSON.stringify({ ...JSON.parse(manifestText), minPersonalClawVersion: floor });
   assert.equal(expectedFirstParty(withFloor("0.2.3"), at).compatibility.value, "Works with PersonalClaw v0.2.4");
   assert.equal(expectedFirstParty(withFloor("v0.2.4"), at).compatibility.value, "Works with PersonalClaw v0.2.4");
   assert.equal(expectedFirstParty(withFloor("0.3.0"), at).compatibility.value, "Needs PersonalClaw 0.3.0 or later, above v0.2.4");
-  assert.equal(expectedFirstParty(withFloor("soon"), at).compatibility.value, "Its version floor, soon, cannot be read, so PersonalClaw v0.2.4 refuses it");
+  assert.equal(expectedFirstParty(withFloor("soon"), at).compatibility.value, "Its version floor, soon, is not a version this site can compare with v0.2.4");
   // A floor the page words as "not declared" fails, naming the field.
   const expected = expectedFirstParty(withFloor("0.2.3"), at);
   const $ = page(fieldsHtml(expected));
