@@ -13,6 +13,8 @@ test("a host path, the account name, the provider, a key and a provider not answ
     ["cd capture-027/workspace", "a host path"],
     ["rootdir: /private/var/folders/8q/abc/T/tmp.Q8YmiXPE0W/tidetable", "a host path"],
     ["cd tmp.Q8YmiXPE0W/tidetable", "a host path"],
+    ["rootdir: /private/tmp/projects.q7Rt2x/tidetable", "a host path"],
+    ["cd /tmp/projects.q7Rt2x/tidetable", "a host path"],
     ["signed in as golani", "the account name"],
     ["on us.anthropic.claude-sonnet", "the model provider"],
     ["Amazon Bedrock", "the model provider"],
