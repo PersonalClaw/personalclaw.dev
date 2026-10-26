@@ -16,7 +16,7 @@ export const PROVIDER_DOWN = /Chat provider not answering/;
 export const DENY = Object.freeze([
   // A scratch copy made with `mktemp -d` lives under macOS's per-user temporary folder
   // (/var/folders/…/T/tmp.XXXXXXXXXX), which a tool row can show as a resolved path.
-  { what: "a host path", pattern: /\/Users\/|\/home\/[a-z]|PersonalClawWork|capture-0\d\d|\/var\/folders\/|\btmp\.[A-Za-z0-9]{10}\b/ },
+  { what: "a host path", pattern: /\/Users\/|\/home\/[a-z]|PersonalClawWork|capture-0\d\d|\/var\/folders\/|\/private\/(?:tmp|var)\/|\btmp\.[A-Za-z0-9]{10}\b|\/tmp\/[^\s/]+\.[A-Za-z0-9]{6,}\b/ },
   { what: "the account name", pattern: /golani/i },
   { what: "the model provider", pattern: /bedrock|us\.anthropic\.|aws[_ -]?(profile|region|access)/i },
   { what: "a key", pattern: /AKIA[0-9A-Z]{12,}|sk-[A-Za-z0-9_-]{16,}|-----BEGIN [A-Z ]*PRIVATE KEY/ },
