@@ -16,8 +16,8 @@ const baselineHighlights =
   releaseFacts.core.changelog.currentVersion.sections.flatMap(
     (section) => section.items
   ).slice(0, 6);
-// The baseline entry is core's words, quoted. A /compare row they talk about (0.2.7's summary names
-// the desktop app) is cited beside them, as every section that talks about a row is (validate:compare).
+// The baseline entry is core's words, quoted. A /compare row they talk about (0.3.0's summary names
+// the Mac dmgs) is cited beside them, as every section that talks about a row is (validate:compare).
 const baselineTopics = topicsIn(
   [releaseFacts.core.changelog.currentVersion.summary, ...baselineHighlights].join(" ")
 );

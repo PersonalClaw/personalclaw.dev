@@ -11,9 +11,10 @@
 # tests/test_website_installer.py, which reds if the job it names stops existing or
 # stops naming this file — an earlier version of this header advertised a weekly
 # container smoke that had never been written, and nothing noticed:
-#   · ci.yml   `lint`          shellcheck -s sh + sh -n + dash -n on this file (every PR)
-#   · ci.yml   `test`          offline contract: --help / --container / unknown-arg, the
-#                              truncation-safe structure, staged-vs-pinned digest
+#   · pr.yml   `test`          the catalogue's static entry, on every PR: shellcheck -s sh +
+#                              sh -n + dash -n on this file, then the offline contract:
+#                              --help / --container / unknown-arg, the truncation-safe
+#                              structure, staged-vs-pinned digest
 #   · breadth.yml `install-smoke` runs BOTH this file AND the bytes actually served at
 #                              /install, in a bare ubuntu container (nightly),
 #                              and reds when the two disagree. A fetch that
@@ -53,7 +54,7 @@ PC_PACKAGE="personalclaw"
 # WHY IT CANNOT ROT. A hand-typed version in a shell script is the defect in #2554 (two
 # copies drifted three weeks). tests/test_website_installer.py pins this constant to
 # CHANGELOG.md's second-newest release heading, so it reds the release after it goes stale.
-PC_MIN_VERSION="0.2.6"
+PC_MIN_VERSION="0.2.7"
 # The Python the tool environment is built on, named because uv will not choose a supported one
 # by itself: it ignores the upper bound of a package's Requires-Python, so an install that names
 # none lands on the newest interpreter uv finds or downloads (measured, uv 0.12.19: a wheel

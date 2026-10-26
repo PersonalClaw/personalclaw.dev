@@ -28,8 +28,9 @@ import { ledgerRow } from "../data/capabilities.mjs";
  *     docs/site-audit.md, the /compare `audit_log` row).
  *   - Optional sign-in. The threat model cites nothing for it, so its row cites the login door
  *     itself, `dashboard/handlers/auth.py`, which says it never becomes the only way in.
- *   - The dependency audit. It is no longer report-only, but nothing requires it to pass before a
- *     change reaches the default branch (the `dep_scan_gate` row).
+ *   - The dependency audit. A merge now needs the merge verdict, which stops a change that adds a
+ *     vulnerable dependency, but an advisory published after a dependency merged is caught by the
+ *     nightly run, not at a merge (the `dep_scan_gate` row).
  *
  * The arrow chain and the numbered 01 to 07 grid are gone (S3, S4): the boundary is drawn in two
  * views of zones and the boundaries between them, as live text, and the controls are rows, not a

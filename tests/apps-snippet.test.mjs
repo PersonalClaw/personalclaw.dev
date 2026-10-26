@@ -30,6 +30,7 @@ function valid() {
     icon: "Globe",
     author: "PersonalClaw",
     license: "MIT",
+    minPersonalClawVersion: "0.2.3",
     tags: ["tool", "web"],
     prompts: ["prompts/example.yaml"],
     permissions: { network: true },
@@ -172,6 +173,17 @@ test("an icon names a lucide component", () => {
   const [problem, ...rest] = appManifestProblems(changed((m) => (m.icon = "web icon")));
   assert.match(problem, /^icon must be a lucide icon name/);
   assert.deepEqual(rest, []);
+});
+
+test("a version floor is a string core can read as MAJOR.MINOR.PATCH", () => {
+  assert.deepEqual(appManifestProblems(changed((m) => (m.minPersonalClawVersion = 0.3))), [
+    "minPersonalClawVersion must be a string, got 0.3"
+  ]);
+  assert.deepEqual(appManifestProblems(changed((m) => (m.minPersonalClawVersion = "latest"))), [
+    'minPersonalClawVersion must start with MAJOR.MINOR.PATCH, or core cannot read the floor and refuses to host the app, got: "latest"'
+  ]);
+  assert.deepEqual(appManifestProblems(changed((m) => (m.minPersonalClawVersion = "v0.3.0"))), []);
+  assert.deepEqual(appManifestProblems(changed((m) => delete m.minPersonalClawVersion)), []);
 });
 
 test("a prompt path cannot traverse out of the app", () => {

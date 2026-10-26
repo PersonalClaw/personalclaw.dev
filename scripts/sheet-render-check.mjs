@@ -83,6 +83,31 @@ function hostLines(manifest) {
   return lines;
 }
 
+/** `major.minor.patch` at the start of *text*, as core reads a floor, or null. Read here on its own. */
+const versionAt = (text) => {
+  const match = /^v?(\d+)\.(\d+)\.(\d+)/.exec(String(text ?? "").trim());
+  return match ? match.slice(1).map(Number) : null;
+};
+
+/**
+ * What the compatibility field must say of an app needing no missing feature, from its raw floor:
+ * none or one at or below the release works, one above it is named, and one core cannot read is
+ * refused.
+ *
+ * @param {unknown} floor the manifest's `minPersonalClawVersion`, as written
+ * @param {string} tag the release the sheet is read at
+ */
+function floorWords(floor, tag) {
+  const written = String(floor ?? "").trim();
+  if (!written) return `Works with PersonalClaw ${tag}`;
+  const want = versionAt(written);
+  const have = versionAt(tag);
+  if (!want || !have) return `Its version floor, ${written}, cannot be read, so PersonalClaw ${tag} refuses it`;
+  const index = want.findIndex((part, i) => part !== have[i]);
+  const above = index !== -1 && want[index] > have[index];
+  return above ? `Needs PersonalClaw ${written} or later, above ${tag}` : `Works with PersonalClaw ${tag}`;
+}
+
 /**
  * What a first-party sheet must show, from its raw `app.json` text and the release it is read at.
  *
@@ -121,8 +146,9 @@ export function expectedFirstParty(text, at) {
     license: { value: manifest.license || null, missing: NOT_DECLARED },
     commit: { value: at.appsCommit, missing: NOT_DECLARED },
     compatibility: {
-      // Compatible says exactly that; incompatible must name every feature the release lacks.
-      value: missing.length === 0 && !manifest.minPersonalClawVersion ? `Works with PersonalClaw ${at.tag}` : null,
+      // Compatible says exactly that; incompatible must name every feature the release lacks, or
+      // the version floor it fails.
+      value: missing.length === 0 ? floorWords(manifest.minPersonalClawVersion, at.tag) : null,
       names: missing,
       missing: NOT_DECLARED
     },
