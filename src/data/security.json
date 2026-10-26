@@ -208,7 +208,7 @@
     },
     {
       "id": "dep_scan_gate",
-      "statement": "The dependency audit stops a merge that adds a vulnerable dependency, not one that turns out vulnerable after it merged.",
+      "statement": "The dependency audit stops a merge that adds a dependency with a known high or critical vulnerability, not one that turns out vulnerable after it merged.",
       "compare": "dep_scan_gate"
     }
   ],
