@@ -5,67 +5,72 @@
   "sources": {
     "core": {
       "repository": "PersonalClaw/PersonalClaw",
-      "commit": "27daa8d20056fbe25ecaed6b8450e4e98aa398c4",
-      "tag": "v0.2.7",
-      "installSha256": "5439b1d0cc712e5f36a265a758915675daaabbe5678fe0f82c931e9c8f5bccfc",
-      "installCommit": "27daa8d20056fbe25ecaed6b8450e4e98aa398c4",
+      "commit": "3611b04f501d0545d5481b19d345f4305fcab472",
+      "tag": "v0.3.0",
+      "installSha256": "bc5a1640294529c490f00a6f8379ae977c1df6bff7515ecaab836b96d9775719",
+      "installCommit": "3611b04f501d0545d5481b19d345f4305fcab472",
       "releaseAssets": [
         {
-          "name": "PersonalClaw-0.2.7-arm64.dmg",
-          "size": 222099695,
-          "sha256": "47037384902c9fa630ba67993cb4fc53a52d9fb473a5c49ab37c46adf53cdd5d"
+          "name": "PersonalClaw-0.3.0-arm64.dmg",
+          "size": 222203702,
+          "sha256": "0e81c65a2ece9df1ac3fd910f898568fed161a5f9ae227badbb321f98364b353"
         },
         {
-          "name": "personalclaw-0.2.7-py3-none-any.whl",
-          "size": 19852679,
-          "sha256": "590fa054f841b0abcdc438c38babf4b83e836f5ba3113fc950695e3bd1d50e21"
+          "name": "personalclaw-0.3.0-py3-none-any.whl",
+          "size": 19862987,
+          "sha256": "ad992d1e04382d34f424ffb3226e4055502d518ed591404725117be8344a50e8"
         },
         {
-          "name": "PersonalClaw-0.2.7.AppImage",
-          "size": 253450814,
-          "sha256": "13db87b4ad3917f090b37e06b2a03d27a3b23eda9bd796e33a6db500fbd452bd"
+          "name": "PersonalClaw-0.3.0-x64.dmg",
+          "size": 232315641,
+          "sha256": "ffeb0ab257cb6bfbb80e9383d746d792198c8dd59adcf672b7ca3a3776e13388"
         },
         {
-          "name": "personalclaw-0.2.7.tar.gz",
-          "size": 29244437,
-          "sha256": "2934254fbae3cdca64fb02d75611869161e912ee7bee8e8613d0f5c9e34929a0"
+          "name": "PersonalClaw-0.3.0.AppImage",
+          "size": 253553296,
+          "sha256": "39fe6e2fda83b93ec3db7af7eca3ecfa3cd1979901afcf7abcc7eed0f381d229"
         },
         {
-          "name": "personalclaw-desktop_0.2.7_amd64.deb",
-          "size": 207558360,
-          "sha256": "a3683859f729a3b92a0b262aa5958c12444c1dbcde3a6fbb3716d6975156b413"
+          "name": "personalclaw-0.3.0.tar.gz",
+          "size": 29349360,
+          "sha256": "ecdf13e39b576dd2e0459da551df20947f94b94cca9f86152d629485281db031"
+        },
+        {
+          "name": "personalclaw-desktop_0.3.0_amd64.deb",
+          "size": 207731436,
+          "sha256": "f1087c3be1377f4c9a4a2dbf8f01707ad7d5a6c203b800067db7e7288573fddc"
         },
         {
           "name": "personalclaw-gateway-amd64.spdx.json",
           "size": 8680725,
-          "sha256": "f3aef05cc3c36a7e0598712e9ec0031b2255c4ce6ed781a323b4ac9910597119"
+          "sha256": "cca88610dd35e7ed2616abb55b1cdf444cf52edba5e4b98fb347776f4e301d44"
         },
         {
           "name": "personalclaw-gateway-arm64.spdx.json",
           "size": 8632861,
-          "sha256": "b97647933abbced0e6f7a25d613ed44da1010e81490c4c032d68c5ebbb86e4ec"
+          "sha256": "85fa7bfa254986dca744de6f878bbf0173ecb6fcc97ca41efe4b3f8734f05e54"
         },
         {
           "name": "personalclaw-web-amd64.spdx.json",
           "size": 1232761,
-          "sha256": "9ce1c9e0668e11ad3c48028480ce486459d2405ec8cfec492b2b3c69f38c87c4"
+          "sha256": "5adf07281a6f30d61f9c2db88731df057b85f88779b1ac0793a9291d30396fca"
         },
         {
           "name": "personalclaw-web-arm64.spdx.json",
           "size": 1232833,
-          "sha256": "5e2ca4289408d0d062b65b82b0aae166e815c2612717c0be464f069e4ff55dcc"
+          "sha256": "864460a0892c1972f65c7664189e38a0b25314e82d5eafed0c45978d18e4dfe4"
         },
         {
           "name": "personalclaw-wheel.spdx.json",
           "size": 619060,
-          "sha256": "cb14acb272a20413d5dc704b7a61d5784a2669c036e6c86ae17dc1cdfa8bfb8c"
+          "sha256": "14fb094f6c6bfcad53343c2bae81a5cf26524be1965e387e3604dbe401c3aaf0"
         }
       ]
     },
     "apps": {
       "repository": "PersonalClaw/PersonalClawApps",
-      "commit": "467cda1ae36d00a45e49418a493401fd7e3905d4",
-      "tag": "v0.2.2"
+      "commit": "178f50d3d60d02fdf97f6b3c75460563a99b368d",
+      "tag": "v0.3.0"
     }
   },
   "data": {

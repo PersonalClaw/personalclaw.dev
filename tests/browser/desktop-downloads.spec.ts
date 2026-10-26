@@ -7,7 +7,8 @@ import { openPage } from "./support";
 //    target, and Enter starts the pinned release's own file (the request is stopped at GitHub).
 // 2. A Mac gets the desktop downloads before the install steps; any other platform gets them
 //    after. The page reads the platform and nothing else: no request, no storage.
-// 3. /release lists the same files, and its "Intel Mac?" line opens Home's install panel.
+// 3. /release lists the same files: from 0.3.0 a dmg for each kind of Mac, so neither page sends
+//    an Intel Mac to the install script.
 
 const platform = (page: Page, name: string, userAgent: string) =>
   page.addInitScript(
@@ -66,17 +67,20 @@ test("a Mac gets the desktop downloads first, and another platform gets the inst
   await platform(page, "macOS", MAC);
   await page.reload();
   expect(await pathsInOrder(page)).toEqual(["desktop", "script"]);
-  // The Intel line points back at the steps it now sits above.
-  await expect(page.locator("[data-desktop-intel-fallback] a")).toHaveAttribute("href", "#install-panel-steps");
+  // An Intel Mac gets its own dmg, and no line sends it to the steps instead.
+  await expect(page.locator('#install-panel a[data-desktop-download="intel"]')).toHaveAttribute(
+    "href",
+    /\/releases\/download\/v\d+\.\d+\.\d+\/PersonalClaw-\d+\.\d+\.\d+-x64\.dmg$/
+  );
+  await expect(page.locator("#install-panel [data-desktop-intel-fallback]")).toHaveCount(0);
 });
 
-test("/release lists the same files, and its Intel Mac line opens Home's install panel", async ({ page }, testInfo) => {
+test("/release lists the same files, the Intel dmg among them, and no Intel Mac line", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "desktop", "one route check");
   await openPage(page, "/release");
   const section = page.locator("[data-desktop-downloads]");
   await expect(section.getByRole("heading", { name: /Desktop app/ })).toBeVisible();
-  for (const kind of ["mac", "appimage", "deb"]) await expect(section.locator(`a[data-desktop-download="${kind}"]`)).toHaveCount(1);
-  await section.locator("[data-desktop-intel-fallback] a").click();
-  await expect(page).toHaveURL(/\/#install-panel$/);
-  await expect(page.locator("#install-panel")).toBeVisible();
+  for (const kind of ["mac", "intel", "appimage", "deb"]) await expect(section.locator(`a[data-desktop-download="${kind}"]`)).toHaveCount(1);
+  await expect(section.locator('a[data-desktop-download="intel"]')).toHaveAccessibleName(/^Intel Mac.*PersonalClaw-\d+\.\d+\.\d+-x64\.dmg, \d+\.\d MB$/);
+  await expect(section.locator("[data-desktop-intel-fallback]")).toHaveCount(0);
 });

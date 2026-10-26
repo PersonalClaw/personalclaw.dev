@@ -70,6 +70,19 @@ test("a first-party sheet that shows what its manifest says passes, and each fie
   }
 });
 
+test("a first-party floor is read from the raw manifest: at or below the release works, above it is named, unreadable is refused", () => {
+  const withFloor = (floor) => JSON.stringify({ ...JSON.parse(manifestText), minPersonalClawVersion: floor });
+  assert.equal(expectedFirstParty(withFloor("0.2.3"), at).compatibility.value, "Works with PersonalClaw v0.2.4");
+  assert.equal(expectedFirstParty(withFloor("v0.2.4"), at).compatibility.value, "Works with PersonalClaw v0.2.4");
+  assert.equal(expectedFirstParty(withFloor("0.3.0"), at).compatibility.value, "Needs PersonalClaw 0.3.0 or later, above v0.2.4");
+  assert.equal(expectedFirstParty(withFloor("soon"), at).compatibility.value, "Its version floor, soon, cannot be read, so PersonalClaw v0.2.4 refuses it");
+  // A floor the page words as "not declared" fails, naming the field.
+  const expected = expectedFirstParty(withFloor("0.2.3"), at);
+  const $ = page(fieldsHtml(expected));
+  $('[data-field="compatibility"] dd').replaceWith(`<dd data-field-missing>${expected.compatibility.missing}</dd>`);
+  assert.match(fieldProblems($, "fixture", expected).join("\n"), /the compatibility field/);
+});
+
 test("a community sheet is checked against its raw row, and two rows with different gaps each read 'not recorded' where they lack a field", () => {
   for (const name of ["registry-fixture-clean", "registry-fixture-unscanned"]) {
     const expected = expectedCommunity(row(name), listed.scanner);

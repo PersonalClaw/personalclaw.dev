@@ -2,7 +2,7 @@
 <!--
   A feature loop (#95): Install an app: open it in Apps, read its consent, and it shows installed.
   One real recording of the released app (the `app-install` clip in
-  marketing/screenshots.manifest.json), staged into assets/ by `npm run render:videos`, 4.66
+  marketing/screenshots.manifest.json), staged into assets/ by `npm run render:videos`, 4.61
   seconds, silent. `data-media-start` is where the action begins in the recording, set from its
   beat times when it is captured at the release. The loop starts once the consent shows: before it,
   the dialog reads "Checking DuckDuckGo and what it gets" with a spinner. The take holds the consent
@@ -44,19 +44,19 @@
     </style>
   </head>
   <body>
-    <div id="main" data-composition-id="main" data-no-timeline data-start="0" data-duration="4.66" data-width="1280" data-height="800">
+    <div id="main" data-composition-id="main" data-no-timeline data-start="0" data-duration="4.61" data-width="1280" data-height="800">
       <div id="frame">
         <video id="consent" class="clip" src="assets/app-install.webm" muted playsinline
-          data-start="0" data-duration="2.05" data-media-start="9.75" data-track-index="1"></video>
+          data-start="0" data-duration="2" data-media-start="9.75" data-track-index="1"></video>
         <video id="installed" class="clip" src="assets/app-install.webm" muted playsinline
-          data-start="2.05" data-duration="2.61" data-media-start="13.55" data-track-index="2"></video>
+          data-start="2" data-duration="2.61" data-media-start="13.55" data-track-index="2"></video>
       </div>
     </div>
     <script>
       // The runtime seeks every paused Web Animation to timeline time, so the frame fades up from
       // the dark over 0.3 s and back down to it over the last 0.3 s.
       const FADE = 0.3;
-      const DURATION = 4.66;
+      const DURATION = 4.61;
       document.getElementById("frame").animate(
         [
           { opacity: 0, easing: "cubic-bezier(0.33, 1, 0.68, 1)" },

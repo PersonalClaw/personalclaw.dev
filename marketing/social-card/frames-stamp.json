@@ -1,44 +1,44 @@
 {
   "frames": {
     "/": {
-      "inputs": "4373ce3eab07d052a6ca040bed7d9bcccbd09280e0aa3b43ffeea753ebe5ba86",
-      "png": "010353e55b15b8b8e1007c677ae488adaf9e772f80ae8e81f3be62e1f79e58d4"
+      "inputs": "9c8c1eb873268884b8ad20da1172ba61f46ea20da6c4bb8c78efd834fa0a0de9",
+      "png": "4452c2ead9c82b321d337e0a923e3ca4898a008c06a124b5fb324041d52d92ba"
     },
     "/product": {
-      "inputs": "5ca24091fc0b17b5fe346335971ec063de4a18a2b997c6f777457aa739d731c7",
-      "png": "95ecb3bdd83e92854922b91482a9e4f2cbf12643491c755efc16b234857a9f61"
+      "inputs": "e3ae21e1be6e131444cfd18fe7a2faa33c024c0f71beedac163c76c66245aa5c",
+      "png": "c932a9162f3655141273bd28e5a600297adb1e03098efc970a1752807a570fcb"
     },
     "/apps": {
-      "inputs": "4d335d9486faeafa1be02055bf618989f5997654d6eab752738c56477ddf351d",
-      "png": "64c967cd6908f99d40108c82eca2526f9b28b6adf178c469abaf7e8f71646ae6"
+      "inputs": "a10e255534d0fb90dc4e68d002b115995755ea24776c3a91aafc03ee89bf557b",
+      "png": "b9b59d32a80044abf52a921a7224793128b7856110425ad4e0c5e95aeda0be89"
     },
     "/security": {
-      "inputs": "0fadfab590b967a8811e44e3181dfc14475c463873973bd8b417d9641f5bd25b",
-      "png": "363e8c5c3712beea64cd682c341907e8aab2e29976250103cf1011986c387ca8"
+      "inputs": "e3e541f179f5e3d2ac00c01fee182496a5b18c2127c39cbdfc26a0cc6b9f3748",
+      "png": "4fb9a82c587dd7399a49eecf5b7fcae9acd8d02e266b724281b2a2085db0bfdf"
     },
     "/release": {
-      "inputs": "e57d3af508ac6acb4db9326be93505da37867011085829977285fa3d64575cb9",
-      "png": "b1b0f9705a03d5fc07b39b1818b6ec6058c4f0c21f88ecc23f7ab5750d611108"
+      "inputs": "a2b895cca3f23318b783f81ab9be5b461befcb4c709d405ee26b8d0df9b53f8e",
+      "png": "303f1f575bc04361f14f36c422690ecca95879373a4eb46150ac97af215302b7"
     },
     "/compare": {
-      "inputs": "9889963226de3198deaf1b8bc380407fe483ed78bf12d4cf15385bb7f06b173b",
-      "png": "7ef2b0f5e8cae6357dd2a7bc249719e1e26b64642afb1d1188790ed83c9376cf"
+      "inputs": "2658744675a16d21b2f20130eb0ff6b427c0a6c5cd1830c2a2b3d28c4fbd61a2",
+      "png": "f0bccaeea0c8287a2fd0db76a7095f1650e8bd237fdde90088398c1a03b196b0"
     },
     "/blog": {
-      "inputs": "59ff52d632a37e948ec2b8c0010bc6bfcc84dc0d1e5ec74e7259909e7efc3f29",
-      "png": "69b76774b4a00a4cd2a402ad8713563d46c242d77031b83e3397c24ee1ff46bc"
+      "inputs": "76a1ca425e89089e258b7e94689742f7029bdd6a59e2ba8fd1ef525f2a8758d3",
+      "png": "aafaf67821eb0acd52a3d1673f080083a49632a8e2fe179db2a1c6d5a1278aaf"
     },
     "/blog/launch": {
-      "inputs": "5f261e393a93cc62e8ec17f33e467873667189f17f421fd09ebff72631cca580",
-      "png": "329e4441e3fea105578517abcf389a48915aa40651d4d0b139dbd581276d1524"
+      "inputs": "4b6b972ff1a2a083b9a2ac7cf5943a0d982fa7da4e299e42298203ceb75e8041",
+      "png": "cfe87236418583ba0986976c27279424c0fbbd74ee33507e5af2f8de15daa26f"
     },
     "/registry": {
-      "inputs": "337f656ad9e0ddc0810e4f3f86f224ae81c3a034cc9990ba0fd0e55eef1eba55",
-      "png": "0283b5ea7a8484af35ec3f5e2bdabd9fc68f71d45c73e31057bdb2377599091e"
+      "inputs": "1f17af1068a18894101206af0623a0a315f8450ca6ea0aef63df39908679e375",
+      "png": "d60eeb9a3f34875d6ba5f1fac314c69f10bc0088c855c449840ce486d4e771d6"
     },
     "/docs": {
-      "inputs": "151ab652d48e90af0097bfd6810257e54792270bf2231cc76cc4e2b5455c337f",
-      "png": "f24df43027379c30c3086fe70f9c0a0ebd36b6752343217d6f57d2517ecd5432"
+      "inputs": "55a32d7d2c0f40ff553bcf900a5599f7440c4d96a55d3b34aa725f9927ee0c1a",
+      "png": "3b963830693cf0f514198aa37d6c30819c4835a105b435a6b9cb4df48fba4ac0"
     }
   }
 }

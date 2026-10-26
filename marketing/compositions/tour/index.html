@@ -9,16 +9,16 @@
   `data-duration` are where that beat begins and how long it runs in the take, from the
   tour.beats.json the recorder writes beside it. The loop beat starts where its mask lifts.
 
-  The cut keeps every view's load off screen. The take shows six outside the loop's mask: Home's
-  first seconds (the status bar still connecting to the gateway), the chat opening, the Library
-  opening (a spinner, then skeleton rows), the search running (skeleton rows, then an empty list),
-  Artifacts opening (a spinner, then placeholder previews) and the chart's page opening (a
-  spinner). They are the `tour` clip's `loading` in marketing/screenshots.manifest.json, and
-  validate:marketing-manifest fails a clip that plays into one (scripts/clip-loading.mjs). So Home
-  starts once it is connected, the chat once its thread is in, the knowledge beat starts on the
-  loaded list and cuts from the typed search straight to its results, the artifacts beat starts on
-  the loaded list and cuts from the click straight to the chart, and the loop beat runs on to the
-  click into the Library. A beat of two clips plays them back to back, with no dip between.
+  The cut keeps every view's load off screen. The take shows five outside the loop's mask: Home's
+  first seconds (the status bar still connecting to the gateway), the Library opening (a spinner,
+  then skeleton rows), the search running (skeleton rows, then an empty list), Artifacts opening
+  (a spinner, then placeholder previews) and the chart's page opening (a spinner). They are the
+  `tour` clip's `loading` in marketing/screenshots.manifest.json, and validate:marketing-manifest
+  fails a clip that plays into one (scripts/clip-loading.mjs). So Home starts once it is
+  connected, the chat once its thread has faded in, the knowledge beat starts on the loaded list
+  and cuts from the typed search straight to its results, the artifacts beat starts on the loaded
+  list and cuts from the click straight to the chart, and the loop beat runs on to the click into
+  the Library. A beat of two clips plays them back to back, with no dip between.
 
   Each beat carries its words, so the tracks cannot drift from the cut:
   - data-caption: what the beat shows, written into the captions track (nothing is spoken);
@@ -60,45 +60,45 @@
     </style>
   </head>
   <body>
-    <div id="main" data-composition-id="main" data-no-timeline data-start="0" data-duration="76.69" data-width="1280" data-height="720">
+    <div id="main" data-composition-id="main" data-no-timeline data-start="0" data-duration="76.75" data-width="1280" data-height="720">
       <div class="beat" data-chapter="home" data-title="Home, and what needs you"
         data-caption="Home holds what needs its owner: an approval, a loop's question and a proposed skill.">
         <video id="home" class="clip" src="assets/tour.webm" muted playsinline
-          data-start="0" data-duration="7.58" data-media-start="2.8" data-track-index="1"></video>
+          data-start="0" data-duration="7.47" data-media-start="3.1" data-track-index="1"></video>
       </div>
       <div class="beat" data-chapter="chat" data-title="A chat, in your own words"
-        data-caption="A question in the owner's own words, answered on a local model: it reads the code and the tests, and explains the failure.">
+        data-caption="A question in the owner's own words, answered on a local model: it reads the code and explains the failure.">
         <video id="chat" class="clip" src="assets/tour.webm" muted playsinline
-          data-start="7.58" data-duration="13.79" data-media-start="10.6" data-track-index="2"></video>
+          data-start="7.47" data-duration="13.68" data-media-start="10.9" data-track-index="2"></video>
       </div>
       <div class="beat" data-chapter="approval" data-title="The approval it stops on"
         data-caption="Before it edits a file, the run stops and asks: the tool, what it would change, its risk, and how far an answer is remembered. The answer is the owner's.">
         <video id="approval" class="clip" src="assets/tour.webm" muted playsinline
-          data-start="21.37" data-duration="18" data-media-start="24.39" data-track-index="3"></video>
+          data-start="21.15" data-duration="18" data-media-start="24.58" data-track-index="3"></video>
       </div>
       <div class="beat" data-chapter="loops" data-title="A goal loop and its report"
         data-caption="A goal loop that ran five cycles on its own, and the report it wrote.">
         <video id="loops" class="clip" src="assets/tour.webm" muted playsinline
-          data-start="39.37" data-duration="11.77" data-media-start="45.51" data-track-index="4"></video>
+          data-start="39.15" data-duration="11.85" data-media-start="45.7" data-track-index="4"></video>
       </div>
       <div class="beat" data-chapter="knowledge" data-title="Knowledge searched locally"
         data-caption="Documents kept on this machine narrow as a station number is typed.">
         <video id="knowledge" class="clip" src="assets/tour.webm" muted playsinline
-          data-start="51.14" data-duration="3.75" data-media-start="57.75" data-track-index="5"></video>
+          data-start="51" data-duration="3.9" data-media-start="57.85" data-track-index="5"></video>
         <video id="knowledge-results" class="clip" src="assets/tour.webm" muted playsinline
-          data-start="54.89" data-duration="6.7" data-media-start="61.7" data-track-index="6"></video>
+          data-start="54.9" data-duration="6.7" data-media-start="61.9" data-track-index="6"></video>
       </div>
       <div class="beat" data-chapter="artifacts" data-title="What it made, in the Library"
         data-caption="What the agent made stays in the Library: here, a chart of the fall-back weekend's tides.">
         <video id="artifacts" class="clip" src="assets/tour.webm" muted playsinline
-          data-start="61.59" data-duration="2.45" data-media-start="68.8" data-track-index="7"></video>
+          data-start="61.6" data-duration="2.5" data-media-start="69" data-track-index="7"></video>
         <video id="artifacts-chart" class="clip" src="assets/tour.webm" muted playsinline
-          data-start="64.04" data-duration="8.75" data-media-start="71.65" data-track-index="8"></video>
+          data-start="64.1" data-duration="8.75" data-media-start="71.85" data-track-index="8"></video>
       </div>
       <div class="beat"
         data-caption="Back where it started: one gateway, one machine, owned by the person using it.">
         <video id="close" class="clip" src="assets/tour.webm" muted playsinline
-          data-start="72.79" data-duration="3.9" data-media-start="80.42" data-track-index="9"></video>
+          data-start="72.85" data-duration="3.9" data-media-start="80.6" data-track-index="9"></video>
       </div>
     </div>
     <script>

@@ -6,15 +6,15 @@ them from the clip's brief in marketing/screenshots.manifest.json; edit them the
 
 1
 00:00:00.000 --> 00:00:03.500
-PersonalClaw 0.2.7, released 23 October 2026.
+PersonalClaw 0.3.0, released 26 October 2026.
 
 2
 00:00:03.500 --> 00:00:08.000
-A running turn's status sits at the bottom of the chat.
+Every release now ships a Mac dmg for Intel.
 
 3
 00:00:08.000 --> 00:00:12.500
-The animated orb at the head of the reply is gone.
+On a new chat, the message composer takes its place at once.
 
 4
 00:00:12.500 --> 00:00:17.000
@@ -22,4 +22,4 @@ No upgrade step is needed.
 
 5
 00:00:17.000 --> 00:00:20.000
-Every change in 0.2.7, with its source: personalclaw.dev/release.
+Every change in 0.3.0, with its source: personalclaw.dev/release.

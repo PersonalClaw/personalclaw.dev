@@ -22,7 +22,10 @@
 // src/personalclaw/versions.py (PEP 440, through `packaging`). The port is CLOSED: a field it
 // does not read is a problem, never a pass, so a manifest it accepts is one core accepts.
 // Where core coerces a value with str() (a numeric displayName, say), the port refuses it
-// instead: stricter, never looser. The sync holds the constants below to the pinned core's
+// instead: stricter, never looser. `minPersonalClawVersion`, which the first-party apps carry from
+// apps v0.3.0, was read at core v0.3.0: validate() takes any value (from_dict reads it with
+// str()), and core_compatibility() refuses to host an app whose floor it cannot read, so the port
+// refuses a floor that is not a string or does not start with MAJOR.MINOR.PATCH. The sync holds the constants below to the pinned core's
 // manifest.py (manifestRulesDrift), so a re-pin that adds a provider type or changes a
 // pattern fails until this port is re-read.
 
@@ -38,12 +41,13 @@ export const BUILDERS_SNIPPET = Object.freeze({
   path: `${SNIPPET_APP}/app.json`,
   text: String.raw`{
   "name": "web-tools",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "displayName": "Web Tools",
   "description": "General web primitives the agent can call: web_search, web_fetch, and web_extract. web_search runs over the search provider you bind in Settings \u2192 Search, web_fetch is an SSRF-guarded page fetch + extraction, and web_extract does structured extraction. No key of its own \u2014 it uses the bound search provider's.",
   "icon": "Globe",
   "author": "PersonalClaw",
   "license": "MIT",
+  "minPersonalClawVersion": "0.2.3",
   "tags": [
     "tool",
     "web"
@@ -132,6 +136,7 @@ const READ_FIELDS = new Set([
   "icon",
   "author",
   "license",
+  "minPersonalClawVersion",
   "tags",
   "prompts",
   "permissions",
@@ -268,6 +273,18 @@ export function appManifestProblems(manifest) {
       if (provider.capabilities !== undefined && !isNames(provider.capabilities)) {
         problems.push("provider.capabilities must be a list of names");
       }
+    }
+  }
+
+  if (manifest.minPersonalClawVersion !== undefined) {
+    const floor = manifest.minPersonalClawVersion;
+    if (typeof floor !== "string") {
+      problems.push(`minPersonalClawVersion must be a string, got ${JSON.stringify(floor).slice(0, 60)}`);
+    } else if (floor.trim() !== "" && !/^v?\d+\.\d+\.\d+/.test(floor.trim())) {
+      problems.push(
+        "minPersonalClawVersion must start with MAJOR.MINOR.PATCH, or core cannot read the floor " +
+          `and refuses to host the app, got: ${JSON.stringify(floor)}`
+      );
     }
   }
 

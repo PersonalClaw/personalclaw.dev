@@ -16,8 +16,8 @@ import marketing from "../../marketing/screenshots.manifest.json";
 /*
  * WHY SEVERAL CLAIMS ON THIS PAGE ARE NARROWER THAN THEY COULD BE.
  *
- * Every claim below was read against the RELEASED tag this site pins (core v0.2.7, apps
- * v0.2.2), and the ones that hold only in part say only the part that holds. Recorded here in
+ * Every claim below was read against the RELEASED tag this site pins (core v0.3.0, apps
+ * v0.3.0), and the ones that hold only in part say only the part that holds. Recorded here in
  * the frontmatter rather than beside the markup on purpose: an Astro template comment is
  * emitted into the HTML, and a retracted claim quoted verbatim in the shipped page is a string
  * a reader — or a scraper — can still find and believe (docs/site-audit.md, P12).
@@ -29,7 +29,7 @@ import marketing from "../../marketing/screenshots.manifest.json";
  * inbox shot stays, placed on Home, which shows it.
  *
  * CUT ENTIRELY — the safety-profile bullet. `guardrails/policy.py` was a closed island when
- * this was first read. At v0.2.7 it is wired: the gateway and the composer's Execution Boundary
+ * this was first read. At v0.3.0 it is wired: the gateway and the composer's Execution Boundary
  * read `profile_for_session`. The bullet stays cut anyway, because /compare's `tool_approval`
  * row states what the profiles bound and what they do not, and a line here would carry the
  * claim without its limits.
@@ -51,7 +51,7 @@ import marketing from "../../marketing/screenshots.manifest.json";
  * GUARDRAILS, narrowed. The incident kill switch holds every kind of unattended work at once
  * (clock and watch triggers, idle triggers and loop cycles, workflow runs, script-hook actions,
  * every subagent spawn, the inbound doors, the background maintenance) and resumes only on an
- * explicit confirm. It was said to "never affect interactive chat"; at v0.2.7 a chat's turns keep
+ * explicit confirm. It was said to "never affect interactive chat"; at v0.3.0 a chat's turns keep
  * running but a subagent a chat asks for is refused too, so the page says the turns keep running
  * and the spawns are held. Budgets are daily token and dollar ceilings on unattended spend only
  * (chat turns and Attended loops are not counted), unlimited until set: "on what your
@@ -60,7 +60,7 @@ import marketing from "../../marketing/screenshots.manifest.json";
  * are left off this page.
  *
  * MEMORY. Semantic and episodic recall, lessons from corrections, and promotion of repeated
- * episodes to facts all have live callers. The procedural layer is now read back at v0.2.7, but
+ * episodes to facts all have live callers. The procedural layer is now read back at v0.3.0, but
  * only as a few global tool-outcome priors, so the page says "which tools have served it well"
  * rather than "recall" of everything it records. The memory page deletes facts, episodes, lessons
  * and entities and edits facts, so "edit" names facts alone.
@@ -89,7 +89,7 @@ import marketing from "../../marketing/screenshots.manifest.json";
  * is typed. The closing section no longer types a Python version (P4).
  *
  * WAITING ON YOU. Core's one list of everything waiting on you (`GET /api/waiting`) ships at
- * v0.2.7, and Home's Needs You reads it. The page still claims the inbox, which stays a
+ * v0.3.0, and Home's Needs You reads it. The page still claims the inbox, which stays a
  * destination of its own, rather than that list.
  *
  * Every section here that talks about a row's subject cites that row, and
