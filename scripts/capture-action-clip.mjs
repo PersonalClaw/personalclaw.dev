@@ -4,7 +4,7 @@
 //     --token-file <path> --out <dir> [--chat <key> | --project <id> --model <ref>] [--rehearse]
 //   node scripts/capture-action-clip.mjs --id app-install --base … --token-file … --out …
 //   node scripts/capture-action-clip.mjs --id approve-enter --base … --token-file … --out … --chat <key>
-//   node scripts/capture-action-clip.mjs --id loop-planning|loop-pause --base … --token-file … --out … --loop <id>
+//   node scripts/capture-action-clip.mjs --id loop-planning --base … --token-file … --out … --loop <id>
 //
 // A held clip (scripts/capture-clip.mjs) changes nothing. Each of these does the one thing its
 // clip is about, on the gateway it is pointed at:
@@ -12,17 +12,16 @@
 //   one) and holds until the reply is done. A turn that asks for an approval is discarded.
 // - app-install searches the Store for DuckDuckGo, opens its consent, holds it 2 s, installs it,
 //   and holds until the app is installed. The install downloads the app.
-// - approve-enter tabs to the pending edit_file approval in --chat and answers it with ⌘Enter, so
-//   it is recorded last. The take is kept only once the chat's transcript records the approval
-//   approved and its card is gone.
-// - loop-planning presses Start on --loop and holds until its first cycle is working;
-//   loop-pause presses Pause, then Resume.
+// - approve-enter tabs to the pending edit_file approval from --chat on Needs you, its own card
+//   there, and answers it with ⌘Enter, so it is recorded last. The take is kept only once the
+//   chat's transcript records the approval approved and its card says so (or has gone).
+// - loop-planning presses Start on --loop and holds until its first cycle is working.
 // So point it only at a scratch home's gateway: it refuses an address that is not loopback, and
 // core's default port 10000, where an install's own gateway listens.
 //
 // --rehearse walks a clip up to its action and stops there, recording nothing: the composer is
 // found and nothing is typed, the Install button is found and not pressed, Tab reaches the
-// approval and ⌘Enter is not pressed, Start or Pause is found and not pressed. With --rehearse,
+// approval and ⌘Enter is not pressed, Start is found and not pressed. With --rehearse,
 // thread-turn without --chat opens a new chat's page rather than making one. It is how a run
 // checks every flow before the takes that cost a model turn, a download or the approval.
 //
@@ -37,8 +36,9 @@ import { mkdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } 
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { denied, loadingOnScreen, settled, textOnScreen } from "./capture-guard.mjs";
+import { signedInState } from "./capture-sign-in.mjs";
 
-export const CLIPS = Object.freeze(["thread-turn", "app-install", "approve-enter", "loop-planning", "loop-pause"]);
+export const CLIPS = Object.freeze(["thread-turn", "app-install", "approve-enter", "loop-planning"]);
 const PROMPT = "Read tidetable/parse.py and tell me in two sentences what it does.";
 const APP = "DuckDuckGo";
 const VIEWPORT = { width: 1440, height: 900 };
@@ -49,7 +49,7 @@ const INSTALL_PORT = "10000";
 export const USAGE =
   "usage: --id <" + CLIPS.join("|") + "> --base http://127.0.0.1:<port> --token-file <path> --out <dir> [--rehearse]\n" +
   "  thread-turn: --chat <key>, or --project <id> and --model <ref>; approve-enter: --chat <key>;\n" +
-  "  loop-planning and loop-pause: --loop <id>";
+  "  loop-planning: --loop <id>";
 
 /** What a frame shows that no take may: the shared deny list, the same one every recorder checks. */
 export const leaksIn = denied;
@@ -179,10 +179,6 @@ async function main() {
     });
     return response.json();
   };
-  const loop = async (loopId) => {
-    const d = await api("GET", `/api/loops/${loopId}`);
-    return d.loop ?? d;
-  };
   const until = async (what, test, seconds) => {
     const end = Date.now() + seconds * 1000;
     while (Date.now() < end) {
@@ -193,19 +189,20 @@ async function main() {
   };
 
   const browser = await chromium.launch();
-  const context = await browser.newContext({
-    viewport: VIEWPORT,
-    colorScheme: "dark",
-    ...(rehearse ? {} : { recordVideo: { dir: tmp, size: VIEWPORT } })
-  });
-  const signIn = await context.request.get(`${base}/?token=${encodeURIComponent(token)}`).catch(() => null);
-  if (!signIn?.ok()) {
-    // Never print the error: its call log carries the URL, and the URL carries the token.
-    console.error(`The gateway at ${base} did not sign this browser in.`);
+  // Signed in apart from the take, so the sign-in page records nothing (scripts/capture-sign-in.mjs).
+  const signed = await signedInState(browser, base, token);
+  if (signed.error) {
+    console.error(signed.error);
     await browser.close();
     rmSync(tmp, { recursive: true, force: true });
     process.exit(2);
   }
+  const context = await browser.newContext({
+    viewport: VIEWPORT,
+    colorScheme: "dark",
+    storageState: signed.state,
+    ...(rehearse ? {} : { recordVideo: { dir: tmp, size: VIEWPORT } })
+  });
   const page = await context.newPage();
   const t0 = Date.now();
   const at = () => ((Date.now() - t0) / 1000).toFixed(2);
@@ -286,20 +283,10 @@ async function main() {
         }, 600);
         await page.waitForTimeout(5000);
       }
-    } else if (id === "loop-pause") {
-      await go(`#/loops/${encodeURIComponent(options.loop)}`, 3500);
-      const pause = await ready(page.getByRole("button", { name: "Pause", exact: true }), "the loop's Pause");
-      if (!rehearse) {
-        beat = at();
-        await pause.click();
-        await until("paused", async () => (await loop(options.loop)).status === "paused", 60);
-        await page.waitForTimeout(2000);
-        await page.getByRole("button", { name: "Resume", exact: true }).click();
-        await until("running again", async () => (await loop(options.loop)).status === "running", 60);
-        await page.waitForTimeout(2000);
-      }
     } else if (id === "app-install") {
-      await go("#/apps?view=store", 6000);
+      // Opened on its search, so the take never shows the whole catalog: a row of it can carry a
+      // listing the deny list keeps off every frame.
+      await go(`#/apps?view=store&q=${encodeURIComponent(APP)}`, 6000);
       // The Store lists only apps not installed yet: an installed one shows "No matching apps".
       await page.getByPlaceholder("Search the Store").fill(APP);
       await page.waitForTimeout(1500);
@@ -328,22 +315,31 @@ async function main() {
         await page.waitForTimeout(4500);
       }
     } else if (id === "approve-enter") {
-      await go(`#/chat/${encodeURIComponent(options.chat)}`, 3500);
-      const card = await ready(page.getByRole("group", { name: /Permission needed to run edit_file/ }), "edit_file's approval");
+      // From 0.3.9 an approval is answered on its own card on Needs you, by the same key: Tab to the
+      // card, then ⌘Enter. The chat's transcript is still what says it was answered.
+      await go("#/mission-control", 3500);
+      const card = await ready(
+        page.locator('[data-need-card][data-need-key^="waiting:approval:"]').filter({ hasText: "edit_file" }).first(),
+        "edit_file's approval card on Needs you"
+      );
       // The transcript's own record of it: the take is kept only once that record says it was answered.
       const waiting = async () =>
         permissionsIn(await api("GET", `/api/chat/sessions/${encodeURIComponent(options.chat)}`));
       const pending = (await waiting()).filter((p) => p.request_id && !p.resolved).at(-1);
       if (!pending) throw new Error("the chat's transcript records no approval waiting");
+      // ⌘Enter answers only from inside the approval itself (its "Permission needed" group): the
+      // card's own row target, which Tab reaches first, opens the panel and decides nothing.
+      const prompt = card.locator('[role="group"][aria-label^="Permission needed"]').first();
       await card.scrollIntoViewIfNeeded();
       await page.waitForTimeout(800);
       if (!rehearse) beat = at();
+      const inside = () => prompt.evaluate((el) => el.contains(document.activeElement)).catch(() => false);
       for (let i = 0; i < 80; i++) {
         await page.keyboard.press("Tab");
         await page.waitForTimeout(110);
-        if (await card.evaluate((el) => el.contains(document.activeElement))) break;
+        if (await inside()) break;
       }
-      if (!(await card.evaluate((el) => el.contains(document.activeElement)))) throw new Error("Tab never reached the approval card");
+      if (!(await inside())) throw new Error("Tab never reached the approval on its card");
       if (rehearse) console.log("rehearse: Tab reaches the approval");
       else {
         await page.waitForTimeout(700);
@@ -354,8 +350,11 @@ async function main() {
         });
         const how = await answered();
         if (how !== "approved") throw new Error(`⌘Enter answered the approval "${how}", not "approved"`);
-        await card.waitFor({ state: "detached", timeout: 30000 }).catch(() => {
-          throw new Error("⌘Enter did not answer the approval: its card is still there");
+        // Needs you holds still while you work: the card stays, saying it was answered, until the list
+        // is read again. Either is the answer showing.
+        await until("the card to show the answer", async () =>
+          (await card.count()) === 0 || /Approved|moving again/i.test((await card.innerText().catch(() => "")) ?? ""), 30).catch(() => {
+          throw new Error("⌘Enter did not answer the approval: its card still asks");
         });
         await page.waitForTimeout(2500);
       }

@@ -59,7 +59,7 @@ test.describe("the tour asks for no video before play", () => {
       await openPage(page, "/product");
       await expectPoster(page);
       await openPage(page, "/product?chapter=knowledge#tour");
-      await expect(chapter(page, "Knowledge searched locally")).toHaveAttribute("aria-pressed", "true");
+      await expect(chapter(page, "The Library, searched locally")).toHaveAttribute("aria-pressed", "true");
       await expectPoster(page);
       await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
       await settlePage(page);
@@ -76,7 +76,7 @@ test("the chosen chapter is in the URL and comes back on reload, back and forwar
 }) => {
   // Choosing a chapter is an explicit play, so it puts the chapter in the URL and plays.
   await openPage(page, "/product");
-  const chosen = chapter(page, "A goal loop and its report");
+  const chosen = chapter(page, "A goal loop and its findings");
   await expect(chapter(page, "Home, and what needs you")).toHaveAttribute("aria-pressed", "true");
   await chosen.click();
   await expect(page).toHaveURL(/\/product\?chapter=loops$/);
@@ -89,7 +89,7 @@ test("the chosen chapter is in the URL and comes back on reload, back and forwar
   const videos = videoRequests(again);
   await again.goto(link);
   await settlePage(again);
-  const loops = chapter(again, "A goal loop and its report");
+  const loops = chapter(again, "A goal loop and its findings");
   await expect(loops).toHaveAttribute("aria-pressed", "true");
 
   await again.reload();
@@ -155,7 +155,7 @@ test("playing, choosing three chapters out of order and scrubbing fail no reques
   await openPage(page, "/product");
   await page.getByRole("button", { name: "Play the tour" }).click();
   await expectPlayingFrom(page, 0);
-  for (const name of ["Knowledge searched locally", "A chat, in your own words", "What it made, in the Library"]) {
+  for (const name of ["The Library, searched locally", "A chat, in your own words", "A goal loop and its findings"]) {
     const button = chapter(page, name);
     await button.click();
     await expect(button).toHaveAttribute("aria-pressed", "true");

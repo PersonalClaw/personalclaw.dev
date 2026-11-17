@@ -12,9 +12,9 @@
 //   PERSONALCLAW_TOKEN=… node scripts/capture-app-shots.mjs --base http://127.0.0.1:10001 [--only chat,loops]
 //     [--out <dir>] [--settle <ms>] [--loading-wait <ms>]
 //
-// The gateway keeps its own sign-in: the browser signs in the way the link `personalclaw token`
-// prints does (`/?token=…`), with the token taken from PERSONALCLAW_TOKEN and never printed. A
-// gateway run with its auth switched off needs no token.
+// The gateway keeps its own sign-in: the browser opens the link `personalclaw token` prints
+// (`/?token=…`) as a page, as a person does (scripts/capture-sign-in.mjs), with the token taken from
+// PERSONALCLAW_TOKEN and never printed. A gateway run with its auth switched off needs no token.
 //
 // Every shot is written to marketing/.captures/<id>.png (or --out) for review BEFORE anything is
 // copied into src/assets/ — a screenshot that silently replaces a good one is worse than a
@@ -32,7 +32,8 @@ import { mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
-import { PROVIDER_DOWN, settled, textOnScreen } from "./capture-guard.mjs";
+import { PROVIDER_DOWN, denied, settled, textOnScreen } from "./capture-guard.mjs";
+import { signedInState } from "./capture-sign-in.mjs";
 
 const repoRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 
@@ -56,15 +57,56 @@ const settleOverride = args.includes("--settle") ? Number(argOf("settle", "")) :
 const loadingWait = Number(argOf("loading-wait", "30000"));
 
 // path: where the view lives. settle: extra ms for animation/data to land. prep: optional
-// in-page setup (open a tab, apply a filter) done through the real UI, never by URL hacking
-// a state the user can't reach. ready: what the view shows once its data is in, for a view
-// whose failure looks settled (the Store's "Couldn't load your Store catalog" carries no
-// loading mark).
+// in-page setup (answer a card, open a panel) done through the real UI, never by URL hacking
+// a state the user can't reach; it returns what went wrong, or nothing. ready: what the view
+// shows once its data is in, for a view whose failure looks settled (the Store's "Couldn't
+// load your Store catalog" carries no loading mark).
 const SHOTS = [
   // The dashboard is a HASH-routed SPA (`useHashRoute`): `#/route/sub`. Path-style URLs all
-  // resolve to the dashboard, which would have produced 13 copies of the same shot.
+  // resolve to the dashboard, which would have produced 13 copies of the same shot. From 0.3.9
+  // Home is its Overview, and what waits on your answer is Needs you's own page.
   { id: "dashboard", hash: "#/dashboard", settle: 2800 },
-  { id: "inbox", hash: "#/inbox", settle: 2400 },
+  {
+    // Needs you (`#/mission-control`): its cards answer in place, and its panel shows the
+    // proposal itself. NEEDS_ANSWER names an answer to press on one card (a workflow gate's
+    // choice), so the shot shows a card answered; NEEDS_OPEN names a card to open in the panel,
+    // through the card's own "Show the details of …" target, by focus and Enter as the keyboard
+    // does (the target lies under the card's text, so a pointer lands on the text).
+    id: "needs-you",
+    hash: "#/mission-control",
+    settle: 2800,
+    ready: (page) => page.getByRole("region", { name: "Needs you" }),
+    prep: async (page) => {
+      const missing = [];
+      if (process.env.NEEDS_ANSWER) {
+        // A choice's button is named for its words and what it answers, so the words are a part of it.
+        const answer = page.getByRole("button", { name: process.env.NEEDS_ANSWER }).first();
+        try {
+          await answer.click({ timeout: 10000 });
+          await page.getByText(/^Answered/).first().waitFor({ state: "visible", timeout: 15000 });
+        } catch {
+          missing.push(`answer: never answered with ${JSON.stringify(process.env.NEEDS_ANSWER)}`);
+        }
+      }
+      if (process.env.NEEDS_OPEN) {
+        const open = page
+          .getByRole("button", { name: /^Show the details of / })
+          .filter({ hasText: process.env.NEEDS_OPEN })
+          .first();
+        const byName = page.getByRole("button", { name: `Show the details of ${process.env.NEEDS_OPEN}` }).first();
+        const target = (await open.count()) ? open : byName;
+        try {
+          await target.focus({ timeout: 10000 });
+          await page.keyboard.press("Enter");
+          await page.waitForURL(/[?&]open=/, { timeout: 10000 });
+          await page.waitForTimeout(1500);
+        } catch {
+          missing.push(`open: never opened ${JSON.stringify(process.env.NEEDS_OPEN)}`);
+        }
+      }
+      return missing;
+    }
+  },
   {
     // `#/chat` with no sub-route is the NEW-CHAT launcher, which photographs an empty
     // prompt. The manifest wants a real multi-turn thread with a visible tool call, and
@@ -78,8 +120,17 @@ const SHOTS = [
     // the last turn.
     scrollToEnd: true,
   },
-  // Knowledge and Memory are tabs of the Library destination (0.2.4); each keeps its own address.
-  { id: "knowledge", hash: "#/knowledge", settle: 2600 },
+  // Library is one page of everything you keep from 0.3.9: `#/knowledge` lands there, and
+  // Memory is its own tab at its own address.
+  // Library opens with nothing picked and its preview empty. LIBRARY_PICK names an item to open,
+  // so the shot shows one in the preview beside the list.
+  { id: "knowledge", hash: "#/library", settle: 2600, clickText: process.env.LIBRARY_PICK },
+  // One project's page, with what runs in it: PROJECT_ID names it per instance.
+  {
+    id: "projects",
+    hash: process.env.PROJECT_ID ? `#/projects/${encodeURIComponent(process.env.PROJECT_ID)}` : "#/projects",
+    settle: 2800
+  },
   {
     // `#/loops` is the LAUNCHER ("What do you want to accomplish?"), which photographs an
     // empty prompt. The manifest asks for a loop MID-RUN, and that lives at `#/loop/<id>`.
@@ -93,8 +144,20 @@ const SHOTS = [
     // The cockpit opens on the loop's working log. The deliverable the manifest asks for (the
     // report) is a tab beside it, named after the artifact, so LOOP_TAB names it per instance.
     clickText: process.env.LOOP_TAB,
+    // A loop that wrote no report shows its findings in the cockpit's Details: LOOP_DETAILS opens it.
+    prep: async (page) => {
+      if (!process.env.LOOP_DETAILS) return [];
+      const opened = await page
+        .getByRole("button", { name: "Details", exact: true })
+        .first()
+        .click({ timeout: 10000 })
+        .then(() => true, () => false);
+      await page.waitForTimeout(1500);
+      return opened ? [] : ["loops: never opened the cockpit's Details"];
+    },
   },
-  { id: "triggers", hash: "#/triggers", settle: 2400 },
+  // Automations is one destination from 0.3.9; `#/triggers` still opens its list.
+  { id: "triggers", hash: "#/automations", settle: 2400 },
   // The Store is a tab of the Capabilities destination (0.2.4), still the Apps page's store view;
   // `#/settings/apps` is the Store-sources settings. The catalog loads after the page, from the
   // Store's git sources, and a cold first fetch can outlast the Store's own 8 s wait; the shot is
@@ -104,6 +167,28 @@ const SHOTS = [
     hash: "#/apps?view=store",
     settle: 6000,
     ready: (page) => page.getByRole("button", { name: /^Install\b/ }).filter({ hasNotText: "URL" }).first(),
+    // The catalog is sorted by name, and a row can carry a listing the deny list keeps off every
+    // frame. APPS_FROM names a listing to start the grid at: the grid scrolls its card to the top.
+    prep: async (page) => {
+      const needle = process.env.APPS_FROM;
+      if (!needle) return [];
+      const moved = await page.evaluate((needle) => {
+        const title = [...document.querySelectorAll("h2, h3, h4, p, div, span")].find(
+          (el) => el.textContent?.trim() === needle && el.children.length === 0
+        );
+        let card = title;
+        while (card && card.getBoundingClientRect().height < 200) card = card.parentElement;
+        let pane = card?.parentElement;
+        while (pane && pane !== document.body && !(/auto|scroll/.test(getComputedStyle(pane).overflowY) && pane.scrollHeight > pane.clientHeight + 8)) {
+          pane = pane.parentElement;
+        }
+        if (!card || !pane || pane === document.body) return false;
+        pane.scrollTop += card.getBoundingClientRect().top - pane.getBoundingClientRect().top - 16;
+        return true;
+      }, needle);
+      await page.waitForTimeout(800);
+      return moved ? [] : [`apps: never found the listing ${JSON.stringify(needle)}`];
+    },
   },
   { id: "agents", hash: "#/agents", settle: 2600 },
   // Memory left Settings for Library's Memory tab in 0.2.4; `#/settings/memory` now redirects.
@@ -129,29 +214,21 @@ if (only.length) {
 mkdirSync(outDir, { recursive: true });
 
 const browser = await chromium.launch();
+const signed = process.env.PERSONALCLAW_TOKEN
+  ? await signedInState(browser, base, process.env.PERSONALCLAW_TOKEN)
+  : {};
+if (signed.error) {
+  console.error(signed.error);
+  process.exit(2);
+}
 const context = await browser.newContext({
   viewport: { width: WIDTH, height: HEIGHT },
   colorScheme: "dark", // the site renders app imagery on a dark surface
   deviceScaleFactor: 1,
   reducedMotion: "reduce", // no half-played transitions in a still
+  storageState: signed.state,
 });
-if (process.env.PERSONALCLAW_TOKEN) {
-  let signIn;
-  try {
-    signIn = await context.request.get(
-      `${base}/?token=${encodeURIComponent(process.env.PERSONALCLAW_TOKEN)}`
-    );
-  } catch {
-    // Playwright's error carries the call log, and the call log carries the URL with the token
-    // in it, so the error is not printed: only that the gateway could not be reached.
-    console.error(`Could not reach the gateway at ${base} to sign this browser in.`);
-    process.exit(2);
-  }
-  if (!signIn.ok()) {
-    console.error(`The gateway at ${base} did not sign this browser in: HTTP ${signIn.status()}`);
-    process.exit(2);
-  }
-}
+
 const page = await context.newPage();
 
 const problems = [];
@@ -200,6 +277,10 @@ for (const shot of wanted) {
     } catch {
       problems.push(`click: never found ${JSON.stringify(shot.clickText)}`);
     }
+  }
+
+  if (shot.prep) {
+    for (const missing of (await shot.prep(page)) ?? []) problems.push(missing);
   }
 
   if (shot.scrollToEnd) {
@@ -286,12 +367,19 @@ for (const shot of wanted) {
   if (!refused && PROVIDER_DOWN.test(await page.evaluate(textOnScreen))) {
     refused = "the top bar says the chat provider is not answering";
   }
+  // Nothing the shared deny list names, the one every recorder checks (scripts/capture-guard.mjs).
+  if (!refused) {
+    const shown = denied(await page.evaluate(textOnScreen));
+    if (shown.length) refused = `it shows ${shown.join(", ")}`;
+  }
   if (refused) {
     console.log(`refused  ${shot.id.padEnd(20)} ${shot.hash}  ✗ ${refused}`);
     refusedShots.push(shot.id);
     continue;
   }
 
+  // No focus ring in a still: a press or an open leaves focus on what it pressed.
+  await page.evaluate(() => document.activeElement instanceof HTMLElement && document.activeElement.blur());
   const file = join(outDir, `${shot.id}.png`);
   await page.screenshot({ path: file, fullPage: false });
 

@@ -1,7 +1,7 @@
 ---
 import { CirclePause, CirclePlay, ShieldCheck, Workflow } from "lucide-react";
-import inboxCapture from "../assets/inbox.png";
 import loopsCapture from "../assets/loops.png";
+import needsYouCapture from "../assets/needs-you.png";
 import DeferredCapture from "../components/DeferredCapture.astro";
 import InstallPanel from "../components/InstallPanel.astro";
 import LoopVideo from "../components/LoopVideo.astro";
@@ -126,7 +126,7 @@ const latest = core.changelog.latest;
         <div class="feature-media">
           <DeferredCapture
             src={loopsCapture}
-            alt="A finished PersonalClaw goal loop with its cycle, time, spend, and the deliverable it reported"
+            alt="A finished PersonalClaw goal loop: its goal, its six cycles and the findings it recorded"
             sizes="(max-width: 900px) 92vw, 58vw"
           />
         </div>
@@ -145,8 +145,8 @@ const latest = core.changelog.latest;
         <div class="feature-media">
           <LoopVideo id="approve-enter" label="Approving from the keyboard: Tab to the waiting request, then Cmd Enter, and it is approved">
             <DeferredCapture
-              src={inboxCapture}
-              alt="The PersonalClaw inbox with a loop waiting on an answer and an agent request waiting on an approval"
+              src={needsYouCapture}
+              alt="Needs you in PersonalClaw: an approval, a workflow's choice, a learned template and a skill proposal waiting, one answered on its card, and the panel open on the template"
               sizes="(max-width: 900px) 92vw, 58vw"
             />
           </LoopVideo>

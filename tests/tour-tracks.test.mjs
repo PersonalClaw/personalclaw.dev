@@ -24,10 +24,11 @@ test("the committed tracks are the ones the tour's composition yields", () => {
 
 test("the tour's beats are the click-path's, end to end, and every chapter but the close is one", () => {
   const beats = beatsOf(composition);
-  assert.deepEqual(
-    beats.map((beat) => beat.chapter),
-    ["home", "chat", "approval", "loops", "knowledge", "artifacts", null]
-  );
+  const shown = beats.map((beat) => beat.chapter);
+  // The artifact beat is the one the path leaves out: it plays only when the home holds an artifact
+  // the agent made (scripts/capture-tour.mjs). Every other beat is there, in the path's order.
+  const path = ["home", "chat", "approval", "loops", "knowledge", "artifacts", null];
+  assert.deepEqual(shown, path.filter((chapter) => chapter !== "artifacts" || shown.includes("artifacts")));
   const length = Number(/data-composition-id="main"[^>]*data-duration="([\d.]+)"/.exec(composition)[1]);
   assert.ok(Math.abs(beats.at(-1).end - length) < 1e-6, `the beats end at ${beats.at(-1).end} s, the composition at ${length} s`);
 });

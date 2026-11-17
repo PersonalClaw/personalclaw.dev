@@ -42,7 +42,7 @@ export const FRAME_CAPTURES = {
   "/": "dashboard", // Home: what waits on you, from one home.
   "/product": "chat", // the tour opens on a chat and the approval it stops on.
   "/apps": "apps", // the app directory itself.
-  "/security": "inbox", // the approval waiting on the owner: the host decides.
+  "/security": "needs-you", // the approval waiting on the owner, on its card: the host decides.
   "/release": "dashboard", // the release's own home view, as the release ships it.
   "/compare": "agents", // swappable runtimes: what the matrix checks, row by row.
   "/blog": "loops", // writing about work it did: a finished goal loop.

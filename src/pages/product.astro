@@ -153,7 +153,7 @@ const capabilities: Capability[] = [
     problem:
       "Long work does not fit in one reply. A goal loop plans, works cycle after cycle and reports against the goal you set, in a cockpit that shows its plan, its current cycle, its tool calls and what it produced.",
     capture: loopsCapture,
-    alt: "A finished PersonalClaw goal loop with its cycle, time, spend, and the deliverable it reported",
+    alt: "A finished PersonalClaw goal loop: its goal, its six cycles and the findings it recorded",
     controls: [
       { text: "Pause and resume a loop, nudge it while it runs, or stop it for good. A stopped loop keeps its findings, its report and any work not yet merged." },
       { text: "Whether it asks: an Attended loop stops when it needs an answer, and the question waits in your inbox." },
@@ -181,7 +181,7 @@ const capabilities: Capability[] = [
     problem:
       "A model knows the public web, not your notes. Knowledge holds what you add on purpose, kept apart from memory, in a database on your machine, and chat searches it when a question needs it.",
     capture: knowledgeCapture,
-    alt: "PersonalClaw knowledge base with tagged source documents",
+    alt: "The PersonalClaw Library with its source documents",
     controls: [
       { text: "What goes in: notes, links it fetches when you save them, and files from documents and spreadsheets to images, audio and video." },
       { text: "What it knows about each item: with a model set, the people, places and things in it." },
@@ -195,7 +195,7 @@ const capabilities: Capability[] = [
     problem:
       "Recurring work should not wait for you to remember it. Schedules, events and finished runs start work on their own, and what needs you lands in one inbox instead of a toast that scrolls past.",
     capture: triggersCapture,
-    alt: "PersonalClaw automation triggers with schedules and status",
+    alt: "PersonalClaw Automations with schedules and status",
     controls: [
       { text: "When it runs: on an interval, a cron schedule or once, on a lifecycle or data event, or when another run finishes. A schedule can run an agent in the background." },
       {

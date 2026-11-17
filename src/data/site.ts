@@ -28,6 +28,9 @@ export const productViews = [
   {
     id: "loops",
     label: "Loops",
+    // Its still is a project's page with its loop (projects.png), so it says so rather than
+    // calling the page a Loops view.
+    alt: "A project in PersonalClaw with its goal loop, its tasks and what is running",
     title: "Delegate goals, not prompts",
     // The app deliberately has no Loops nav tile — loops launch from within Projects (and
     // surface as chat widgets). Say so here, or a reader lands in the app hunting for a

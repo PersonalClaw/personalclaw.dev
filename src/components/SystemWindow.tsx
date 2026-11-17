@@ -6,6 +6,8 @@ type View = {
   label: string;
   title: string;
   description: string;
+  /** The still's alt text. */
+  alt: string;
   src: string;
   srcSet: string;
   sizes: string;
@@ -132,7 +134,7 @@ export function SystemWindow({ views }: { views: View[] }) {
               sizes={active.sizes}
               width={active.width}
               height={active.height}
-              alt={`${active.label} view in the PersonalClaw dashboard`}
+              alt={active.alt}
               loading="eager"
               fetchPriority={activeIndex === 0 ? "high" : "auto"}
             />

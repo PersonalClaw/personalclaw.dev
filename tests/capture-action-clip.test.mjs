@@ -44,7 +44,7 @@ test("a clip that acts on a chat or a loop is told which one", () => {
   assert.equal(parseArgs(["--id", "thread-turn", "--rehearse", ...named]).rehearse, true);
   assert.throws(ask("--id", "approve-enter", "--rehearse"), /approve-enter needs --chat/);
   assert.throws(ask("--id", "approve-enter"), /approve-enter needs --chat/);
-  assert.throws(ask("--id", "loop-pause"), /loop-pause needs --loop/);
+  assert.throws(ask("--id", "loop-planning"), /loop-planning needs --loop/);
 });
 
 test("the token comes from a file only its owner may read, and is never in the error", () => {
