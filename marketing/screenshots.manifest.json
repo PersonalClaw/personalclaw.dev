@@ -1,7 +1,7 @@
 {
   "$schema": "./screenshots.schema.json",
   "schemaVersion": 1,
-  "targetRelease": "0.3.0",
+  "targetRelease": "0.3.9",
   "capture": {
     "instance": "A scratch home, never the install's own: seed core's demo home into it and run a gateway on a free loopback port (PERSONALCLAW_HOME=/tmp/pc-showcase personalclaw gateway --seed demo-home --seed-replace --port 10021 --no-open --json-ready), as core's docs/screenshots/CAPTURE.md describes. The seed carries projects, tasks, knowledge documents and markdown memory, and binds no model, so install a model app and bind chat (and embedding and speech-to-text, so no surface waits on a model) before any turn. Chat, the approval, the loop, the skill proposal, the artifacts and the memory records are the product of real turns on that model, a few short ones; nothing is staged. Then photograph each appView with scripts/capture-app-shots.mjs, which signs its browser in with the gateway's token.",
     "theme": "dark",
@@ -12,10 +12,10 @@
     {
       "id": "dashboard",
       "asset": "src/assets/dashboard.png",
-      "appView": "Dashboard home (the landing view)",
+      "appView": "Home (the Overview, the landing view)",
       "minWidth": 1200,
       "minHeight": 750,
-      "scenario": "Home's Attention view, lived in: Needs You holding a tool approval from a chat, a goal loop's question and a skill proposal, each answerable where it sits; Running Now with that loop waiting on your answer and the chat waiting on its approval; Recent and completed below. Nothing empty: this is the 'what waits on me' shot. Since 0.2.6 Home reads core's one list of what waits on you, and the Overview view (tasks, Agent world) is a toggle beside it, not this shot.",
+      "scenario": "Home's Overview, lived in: the band counting every ask that waits on you (a tool approval from a chat, a workflow's choice and the proposals to review), your agents' day, the work running now and the tiles below. Nothing empty. Since 0.3.9 Needs you is a page of its own (the needs-you shot), and the band's Answer opens it.",
       "value": "One home surfaces what waits on you, beside current work and recent conversations.",
       "placements": [
         {
@@ -23,6 +23,24 @@
           "kind": "hero-system-window",
           "caption": "See what waits on you — Approvals, ready tasks, current work, and recent conversations stay visible from one home.",
           "alt": "Home view in the PersonalClaw dashboard"
+        }
+      ],
+      "status": "shipping"
+    },
+    {
+      "id": "needs-you",
+      "asset": "src/assets/needs-you.png",
+      "appView": "Needs you (one list of what waits on your answer)",
+      "minWidth": 1200,
+      "minHeight": 750,
+      "scenario": "Needs you, lived in: an edit_file approval from a real chat turn, a nightly backup's workflow asking which snapshots to keep, the reading digest's choice answered on its card, and under To review a new skill, a change to a skill from a correction, a learned template and a run's lesson. The panel is open on the template: its steps, why it was proposed and the chat it came from. Each card leads with what it asks and is answered where it sits.",
+      "value": "One list of what waits on your answer, each card answered where it sits, from the keyboard too.",
+      "placements": [
+        {
+          "file": "src/pages/index.astro",
+          "kind": "index-image",
+          "caption": "Delegation and control chapter: approve from the keyboard",
+          "alt": "Needs you in PersonalClaw: an approval, a workflow's choice, a learned template and a skill proposal waiting, one answered on its card, and the panel open on the template"
         }
       ],
       "status": "shipping"
@@ -54,29 +72,41 @@
     {
       "id": "loops",
       "asset": "src/assets/loops.png",
-      "appView": "Goal loop cockpit (a finished loop and its deliverable)",
+      "appView": "Goal loop cockpit (a finished loop and its findings)",
       "minWidth": 1280,
       "minHeight": 800,
-      "scenario": "A goal loop that ran on its own and reported: the goal statement, its cycle count, time and spend, the skills it used, and the deliverable it left (a summary, an evidence table citing the files, and a proposed change). Shows delegation-of-a-goal, not a prompt.",
+      "scenario": "A goal loop that ran on its own: the goal statement, its cycle count, and Details open on its findings log, one recorded finding a cycle. At 0.3.9 this is the demo home's finished loop; a loop that leaves a report (a summary, an evidence table citing the files, and a proposed change) is the shot to take when one is run on the home. Shows delegation-of-a-goal, not a prompt.",
+      "value": "Launched from within your projects, autonomous loops plan, act, and report against a goal while remaining observable and pausable.",
+      "placements": [
+        {
+          "file": "src/pages/index.astro",
+          "kind": "index-image",
+          "caption": "Goal loops story section",
+          "alt": "A finished PersonalClaw goal loop: its goal, its six cycles and the findings it recorded."
+        },
+        {
+          "file": "src/pages/product.astro",
+          "kind": "product-image",
+          "caption": "Goal loops section (#loops): hand off a goal, watch it work",
+          "alt": "A finished PersonalClaw goal loop: its goal, its six cycles and the findings it recorded"
+        }
+      ],
+      "status": "shipping"
+    },
+    {
+      "id": "projects",
+      "asset": "src/assets/projects.png",
+      "appView": "Projects -> one project (its goal loop, its tasks and what is running)",
+      "minWidth": 1280,
+      "minHeight": 800,
+      "scenario": "One project's page, lived in: the box to start a chat in the project at the top, what needs you and what is running there, its goal loop and its tasks. It shows that a loop is launched from within a project.",
       "value": "Launched from within your projects, autonomous loops plan, act, and report against a goal while remaining observable and pausable.",
       "placements": [
         {
           "file": "src/data/site.ts",
           "kind": "hero-system-window",
           "caption": "Delegate goals, not prompts — Launched from within your projects, autonomous loops plan, act, and report against a goal while remaining observable and pausable.",
-          "alt": "Loops view in the PersonalClaw dashboard"
-        },
-        {
-          "file": "src/pages/index.astro",
-          "kind": "index-image",
-          "caption": "Goal loops story section",
-          "alt": "A finished PersonalClaw goal loop with its cycle, time, spend, and the deliverable it reported."
-        },
-        {
-          "file": "src/pages/product.astro",
-          "kind": "product-image",
-          "caption": "Goal loops section (#loops): hand off a goal, watch it work",
-          "alt": "A finished PersonalClaw goal loop with its cycle, time, spend, and the deliverable it reported"
+          "alt": "A project in PersonalClaw with its goal loop, its tasks and what is running"
         }
       ],
       "status": "shipping"
@@ -84,10 +114,10 @@
     {
       "id": "knowledge",
       "asset": "src/assets/knowledge.png",
-      "appView": "Library -> Knowledge (source documents; the entity graph is a view of the same page)",
+      "appView": "Library (one page of everything you keep, with a preview beside it)",
       "minWidth": 1440,
       "minHeight": 900,
-      "scenario": "A populated knowledge base: several real source documents and notes ingested, tagged, and embedded for semantic search. Distinct from memory — this is explicit, inspectable reference material.",
+      "scenario": "A lived-in Library: real source documents, notes and links, each with its kind and tags, and one open in the preview beside the list. Distinct from memory: this is explicit, inspectable reference material.",
       "value": "Knowledge is explicit, inspectable source material; personal memory remains a separate system.",
       "placements": [
         {
@@ -99,7 +129,7 @@
         {
           "file": "src/pages/product.astro",
           "kind": "product-image",
-          "alt": "PersonalClaw knowledge base with tagged source documents.",
+          "alt": "The PersonalClaw Library with its source documents",
           "caption": "Knowledge section (#knowledge): answers from your own sources"
         }
       ],
@@ -168,7 +198,7 @@
     {
       "id": "triggers",
       "asset": "src/assets/triggers.png",
-      "appView": "Automation triggers / schedules",
+      "appView": "Automations (schedules and status)",
       "minWidth": 1280,
       "minHeight": 800,
       "scenario": "A few real automations, each with its schedule, next run and last-run status: a weekly digest that has run, a morning source digest, a weekly backup check and the built-in heartbeat, so the automation story reads as genuinely in use.",
@@ -178,7 +208,7 @@
           "file": "src/pages/product.astro",
           "kind": "product-image",
           "caption": "Automation section (#automation): work that starts without you asking",
-          "alt": "PersonalClaw automation triggers with schedules and status."
+          "alt": "PersonalClaw Automations with schedules and status"
         }
       ],
       "status": "shipping"
@@ -213,15 +243,8 @@
       "minHeight": 750,
       "scenario": "A real queue of what waits on you, with three kinds of item, because the point is that these used to live in different places: a goal loop asking which of two fixes to apply, a tool approval the agent is waiting on, and a proposed skill awaiting approval, each with its deep link to where it came from, and the filter chips along the top showing the kinds present. NOT an empty or single-kind inbox — a one-kind inbox looks like the old notification list and tells the reader nothing.",
       "value": "Everything waiting on you — loop decisions, proposals, approvals, alerts — in one place you can answer in, instead of a toast that scrolls past while the work stays stalled.",
-      "placements": [
-        {
-          "file": "src/pages/index.astro",
-          "kind": "index-image",
-          "caption": "Delegation and control chapter: approve from the keyboard",
-          "alt": "The PersonalClaw inbox with a loop waiting on an answer and an agent request waiting on an approval"
-        }
-      ],
-      "status": "shipping"
+      "placements": [],
+      "status": "retired"
     },
     {
       "id": "notification-rules",
@@ -254,8 +277,8 @@
       "sources": [
         "tour"
       ],
-      "capturedAt": "0.3.0",
-      "durationSeconds": 76.75,
+      "capturedAt": "0.3.9",
+      "durationSeconds": 65.42,
       "posterAtSeconds": 2,
       "crf": 29,
       "width": 1280,
@@ -288,7 +311,7 @@
         "loops",
         "approval-wait"
       ],
-      "capturedAt": "0.3.0",
+      "capturedAt": "0.3.9",
       "durationSeconds": 10,
       "posterAtSeconds": 0.6,
       "crf": 24,
@@ -318,7 +341,7 @@
       "sources": [
         "approve-enter"
       ],
-      "capturedAt": "0.3.0",
+      "capturedAt": "0.3.9",
       "durationSeconds": 4.1,
       "posterAtSeconds": 0.6,
       "crf": 24,
@@ -330,7 +353,7 @@
       "chapters": null,
       "budgetBytes": 600000,
       "autoplay": "none",
-      "fallback": "The loop could not play. The inbox still stays: a request waiting on your approval.",
+      "fallback": "The loop could not play. The Needs you still stays: a request waiting on your approval.",
       "audio": [],
       "placements": [
         {
@@ -342,43 +365,13 @@
       "status": "shipping"
     },
     {
-      "id": "loop-pause",
-      "kind": "loop",
-      "composition": "marketing/compositions/loop-pause/index.html",
-      "sources": [
-        "loop-pause"
-      ],
-      "capturedAt": "0.2.6",
-      "durationSeconds": 5,
-      "posterAtSeconds": 0.6,
-      "crf": 24,
-      "width": 1280,
-      "height": 800,
-      "output": "public/media/loop-pause.mp4",
-      "poster": "public/media/loop-pause-poster.webp",
-      "captions": null,
-      "chapters": null,
-      "budgetBytes": 600000,
-      "autoplay": "none",
-      "fallback": "The section's still and its text.",
-      "audio": [],
-      "placements": [
-        {
-          "file": "src/pages/index.astro",
-          "kind": "feature-loop",
-          "caption": "Delegation and control: delegate a goal, then pause the loop"
-        }
-      ],
-      "status": "new-needs-placement"
-    },
-    {
       "id": "app-install",
       "kind": "loop",
       "composition": "marketing/compositions/app-install/index.html",
       "sources": [
         "app-install"
       ],
-      "capturedAt": "0.3.0",
+      "capturedAt": "0.3.9",
       "durationSeconds": 4.61,
       "posterAtSeconds": 0.6,
       "crf": 24,
@@ -406,10 +399,11 @@
       "kind": "narrative",
       "composition": "marketing/compositions/release-clip/index.html",
       "sources": [
-        "thread-turn",
-        "home-lanes"
+        "needs-you",
+        "knowledge",
+        "projects"
       ],
-      "capturedAt": "0.3.0",
+      "capturedAt": "0.3.9",
       "durationSeconds": 20,
       "posterAtSeconds": 1.5,
       "crf": 28,
@@ -433,26 +427,23 @@
       ],
       "use": "site",
       "brief": {
-        "release": "0.3.0",
-        "date": "2026-10-26",
+        "release": "0.3.9",
+        "date": "2026-11-16",
         "highlights": [
           {
-            "text": "Every release now ships a Mac dmg for Intel.",
-            "source": "home-lanes",
-            "mediaStart": 4.6
+            "text": "Needs you is one list of what waits on your answer.",
+            "source": "needs-you"
           },
           {
-            "text": "On a new chat, the message composer takes its place at once.",
-            "source": "thread-turn",
-            "mediaStart": 3
+            "text": "Library is one page of everything you keep.",
+            "source": "knowledge"
           },
           {
-            "text": "No upgrade step is needed.",
-            "source": "home-lanes",
-            "mediaStart": 7.2
+            "text": "A project's page opens on a box to start a chat there.",
+            "source": "projects"
           }
         ],
-        "shareCopy": "PersonalClaw 0.3.0 ships a Mac dmg for Intel beside the Apple-silicon one, keeps the new-chat composer in its place, and needs no upgrade step. Every change, with its source: https://personalclaw.dev/release"
+        "shareCopy": "PersonalClaw 0.3.9 puts what waits on your answer in one list you answer card by card, keeps everything you keep on one Library page, and opens each project's page on a box to start a chat there. Every change, with its source: https://personalclaw.dev/release"
       },
       "status": "shipping"
     },
@@ -461,10 +452,11 @@
       "kind": "narrative",
       "composition": "marketing/compositions/release-clip-vertical/index.html",
       "sources": [
-        "thread-turn",
-        "home-lanes"
+        "needs-you",
+        "knowledge",
+        "projects"
       ],
-      "capturedAt": "0.3.0",
+      "capturedAt": "0.3.9",
       "durationSeconds": 20,
       "posterAtSeconds": 1.5,
       "crf": 26,
@@ -481,26 +473,23 @@
       "placements": [],
       "use": "social",
       "brief": {
-        "release": "0.3.0",
-        "date": "2026-10-26",
+        "release": "0.3.9",
+        "date": "2026-11-16",
         "highlights": [
           {
-            "text": "Every release now ships a Mac dmg for Intel.",
-            "source": "home-lanes",
-            "mediaStart": 4.6
+            "text": "Needs you is one list of what waits on your answer.",
+            "source": "needs-you"
           },
           {
-            "text": "On a new chat, the message composer takes its place at once.",
-            "source": "thread-turn",
-            "mediaStart": 3
+            "text": "Library is one page of everything you keep.",
+            "source": "knowledge"
           },
           {
-            "text": "No upgrade step is needed.",
-            "source": "home-lanes",
-            "mediaStart": 7.2
+            "text": "A project's page opens on a box to start a chat there.",
+            "source": "projects"
           }
         ],
-        "shareCopy": "PersonalClaw 0.3.0 ships a Mac dmg for Intel beside the Apple-silicon one, keeps the new-chat composer in its place, and needs no upgrade step. Every change, with its source: https://personalclaw.dev/release"
+        "shareCopy": "PersonalClaw 0.3.9 puts what waits on your answer in one list you answer card by card, keeps everything you keep on one Library page, and opens each project's page on a box to start a chat there. Every change, with its source: https://personalclaw.dev/release"
       },
       "status": "shipping"
     }
@@ -511,7 +500,7 @@
       "file": "marketing/.captures/clips/home-lanes.webm",
       "width": 1440,
       "height": 900,
-      "scenario": "Home showing what needs you, with at least one approval and one question waiting; held still about 4 s.",
+      "scenario": "Home's Overview, its band counting what waits on you (an approval, a workflow's choice and the proposals to review); held still about 4 s.",
       "status": "shipping"
     },
     {
@@ -519,8 +508,8 @@
       "file": "marketing/.captures/clips/thread-turn.webm",
       "width": 1440,
       "height": 900,
-      "scenario": "One chat turn from the prompt sent to the reply finished: the turn's status row above the composer, its orb and its turning word while the agent thinks and reads a file, then the reply and its done mark; about 45 s on a local model.",
-      "loading": [[0.27, 2.9]],
+      "scenario": "One chat turn from the prompt sent to the reply finished: the turn's status row above the composer, its orb and its turning word while the agent thinks and reads a file, then the reply and its done mark; about 90 s on a local model.",
+      "loading": [[0.53, 1.09]],
       "status": "shipping"
     },
     {
@@ -544,17 +533,9 @@
       "file": "marketing/.captures/clips/approve-enter.webm",
       "width": 1440,
       "height": 900,
-      "scenario": "Tab to the pending approval card, press Cmd Enter, and it resolves; about 6 s.",
-      "loading": [[0.15, 2.66]],
+      "scenario": "On Needs you, Tab to the pending approval card, press Cmd Enter, and it is answered in place; about 6 s.",
+      "loading": [[0.48, 3.39]],
       "status": "shipping"
-    },
-    {
-      "id": "loop-pause",
-      "file": "marketing/.captures/clips/loop-pause.webm",
-      "width": 1440,
-      "height": 900,
-      "scenario": "In a running loop's cockpit, press Pause, it settles paused, then Resume; about 6 s.",
-      "status": "new-needs-placement"
     },
     {
       "id": "app-install",
@@ -562,7 +543,7 @@
       "width": 1440,
       "height": 900,
       "scenario": "In Apps, open one app that needs no key, read its consent dialog, install, and it shows installed; about 6 s.",
-      "loading": [[0.12, 2.55], [8.4, 9.7], [11.77, 13.5]],
+      "loading": [[3.28, 9.34], [20.16, 27.75]],
       "status": "shipping"
     },
     {
@@ -570,8 +551,8 @@
       "file": "marketing/.captures/clips/tour.webm",
       "width": 1440,
       "height": 810,
-      "scenario": "Core's demo click-path at the release (docs/demo/CLICKPATH.md, docs/demo/capture_demo.mjs), end to end: Home, Chat, Approval, Loops, Knowledge, Artifacts and back to Home, about 85 s, with each beat's start time recorded for the composition's data-media-start.",
-      "loading": [[0.61, 3.04], [42.71, 43.02], [57.61, 57.81], [61.77, 61.87], [68.67, 68.98], [71.51, 71.81]],
+      "scenario": "Core's demo click-path at the release (docs/demo/CLICKPATH.md, docs/demo/capture_demo.mjs), played on the release's own screens: Home, Chat, Approval, a goal loop with its findings, the Library's search and back to Home, about 73 s, with each beat's start time recorded for the composition's data-media-start. Its artifact beat plays when the home holds an artifact the agent made.",
+      "loading": [[0.71, 0.82], [1.01, 1.21], [10.75, 10.94], [42.75, 43.15], [57.65, 58.15], [61.69, 61.78], [69.8, 70]],
       "status": "shipping"
     }
   ]

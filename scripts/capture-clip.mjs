@@ -18,6 +18,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 import { denied, loadingOnScreen, settled, textOnScreen } from "./capture-guard.mjs";
+import { signedInState } from "./capture-sign-in.mjs";
 
 const repoRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const outDir = join(repoRoot, "marketing", ".captures", "clips");
@@ -43,20 +44,19 @@ const TOKEN = tokenFile ? readFileSync(tokenFile, "utf8").trim() : process.env.P
 
 mkdirSync(outDir, { recursive: true });
 const browser = await chromium.launch();
+// Signed in apart from the take, so the sign-in page records nothing (scripts/capture-sign-in.mjs).
+const signed = TOKEN ? await signedInState(browser, base, TOKEN) : {};
+if (signed.error) {
+  console.error(signed.error);
+  process.exit(2);
+}
 const context = await browser.newContext({
   viewport: VIEWPORT,
   deviceScaleFactor: 1,
   colorScheme: "dark",
-  recordVideo: { dir: outDir, size: VIEWPORT }
+  recordVideo: { dir: outDir, size: VIEWPORT },
+  storageState: signed.state
 });
-if (TOKEN) {
-  const signIn = await context.request.get(`${base}/?token=${encodeURIComponent(TOKEN)}`).catch(() => null);
-  if (!signIn?.ok()) {
-    // Never print the error: its call log carries the URL, and the URL carries the token.
-    console.error(`The gateway at ${base} did not sign this browser in.`);
-    process.exit(2);
-  }
-}
 await context.addInitScript(() => {
   localStorage.setItem("mode", "dark");
   document.documentElement.setAttribute("data-mode", "dark");

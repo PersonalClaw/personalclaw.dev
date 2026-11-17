@@ -3,9 +3,9 @@
   A feature loop (#95): Approve with the keyboard: Tab to the waiting approval, press Cmd Enter, and it resolves.
   One real recording of the released app (the `approve-enter` clip in
   marketing/screenshots.manifest.json), staged into assets/ by `npm run render:videos`, 4.1
-  seconds, silent: from the request in view with keyboard focus on it, through Cmd Enter, to
-  "approved". The Tabs before it walk the sidebar and the thread, so the loop starts where focus
-  reaches the request. `data-media-start` is where the action begins in the recording, set from its
+  seconds, silent: on Needs you, from keyboard focus reaching the approval's card, through Cmd
+  Enter, to the card's "Approved." The Tabs before it walk the sidebar, so the loop starts where
+  focus reaches the card. `data-media-start` is where the action begins in the recording, set from its
   beat times when it is captured at the release. It fades up from the theater's dark and back down
   to it, so it repeats with no seam: a paused Web Animation the runtime seeks, on a root marked
   `data-no-timeline` because no GSAP timeline is registered. Nothing loads from the network.
@@ -43,7 +43,7 @@
     <div id="main" data-composition-id="main" data-no-timeline data-start="0" data-duration="4.1" data-width="1280" data-height="800">
       <div id="frame">
         <video id="action" class="clip" src="assets/approve-enter.webm" muted playsinline
-          data-start="0" data-duration="4.1" data-media-start="11" data-track-index="1"></video>
+          data-start="0" data-duration="4.1" data-media-start="7.8" data-track-index="1"></video>
       </div>
     </div>
     <script>

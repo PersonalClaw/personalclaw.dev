@@ -8,15 +8,21 @@
 // changed and missing.
 
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import test from "node:test";
 
 import {
   BUILDERS_SNIPPET,
+  CORE_CAPABILITY_IDS_PATH,
   CORE_MANIFEST_PATH,
+  CORE_PROVIDER_CONFIG_PATH,
   MANIFEST_RULES,
+  REFUSAL_FINGERPRINTS,
   appManifestProblems,
   manifestRulesDrift,
-  snippetDrift
+  refusalsDrift,
+  snippetDrift,
+  topLevelFunction
 } from "../src/data/apps-snippet.mjs";
 import { checkBuildersSnippet } from "../scripts/sync-sources.mjs";
 
@@ -35,6 +41,8 @@ function valid() {
     prompts: ["prompts/example.yaml"],
     permissions: { network: true },
     provider: {
+      id: "tools",
+      label: "Search and fetch example pages",
       type: "tool",
       implementation: "provider:create_provider",
       capabilities: ["web"]
@@ -130,6 +138,41 @@ test("displayName and description are required and non-empty", () => {
   ]);
 });
 
+test("a provider's id is kebab-case, and its label says what it does in plain words", () => {
+  for (const id of ["Tools", "web_tools", 7]) {
+    assert.deepEqual(appManifestProblems(changed((m) => (m.provider.id = id))), [
+      `provider.id must be kebab-case, got: ${JSON.stringify(id)}`
+    ]);
+  }
+  assert.deepEqual(appManifestProblems(changed((m) => (m.provider.label = "Tools"))), [
+    "provider.label is its id: say in plain words what it does"
+  ]);
+  // Core folds with str.casefold(): "Straße" is the id "strasse", as "ſearch" is the type "search".
+  assert.deepEqual(
+    appManifestProblems(changed((m) => Object.assign(m.provider, { id: "strasse", label: "Straße" }))),
+    ["provider.label is its id: say in plain words what it does"]
+  );
+  assert.match(appManifestProblems(changed((m) => (m.provider.label = "ſearch")))[0], /is a provider type/);
+  for (const label of ["tool", "Trigger Source"]) {
+    const [problem, ...rest] = appManifestProblems(changed((m) => (m.provider.label = label)));
+    assert.match(problem, /is a provider type/, label);
+    assert.deepEqual(rest, []);
+  }
+  for (const label of ["", 3]) {
+    assert.deepEqual(appManifestProblems(changed((m) => (m.provider.label = label))), [
+      "provider.label must be text"
+    ]);
+  }
+  assert.deepEqual(appManifestProblems(changed((m) => delete m.provider.id)), [
+    "provider.label is checked against provider.id, and this provider has none"
+  ]);
+  const plain = changed((m) => {
+    delete m.provider.id;
+    delete m.provider.label;
+  });
+  assert.deepEqual(appManifestProblems(plain), []);
+});
+
 test("a provider needs a type core accepts", () => {
   assert.deepEqual(appManifestProblems(changed((m) => delete m.provider.type)), [
     "provider.type is required"
@@ -219,11 +262,17 @@ test("the snippet matches the pinned file byte for byte", () => {
 // ── the rules held to the pinned core ────────────────────────────────────────────────────
 
 /** The parts of core's manifest.py the check reads, written the way core writes them. */
-function manifestPy({ kebab = MANIFEST_RULES.kebabPattern, types = MANIFEST_RULES.providerTypes } = {}) {
+function manifestPy({ kebab = MANIFEST_RULES.kebabPattern } = {}) {
   return [
     `KEBAB_RE = re.compile(r"${kebab}")`,
     `ICON_NAME_RE = re.compile(r"${MANIFEST_RULES.iconPattern}")`,
-    "",
+    ""
+  ].join("\n");
+}
+
+/** The parts of core's provider_config.py the check reads, written the way core writes them. */
+function providerConfigPy({ types = MANIFEST_RULES.providerTypes } = {}) {
+  return [
     "PROVIDER_TYPES = frozenset(",
     "    {",
     ...types.flatMap((type, index) =>
@@ -242,31 +291,125 @@ function manifestPy({ kebab = MANIFEST_RULES.kebabPattern, types = MANIFEST_RULE
 }
 
 test("core's manifest rules at the pin match the check's", () => {
-  assert.deepEqual(manifestRulesDrift(manifestPy()), []);
+  assert.deepEqual(manifestRulesDrift(manifestPy(), providerConfigPy()), []);
+});
+
+test("each rule is read from the file that defines it", () => {
+  // core v0.3.9 moved ProviderConfig to provider_config.py: a provider rule found only in
+  // manifest.py, or a manifest rule found only in provider_config.py, is not found.
+  const swapped = manifestRulesDrift(providerConfigPy(), manifestPy());
+  assert.equal(swapped.length, 4);
+  for (const [path, name] of [
+    [CORE_MANIFEST_PATH, "KEBAB_RE"],
+    [CORE_MANIFEST_PATH, "ICON_NAME_RE"],
+    [CORE_PROVIDER_CONFIG_PATH, "PROVIDER_TYPES"],
+    [CORE_PROVIDER_CONFIG_PATH, "_HOOK_OR_ENTRYPOINT_RE"]
+  ]) {
+    assert.ok(swapped.some((problem) => problem.startsWith(path) && problem.includes(` ${name} `)), name);
+  }
 });
 
 test("a provider type core adds or drops is drift, named", () => {
-  const added = manifestRulesDrift(manifestPy({ types: [...MANIFEST_RULES.providerTypes, "hologram"] }));
+  const added = manifestRulesDrift(manifestPy(), providerConfigPy({ types: [...MANIFEST_RULES.providerTypes, "hologram"] }));
   assert.equal(added.length, 1);
   assert.match(added[0], /PROVIDER_TYPES/);
   assert.match(added[0], /hologram/);
-  const dropped = manifestRulesDrift(manifestPy({ types: MANIFEST_RULES.providerTypes.slice(1) }));
+  const dropped = manifestRulesDrift(manifestPy(), providerConfigPy({ types: MANIFEST_RULES.providerTypes.slice(1) }));
   assert.equal(dropped.length, 1);
   assert.match(dropped[0], new RegExp(MANIFEST_RULES.providerTypes[0]));
 });
 
 test("a changed pattern is drift, named", () => {
-  const [problem, ...rest] = manifestRulesDrift(manifestPy({ kebab: "^[a-z]+$" }));
+  const [problem, ...rest] = manifestRulesDrift(manifestPy({ kebab: "^[a-z]+$" }), providerConfigPy());
   assert.match(problem, /KEBAB_RE/);
   assert.deepEqual(rest, []);
 });
 
+test("a rule defined twice is drift: Python keeps the last, and the check reads one", () => {
+  const rebound = `${manifestPy()}KEBAB_RE = re.compile(r"^[a-z]+$")\n`;
+  const [problem, ...rest] = manifestRulesDrift(rebound, providerConfigPy());
+  assert.match(problem, /defines KEBAB_RE 2 times/);
+  assert.deepEqual(rest, []);
+  const types = manifestRulesDrift(manifestPy(), `${providerConfigPy()}PROVIDER_TYPES = frozenset({"tool"})\n`);
+  assert.equal(types.length, 1);
+  assert.match(types[0], /defines PROVIDER_TYPES 2 times/);
+});
+
+test("a provider set that closes on its own line reads as empty, never as the rule after it", () => {
+  const empty = providerConfigPy().replace(/PROVIDER_TYPES = frozenset\([\s\S]*?\n\)\n/, "PROVIDER_TYPES = frozenset()\n");
+  const [problem, ...rest] = manifestRulesDrift(manifestPy(), empty);
+  assert.match(problem, /defines no PROVIDER_TYPES/);
+  assert.deepEqual(rest, []);
+});
+
 test("a rule the check cannot find is drift, never a pass", () => {
-  const problems = manifestRulesDrift("");
+  const problems = manifestRulesDrift("", "");
   assert.equal(problems.length, 4);
   for (const name of ["KEBAB_RE", "ICON_NAME_RE", "PROVIDER_TYPES", "_HOOK_OR_ENTRYPOINT_RE"]) {
     assert.ok(problems.some((problem) => problem.includes(name)), name);
   }
+});
+
+// ── the refusals the provider id and label rules follow ─────────────────────────────────
+
+/** A capability_ids.py with the two functions the port follows, written the way core writes them. */
+function capabilityIdsPy({ label = "        folded = p.label.casefold()" } = {}) {
+  return [
+    "def capability_refusals(manifest: AppManifest) -> list[str]:",
+    '    """The refusals for *manifest*\'s capability ids and labels."""',
+    "    errors = []",
+    "",
+    "    errors += _label_refusals(named)",
+    "    return errors",
+    "",
+    "",
+    "def _label_refusals(named: list[tuple[str, ProviderConfig, str]]) -> list[str]:",
+    "    errors: list[str] = []",
+    "    for path, p, cid in named:",
+    label,
+    "    return errors",
+    "",
+    "",
+    "_SHARED_WORDS = {",
+    '    "app",',
+    "}",
+    ""
+  ].join("\n");
+}
+
+const sha256 = (text) => createHash("sha256").update(text).digest("hex");
+/** Each function's fingerprint in *source*, as the check takes them. */
+const fingerprintsOf = (source) =>
+  Object.fromEntries(Object.keys(REFUSAL_FINGERPRINTS).map((name) => [name, sha256(topLevelFunction(source, name).text)]));
+const FINGERPRINTS = fingerprintsOf(capabilityIdsPy());
+
+test("a function is read from its def to the next line at the margin", () => {
+  const { count, text } = topLevelFunction(capabilityIdsPy(), "_label_refusals");
+  assert.equal(count, 1);
+  assert.ok(text.startsWith("def _label_refusals("));
+  assert.ok(text.endsWith("    return errors"));
+  assert.doesNotMatch(text, /_SHARED_WORDS/);
+});
+
+test("core's refusals the id and label rules follow are held by fingerprint", () => {
+  assert.deepEqual(refusalsDrift(capabilityIdsPy(), sha256, FINGERPRINTS), []);
+  const changed = refusalsDrift(capabilityIdsPy({ label: "        folded = p.label" }), sha256, FINGERPRINTS);
+  assert.equal(changed.length, 1);
+  assert.match(changed[0], new RegExp(`^${CORE_CAPABILITY_IDS_PATH} at the pin has a changed _label_refusals\\.`));
+});
+
+test("a refusal the check cannot find, or finds twice, is drift, never a pass", () => {
+  const none = refusalsDrift("", sha256, FINGERPRINTS);
+  assert.equal(none.length, 2);
+  for (const name of ["capability_refusals", "_label_refusals"]) {
+    assert.ok(none.some((problem) => problem.includes(`defines no ${name} `)), name);
+  }
+  const moved = capabilityIdsPy().replace("def _label_refusals(", "def label_refusals(");
+  const [gone, ...rest] = refusalsDrift(moved, sha256, FINGERPRINTS);
+  assert.match(gone, /defines no _label_refusals this check can read/);
+  assert.deepEqual(rest, []);
+  const twice = `${capabilityIdsPy()}\ndef capability_refusals(manifest):\n    return []\n`;
+  assert.match(refusalsDrift(twice, sha256, FINGERPRINTS)[0], /defines capability_refusals 2 times/);
 });
 
 // ── the sync check over fake pinned trees ────────────────────────────────────────────────
@@ -286,30 +429,63 @@ function tree(files) {
   };
 }
 
-const core = tree({ [CORE_MANIFEST_PATH]: manifestPy() });
+const core = tree({
+  [CORE_MANIFEST_PATH]: manifestPy(),
+  [CORE_PROVIDER_CONFIG_PATH]: providerConfigPy(),
+  [CORE_CAPABILITY_IDS_PATH]: capabilityIdsPy()
+});
+/** The sync check over fake trees, holding the fake refusals' fingerprints. */
+const check = (coreTree, appsTree) => checkBuildersSnippet(coreTree, appsTree, FINGERPRINTS);
 const apps = tree({ [BUILDERS_SNIPPET.path]: BUILDERS_SNIPPET.text });
 
 test("the sync passes when the pinned file and rules are the ones the check holds", async () => {
-  await checkBuildersSnippet(core, apps);
+  await check(core, apps);
 });
 
 test("the sync fails when the pinned file changed", async () => {
   const bumped = tree({ [BUILDERS_SNIPPET.path]: BUILDERS_SNIPPET.text.replace("{", "{ ") });
-  await assert.rejects(checkBuildersSnippet(core, bumped), /BUILDERS_SNIPPET/);
+  await assert.rejects(check(core, bumped), /BUILDERS_SNIPPET/);
 });
 
 test("the sync fails, naming the app, when the pinned apps commit no longer has it", async () => {
-  await assert.rejects(checkBuildersSnippet(core, tree({})), (error) => {
+  await assert.rejects(check(core, tree({})), (error) => {
     assert.match(error.message, new RegExp(`no ${BUILDERS_SNIPPET.path}`));
     assert.doesNotMatch(error.message, /not found:/);
     return true;
   });
 });
 
-test("the sync fails when core's rules moved or its manifest module is gone", async () => {
-  const moved = tree({ [CORE_MANIFEST_PATH]: manifestPy({ kebab: "^[a-z]+$" }) });
-  await assert.rejects(checkBuildersSnippet(moved, apps), /KEBAB_RE/);
-  await assert.rejects(checkBuildersSnippet(tree({}), apps), new RegExp(`no ${CORE_MANIFEST_PATH}`));
+test("the sync fails when core's rules moved or a module that holds them is gone", async () => {
+  const moved = tree({
+    [CORE_MANIFEST_PATH]: manifestPy({ kebab: "^[a-z]+$" }),
+    [CORE_PROVIDER_CONFIG_PATH]: providerConfigPy(),
+    [CORE_CAPABILITY_IDS_PATH]: capabilityIdsPy()
+  });
+  await assert.rejects(check(moved, apps), /KEBAB_RE/);
+  await assert.rejects(check(tree({}), apps), (error) => {
+    assert.match(error.message, new RegExp(`no ${CORE_MANIFEST_PATH}`));
+    assert.match(error.message, new RegExp(`no ${CORE_PROVIDER_CONFIG_PATH}`));
+    return true;
+  });
+  const manifestOnly = tree({ [CORE_MANIFEST_PATH]: manifestPy() });
+  await assert.rejects(check(manifestOnly, apps), (error) => {
+    assert.match(error.message, new RegExp(`no ${CORE_PROVIDER_CONFIG_PATH}`));
+    assert.match(error.message, new RegExp(`no ${CORE_CAPABILITY_IDS_PATH}`));
+    assert.doesNotMatch(error.message, new RegExp(`no ${CORE_MANIFEST_PATH}`));
+    return true;
+  });
+  const refusalsGone = tree({ [CORE_MANIFEST_PATH]: manifestPy(), [CORE_PROVIDER_CONFIG_PATH]: providerConfigPy() });
+  await assert.rejects(check(refusalsGone, apps), (error) => {
+    assert.match(error.message, new RegExp(`no ${CORE_CAPABILITY_IDS_PATH}, where the builders band's provider id and label rules`));
+    assert.doesNotMatch(error.message, new RegExp(`no ${CORE_PROVIDER_CONFIG_PATH}`));
+    return true;
+  });
+  const refusalsChanged = tree({
+    [CORE_MANIFEST_PATH]: manifestPy(),
+    [CORE_PROVIDER_CONFIG_PATH]: providerConfigPy(),
+    [CORE_CAPABILITY_IDS_PATH]: capabilityIdsPy({ label: "        folded = p.label.lower()" })
+  });
+  await assert.rejects(check(refusalsChanged, apps), /a changed _label_refusals/);
 });
 
 test("a read that fails for another reason fails the sync with that reason", async () => {
@@ -318,5 +494,5 @@ test("a read that fails for another reason fails the sync with that reason", asy
       throw Object.assign(new Error("GitHub request failed (503)"), { status: 503 });
     }
   };
-  await assert.rejects(checkBuildersSnippet(core, unreachable), /503/);
+  await assert.rejects(check(core, unreachable), /503/);
 });

@@ -25,9 +25,17 @@
 // instead: stricter, never looser. `minPersonalClawVersion`, which the first-party apps carry from
 // apps v0.3.0, was read at core v0.3.0: validate() takes any value (from_dict reads it with
 // str()), and core_compatibility() refuses to host an app whose floor it cannot read, so the port
-// refuses a floor that is not a string or does not start with MAJOR.MINOR.PATCH. The sync holds the constants below to the pinned core's
-// manifest.py (manifestRulesDrift), so a re-pin that adds a provider type or changes a
-// pattern fails until this port is re-read.
+// refuses a floor that is not a string or does not start with MAJOR.MINOR.PATCH. Re-read at core
+// v0.3.9: ProviderConfig, PROVIDER_TYPES and _HOOK_OR_ENTRYPOINT_RE are in
+// src/personalclaw/apps/provider_config.py, unchanged. ProviderConfig.validate() adds
+// settingsCheck, and AppManifest.validate() adds the refusals for provider ids, labels, renames
+// and settings. None of them is on a field this port reads, and the port refuses each of those
+// fields. From apps v0.3.9 the snippet's provider declares an id and a label, so the port reads
+// those two by core v0.3.9's capability_refusals and _label_refusals: an id is kebab-case, and a
+// label is never its id or a provider type. The sync holds the constants below to the pinned
+// core's files that define them (manifestRulesDrift), and the two functions those id and label
+// rules are ported from by their fingerprint (refusalsDrift), so a re-pin that adds a provider
+// type, changes a pattern or changes either function fails until this port is re-read.
 
 /** The first-party app whose manifest the builders band shows. */
 const SNIPPET_APP = "web-tools";
@@ -41,7 +49,7 @@ export const BUILDERS_SNIPPET = Object.freeze({
   path: `${SNIPPET_APP}/app.json`,
   text: String.raw`{
   "name": "web-tools",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "displayName": "Web Tools",
   "description": "General web primitives the agent can call: web_search, web_fetch, and web_extract. web_search runs over the search provider you bind in Settings \u2192 Search, web_fetch is an SSRF-guarded page fetch + extraction, and web_extract does structured extraction. No key of its own \u2014 it uses the bound search provider's.",
   "icon": "Globe",
@@ -59,6 +67,8 @@ export const BUILDERS_SNIPPET = Object.freeze({
     "network": true
   },
   "provider": {
+    "id": "tools",
+    "label": "Search, fetch and extract web pages",
     "type": "tool",
     "implementation": "provider:create_provider",
     "capabilities": [
@@ -69,22 +79,38 @@ export const BUILDERS_SNIPPET = Object.freeze({
 `
 });
 
-/** Where core defines the rules below. The sync reads it at the pinned core commit. */
+/** Where core defines the manifest's own rules below. The sync reads it at the pinned core commit. */
 export const CORE_MANIFEST_PATH = "src/personalclaw/apps/manifest.py";
+/** Where core defines a provider's rules below (ProviderConfig). The sync reads it at the pinned core commit. */
+export const CORE_PROVIDER_CONFIG_PATH = "src/personalclaw/apps/provider_config.py";
+/** Where core refuses a provider's id and label, the logic the port follows by hand. The sync reads it at the pinned core commit. */
+export const CORE_CAPABILITY_IDS_PATH = "src/personalclaw/apps/capability_ids.py";
 
 /**
- * Core's constants, as written in CORE_MANIFEST_PATH (the patterns are its raw strings).
+ * The two functions in CORE_CAPABILITY_IDS_PATH the provider id and label rules are ported from,
+ * held by a fingerprint: the SHA-256 of each one's source at the pin, from its `def` line to the
+ * last line before the next one at the margin (topLevelFunction). The port reads no logic from
+ * core, so a changed body is drift too, and so is a function that moved or is defined twice.
+ */
+export const REFUSAL_FINGERPRINTS = Object.freeze({
+  capability_refusals: "23243a00d5fd202319ae96c172458d5c601ebd6574c01d83f639a36c10c025c9",
+  _label_refusals: "1f31c9ddc8fe5c4cee0b529c5f8b3fa2434ad2597b6737356db0bc73a13bf506"
+});
+
+/**
+ * Core's constants, as written in CORE_MANIFEST_PATH and CORE_PROVIDER_CONFIG_PATH (the patterns
+ * are its raw strings).
  * Python's `$` also matches before a final newline; JavaScript's does not, which only makes
  * the port refuse a value core would take.
  */
 export const MANIFEST_RULES = Object.freeze({
-  /** `KEBAB_RE`: an app's `name`. */
+  /** `KEBAB_RE` (CORE_MANIFEST_PATH): an app's `name`. */
   kebabPattern: String.raw`^[a-z0-9]+(?:-[a-z0-9]+)*$`,
-  /** `ICON_NAME_RE`: a lucide component name. */
+  /** `ICON_NAME_RE` (CORE_MANIFEST_PATH): a lucide component name. */
   iconPattern: String.raw`^[A-Za-z][A-Za-z0-9]*$`,
-  /** `_HOOK_OR_ENTRYPOINT_RE`: `provider.implementation`, as `module.path:factory_fn`. */
+  /** `_HOOK_OR_ENTRYPOINT_RE` (CORE_PROVIDER_CONFIG_PATH): `provider.implementation`, as `module.path:factory_fn`. */
   implementationPattern: String.raw`^[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_][a-zA-Z0-9_]*)*:[a-zA-Z_][a-zA-Z0-9_]*$`,
-  /** `PROVIDER_TYPES`, sorted. */
+  /** `PROVIDER_TYPES` (CORE_PROVIDER_CONFIG_PATH), sorted. */
   providerTypes: Object.freeze([
     "action",
     "agent",
@@ -143,7 +169,7 @@ const READ_FIELDS = new Set([
   "provider"
 ]);
 const READ_PERMISSIONS = new Set(["network"]);
-const READ_PROVIDER_FIELDS = new Set(["type", "implementation", "capabilities"]);
+const READ_PROVIDER_FIELDS = new Set(["id", "label", "type", "implementation", "capabilities"]);
 
 const isObject = (value) => value != null && typeof value === "object" && !Array.isArray(value);
 const isNames = (value) =>
@@ -273,6 +299,31 @@ export function appManifestProblems(manifest) {
       if (provider.capabilities !== undefined && !isNames(provider.capabilities)) {
         problems.push("provider.capabilities must be a list of names");
       }
+      // capability_ids.capability_refusals and _label_refusals (core v0.3.9), for one provider.
+      if (provider.id !== undefined && (typeof provider.id !== "string" || !KEBAB.test(provider.id))) {
+        problems.push(`provider.id must be kebab-case, got: ${JSON.stringify(provider.id)}`);
+      }
+      if (provider.label !== undefined) {
+        // Core compares with str.casefold(). Upper case then lower case folds the same letters it
+        // does ("ß" to "ss", "ſ" to "s"), where lower case alone would leave them, and the port looser.
+        const fold = (text) => text.toUpperCase().toLowerCase();
+        const typeWords = new Set(
+          MANIFEST_RULES.providerTypes.flatMap((type) => [type, type.replace(/_/g, " ")])
+        );
+        if (typeof provider.label !== "string" || provider.label === "") {
+          problems.push("provider.label must be text");
+        } else if (provider.id === undefined) {
+          // Core compares a label to the id its type derives; the port reads no derived ids, so
+          // it refuses a label without an id of its own: stricter, never looser.
+          problems.push("provider.label is checked against provider.id, and this provider has none");
+        } else if (fold(provider.label) === fold(String(provider.id))) {
+          problems.push("provider.label is its id: say in plain words what it does");
+        } else if (typeWords.has(fold(provider.label))) {
+          problems.push(
+            `provider.label ${JSON.stringify(provider.label)} is a provider type: say in plain words what it does`
+          );
+        }
+      }
     }
   }
 
@@ -319,59 +370,92 @@ export function snippetDrift(pinnedText) {
   ];
 }
 
-/** The raw string of `<name> = re.compile(r"...")` in core's manifest.py, or null. */
+/** The raw string of `<name> = re.compile(r"...")` in a core source file, or null. */
 function compiledPattern(source, name) {
   const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const match = source.match(new RegExp(`(?:^|\\n)${escaped} = re\\.compile\\(\\s*r"([^"\\n]*)"\\s*\\)`));
   return match ? match[1] : null;
 }
 
-/** The string literals of core's `PROVIDER_TYPES = frozenset({...})`, comments skipped, or null. */
-function providerTypes(source) {
-  const opener = "\nPROVIDER_TYPES = frozenset(";
-  const start = source.indexOf(opener);
-  if (start === -1) return null;
-  const end = source.indexOf("\n)", start + opener.length);
-  if (end === -1) return null;
-  return source
-    .slice(start + opener.length, end)
-    .split("\n")
-    .map((line) => line.replace(/#.*$/, ""))
-    .flatMap((line) => [...line.matchAll(/"([^"]*)"/g)].map((match) => match[1]))
-    .sort();
+/** How many lines of *source* bind *name* at the margin (`NAME =` or `NAME: type =`). */
+function definitions(source, name) {
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return (source.match(new RegExp(`^${escaped}\\s*(?::[^=\\n]*)?=(?!=)`, "gm")) ?? []).length;
 }
 
 /**
- * Where MANIFEST_RULES differs from core's manifest.py at the pin, or [] when it does not.
- * A rule this cannot find is drift too: a check that reads nothing must not pass.
- *
- * @param {string} source core's CORE_MANIFEST_PATH at the pinned commit
- * @returns {string[]}
+ * The string literals of core's `PROVIDER_TYPES = frozenset({...})`, comments skipped, or null.
+ * The read ends where the call's own parenthesis closes, so a set that closes on its own line
+ * reads as empty, never as the strings of whatever follows it.
  */
-export function manifestRulesDrift(source) {
-  const problems = [];
-  const reread = "Re-read core's AppManifest.validate() and update src/data/apps-snippet.mjs.";
-  for (const [name, pattern] of [
-    ["KEBAB_RE", MANIFEST_RULES.kebabPattern],
-    ["ICON_NAME_RE", MANIFEST_RULES.iconPattern],
-    ["_HOOK_OR_ENTRYPOINT_RE", MANIFEST_RULES.implementationPattern]
-  ]) {
-    const pinned = compiledPattern(source, name);
-    if (pinned == null) {
-      problems.push(`${CORE_MANIFEST_PATH} at the pin defines no ${name} this check can read. ${reread}`);
-    } else if (pinned !== pattern) {
-      problems.push(`${CORE_MANIFEST_PATH} at the pin has ${name} r"${pinned}", not r"${pattern}". ${reread}`);
+function providerTypes(source) {
+  // At the file's start or a line's, as compiledPattern reads a pattern.
+  const opener = "PROVIDER_TYPES = frozenset(";
+  const at = source.startsWith(opener) ? 0 : source.indexOf(`\n${opener}`);
+  if (at === -1) return null;
+  const start = source.indexOf(opener, at) + opener.length;
+  const found = [];
+  let depth = 1;
+  for (let i = start; i < source.length; i++) {
+    const char = source[i];
+    if (char === "#") {
+      const eol = source.indexOf("\n", i);
+      i = eol === -1 ? source.length : eol;
+    } else if (char === '"' || char === "'") {
+      const close = source.indexOf(char, i + 1);
+      if (close === -1) return null;
+      found.push(source.slice(i + 1, close));
+      i = close;
+    } else if (char === "(" || char === "{" || char === "[") {
+      depth++;
+    } else if (char === ")" || char === "}" || char === "]") {
+      depth--;
+      if (depth === 0) return found.sort();
     }
   }
-  const pinnedTypes = providerTypes(source);
-  if (pinnedTypes == null || pinnedTypes.length === 0) {
-    problems.push(`${CORE_MANIFEST_PATH} at the pin defines no PROVIDER_TYPES this check can read. ${reread}`);
+  return null;
+}
+
+/**
+ * Where MANIFEST_RULES differs from core's files at the pin, or [] when it does not. Each rule
+ * is read from the file that defines it. A rule this cannot find is drift too: a check that
+ * reads nothing must not pass.
+ *
+ * @param {string} manifestSource core's CORE_MANIFEST_PATH at the pinned commit
+ * @param {string} providerSource core's CORE_PROVIDER_CONFIG_PATH at the pinned commit
+ * @returns {string[]}
+ */
+export function manifestRulesDrift(manifestSource, providerSource) {
+  const problems = [];
+  const reread = "Re-read core's AppManifest.validate() and ProviderConfig.validate(), and update src/data/apps-snippet.mjs.";
+  for (const [path, source, name, pattern] of [
+    [CORE_MANIFEST_PATH, manifestSource, "KEBAB_RE", MANIFEST_RULES.kebabPattern],
+    [CORE_MANIFEST_PATH, manifestSource, "ICON_NAME_RE", MANIFEST_RULES.iconPattern],
+    [CORE_PROVIDER_CONFIG_PATH, providerSource, "_HOOK_OR_ENTRYPOINT_RE", MANIFEST_RULES.implementationPattern]
+  ]) {
+    const pinned = compiledPattern(source, name);
+    const count = definitions(source, name);
+    if (count > 1) {
+      // Python keeps the last binding; the check reads one, so two is drift until re-read.
+      problems.push(`${path} at the pin defines ${name} ${count} times. ${reread}`);
+    } else if (pinned == null) {
+      problems.push(`${path} at the pin defines no ${name} this check can read. ${reread}`);
+    } else if (pinned !== pattern) {
+      problems.push(`${path} at the pin has ${name} r"${pinned}", not r"${pattern}". ${reread}`);
+    }
+  }
+  const pinnedTypes = providerTypes(providerSource);
+  const typeDefinitions = definitions(providerSource, "PROVIDER_TYPES");
+  if (typeDefinitions > 1) {
+    problems.push(`${CORE_PROVIDER_CONFIG_PATH} at the pin defines PROVIDER_TYPES ${typeDefinitions} times. ${reread}`);
+  } else if (pinnedTypes == null || pinnedTypes.length === 0) {
+    problems.push(`${CORE_PROVIDER_CONFIG_PATH} at the pin defines no PROVIDER_TYPES this check can read. ${reread}`);
   } else {
     const added = pinnedTypes.filter((type) => !PROVIDER_TYPES.has(type));
     const dropped = MANIFEST_RULES.providerTypes.filter((type) => !pinnedTypes.includes(type));
     if (added.length > 0 || dropped.length > 0) {
       problems.push(
-        `${CORE_MANIFEST_PATH} at the pin has PROVIDER_TYPES ` +
+        `${CORE_PROVIDER_CONFIG_PATH} at the pin has PROVIDER_TYPES ` +
           [
             added.length > 0 ? `with ${added.join(", ")}` : "",
             dropped.length > 0 ? `without ${dropped.join(", ")}` : ""
@@ -383,4 +467,44 @@ export function manifestRulesDrift(source) {
     }
   }
   return problems;
+}
+
+/**
+ * The source of the one top-level `def <name>(` in *source*: from its `def` line to the last
+ * line before the next one at the margin, trailing blank lines dropped. `count` is how many such
+ * definitions there are; `text` is null unless there is exactly one.
+ *
+ * @param {string} source
+ * @param {string} name
+ * @returns {{ count: number, text: string | null }}
+ */
+export function topLevelFunction(source, name) {
+  const lines = source.split("\n");
+  const starts = lines.flatMap((line, index) => (line.startsWith(`def ${name}(`) ? [index] : []));
+  if (starts.length !== 1) return { count: starts.length, text: null };
+  let end = starts[0] + 1;
+  while (end < lines.length && (lines[end].trim() === "" || /^\s/.test(lines[end]))) end++;
+  while (end > starts[0] + 1 && lines[end - 1].trim() === "") end--;
+  return { count: 1, text: lines.slice(starts[0], end).join("\n") };
+}
+
+/**
+ * Where core's refusals at the pin differ from the ones the port was read from, or []. A function
+ * the check cannot find, or finds twice, is drift too.
+ *
+ * @param {string} capabilitySource core's CORE_CAPABILITY_IDS_PATH at the pinned commit
+ * @param {(text: string) => string} sha256 the hex SHA-256 of a string (this module imports no Node built-in)
+ * @param {Record<string, string>} [expected] each function's fingerprint, REFUSAL_FINGERPRINTS by default
+ * @returns {string[]}
+ */
+export function refusalsDrift(capabilitySource, sha256, expected = REFUSAL_FINGERPRINTS) {
+  const reread =
+    "Re-read core's capability_refusals and _label_refusals, port what changed into appManifestProblems, " +
+    "and update REFUSAL_FINGERPRINTS in src/data/apps-snippet.mjs.";
+  return Object.entries(expected).flatMap(([name, fingerprint]) => {
+    const { count, text } = topLevelFunction(capabilitySource, name);
+    if (count === 0) return [`${CORE_CAPABILITY_IDS_PATH} at the pin defines no ${name} this check can read. ${reread}`];
+    if (count > 1) return [`${CORE_CAPABILITY_IDS_PATH} at the pin defines ${name} ${count} times. ${reread}`];
+    return sha256(text) === fingerprint ? [] : [`${CORE_CAPABILITY_IDS_PATH} at the pin has a changed ${name}. ${reread}`];
+  });
 }

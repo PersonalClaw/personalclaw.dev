@@ -3,14 +3,14 @@ import { getImage } from "astro:assets";
 import manifest from "../../marketing/screenshots.manifest.json";
 import dashboard from "../assets/dashboard.png";
 import chat from "../assets/chat.png";
-import loops from "../assets/loops.png";
+import projects from "../assets/projects.png";
 import apps from "../assets/apps.png";
 import { productViews } from "../data/site";
 import { manifestLoopMarkup } from "./loop-video.mjs";
 import "./loop-video.css";
 import { SystemWindow } from "./SystemWindow";
 
-const images = [dashboard, chat, loops, apps];
+const images = [dashboard, chat, projects, apps];
 const widths = [480, 720, 960, 1280, 1600];
 
 // The tabs that play a loop (#95), by view id: the manifest's `videos` entry, and what it shows
@@ -39,10 +39,11 @@ const views = await Promise.all(
     };
     // A tab's loop shows the tab's own still until it plays, so the first tab keeps Home's
     // largest paint: the same responsive image, fetched first.
+    const alt = ("alt" in view ? view.alt : undefined) ?? `${view.label} view in the PersonalClaw dashboard`;
     const loop = tabLoops[view.id];
     const still = loop
       ? `<img class="system-image is-active" src="${shown.src}" srcset="${shown.srcSet}" sizes="${shown.sizes}"` +
-        ` width="${shown.width}" height="${shown.height}" alt="${view.label} view in the PersonalClaw dashboard"` +
+        ` width="${shown.width}" height="${shown.height}" alt="${alt}"` +
         (index === 0 ? ` loading="eager" fetchpriority="high"` : ` loading="lazy"`) +
         ` />`
       : undefined;
@@ -50,6 +51,7 @@ const views = await Promise.all(
     return {
       ...view,
       ...shown,
+      alt,
       loop: loop ? manifestLoopMarkup(manifest.videos ?? [], loop.id, loop.label, still) : undefined
     };
   })

@@ -1,12 +1,12 @@
 // Record the product tour's clip (#96) from a released, already-seeded gateway.
 //
-//   SESSION_KEY=… LOOP_ID=… KNOWLEDGE_QUERY=… ARTIFACT_NAME=… \
+//   SESSION_KEY=… LOOP_ID=… KNOWLEDGE_QUERY=… CHAT_PROMPT=… [ARTIFACT_NAME=…] [LOOP_REPORT=…] \
 //     node scripts/capture-tour.mjs --base http://127.0.0.1:10200 --token-file <path>
 //
 // It plays core's demo click-path (docs/demo/CLICKPATH.md at the pinned tag) through the
 // release's own UI, one beat at a time at the path's per-beat budget, and records it silently
 // at 1440 x 810 with Playwright's screencast: Home, a chat, the approval it waits on, a goal
-// loop, Knowledge narrowed by a search, an artifact, and back to Home. It reads what the home
+// loop, the Library narrowed by a search, an artifact in it, and back to Home. It reads what the home
 // already holds and writes nothing: it never sends a message and never answers an approval
 // (it shows the card and its chips), so a take costs no model call and changes no state.
 // Typing into a search box is the one input.
@@ -37,6 +37,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 import { denied, loadingOnScreen, settled, textOnScreen } from "./capture-guard.mjs";
+import { signedInState } from "./capture-sign-in.mjs";
 
 const repoRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const outDir = join(repoRoot, "marketing", ".captures", "clips");
@@ -59,9 +60,13 @@ const need = (name) => {
 const SESSION_KEY = need("SESSION_KEY");
 const LOOP_ID = need("LOOP_ID");
 const KNOWLEDGE_QUERY = need("KNOWLEDGE_QUERY");
-const ARTIFACT_NAME = need("ARTIFACT_NAME");
+// The artifact beat shows what the agent made, so it plays only when the home holds one: without
+// ARTIFACT_NAME the tour goes from the Library's search straight back to Home.
+const ARTIFACT_NAME = process.env.ARTIFACT_NAME || "";
 const CHAT_PROMPT = need("CHAT_PROMPT");
-const LOOP_REPORT = process.env.LOOP_REPORT || "report";
+// LOOP_REPORT names the cockpit's report tab, for a loop that wrote one. Without it the loop beat
+// opens the cockpit's Details on its findings, one a cycle.
+const LOOP_REPORT = process.env.LOOP_REPORT || "";
 const tokenFile = argOf("token-file", "");
 const TOKEN = tokenFile ? readFileSync(tokenFile, "utf8").trim() : process.env.PERSONALCLAW_TOKEN;
 
@@ -158,10 +163,11 @@ const BEATS = [
     id: "home",
     seconds: 9,
     act: async () => {
+      // From 0.3.9 Home is the Overview: its band counts what needs you, with an Answer that opens it.
       await dwell(1500);
-      await glide(page.getByText(/needs you/i), "Home's needs-you list");
+      await glide(page.getByText(/\bneed you\b/i), "Home's count of what needs you");
       await dwell(1800);
-      await glide(page.getByText(/running|finished/i), "Home's running and finished work");
+      await glide(page.getByText("Answer", { exact: true }), "the band's Answer");
     }
   },
   {
@@ -171,9 +177,10 @@ const BEATS = [
       await route(`#/chat/${encodeURIComponent(SESSION_KEY)}`, 2200);
       await glide(page.locator("main p, main div").filter({ hasText: CHAT_PROMPT }).last(), "the prompt sent");
       await dwell(1600);
-      await glide(page.getByRole("button", { name: /^Tool / }).first(), "a tool row");
+      // A tool row is named by what it does (0.3.9): the tests it ran, then the edit it waits on.
+      await glide(page.getByText("Run command", { exact: true }).last(), "the tests it ran");
       await dwell(1200);
-      await glide(page.getByRole("button", { name: /^Tool / }).last(), "the last tool row");
+      await glide(page.getByText("Edit", { exact: true }).last(), "the edit it waits on");
     }
   },
   {
@@ -181,8 +188,10 @@ const BEATS = [
     seconds: 18,
     act: async () => {
       // The approval waits in this chat; the take shows it and never answers it.
-      await glide(page.getByRole("button", { name: /^Show all of what .* would run/ }), "the approval card");
-      await dwell(2500);
+      await glide(page.getByText("Permission needed", { exact: true }), "the approval card");
+      await dwell(1200);
+      await glide(page.getByText("Writes files", { exact: true }), "what the call can touch");
+      await dwell(1300);
       await glide(page.getByText("Just this once", { exact: true }), "how far the answer is remembered");
       await dwell(1500);
       await glide(page.getByText("This chat", { exact: true }), "the wider scopes");
@@ -192,6 +201,17 @@ const BEATS = [
     id: "loops",
     seconds: 14,
     act: async () => {
+      if (!LOOP_REPORT) {
+        await route(`#/loops/${encodeURIComponent(LOOP_ID)}`, 2200);
+        await guard("loops");
+        await glide(page.getByText("Prompt", { exact: true }), "the loop's goal");
+        await dwell(1400);
+        await tap(page.getByRole("button", { name: "Details", exact: true }), "the loop's Details");
+        await dwell(1200);
+        await glide(page.getByText("Findings Log", { exact: true }), "its findings, one a cycle");
+        await dwell(1500);
+        return;
+      }
       // The cockpit opens on its Deliverable tab, which no address can skip, so the switch to the
       // report happens under a dark mask: the take never shows the Deliverable, and the
       // composition's cut starts after the mask lifts (the beat's `shown` time).
@@ -220,7 +240,7 @@ const BEATS = [
     act: async () => {
       await tap(nav("Library"), "Library in the rail");
       await dwell(1200);
-      const search = await firstVisible(page.getByLabel("Search knowledge"), "Knowledge's search");
+      const search = await firstVisible(page.getByPlaceholder("Search your library"), "Library's search");
       await tap(search, "Knowledge's search");
       await page.keyboard.type(KNOWLEDGE_QUERY, { delay: 160 });
     }
@@ -229,7 +249,8 @@ const BEATS = [
     id: "artifacts",
     seconds: 12,
     act: async () => {
-      await route("#/artifacts", 2000);
+      // Artifacts are Library's from 0.3.9: `#/artifacts` lands on it.
+      await route("#/library", 2000);
       await tap(page.getByText(ARTIFACT_NAME, { exact: false }), `the "${ARTIFACT_NAME}" artifacts`);
       await dwell(1500);
     }
@@ -238,30 +259,28 @@ const BEATS = [
     id: "close",
     seconds: 4,
     act: async () => {
-      await tap(nav("Home"), "Home in the rail");
+      // Home is the rail's PersonalClaw mark (0.3.9): it has no row of its own.
+      await tap(page.locator("nav").getByRole("button").filter({ hasText: "PersonalClaw" }).first(), "Home, the rail's mark");
     }
   }
 ];
 
 mkdirSync(outDir, { recursive: true });
 const browser = await chromium.launch();
+// Signed in apart from the take, so the sign-in page records nothing (scripts/capture-sign-in.mjs).
+const signed = TOKEN ? await signedInState(browser, base, TOKEN) : {};
+if (signed.error) {
+  console.error(signed.error);
+  process.exit(2);
+}
 const context = await browser.newContext({
   viewport: VIEWPORT,
   deviceScaleFactor: 1,
   colorScheme: "dark",
   reducedMotion: "no-preference",
-  recordVideo: { dir: outDir, size: VIEWPORT }
+  recordVideo: { dir: outDir, size: VIEWPORT },
+  storageState: signed.state
 });
-if (TOKEN) {
-  const signIn = await context.request
-    .get(`${base}/?token=${encodeURIComponent(TOKEN)}`)
-    .catch(() => null);
-  if (!signIn?.ok()) {
-    // Never print the error: its call log carries the URL, and the URL carries the token.
-    console.error(`The gateway at ${base} did not sign this browser in.`);
-    process.exit(2);
-  }
-}
 await context.addInitScript(() => {
   localStorage.setItem("mode", "dark");
   document.documentElement.setAttribute("data-mode", "dark");
@@ -294,7 +313,7 @@ try {
   await page.goto(`${base}/#/dashboard`, { waitUntil: "domcontentloaded", timeout: 60000 });
   await page.getByText("Connecting to gateway", { exact: false }).first().waitFor({ state: "hidden", timeout: 20000 }).catch(() => {});
   await dwell(1000);
-  for (const beat of BEATS) {
+  for (const beat of BEATS.filter((b) => b.id !== "artifacts" || ARTIFACT_NAME)) {
     const t0 = Date.now();
     starts[beat.id] = Number(((t0 - recording) / 1000).toFixed(2));
     await beat.act();

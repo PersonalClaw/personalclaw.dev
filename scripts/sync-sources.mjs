@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { execFile } from "node:child_process";
 import { access, chmod, mkdir, readFile, readdir, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
@@ -25,8 +26,12 @@ import Ajv2020 from "ajv/dist/2020.js";
 import { parse as parseToml } from "smol-toml";
 import {
   BUILDERS_SNIPPET,
+  CORE_CAPABILITY_IDS_PATH,
   CORE_MANIFEST_PATH,
+  CORE_PROVIDER_CONFIG_PATH,
+  REFUSAL_FINGERPRINTS,
   manifestRulesDrift,
+  refusalsDrift,
   snippetDrift
 } from "../src/data/apps-snippet.mjs";
 import {
@@ -790,19 +795,33 @@ async function readIfPresent(source, relativePath) {
  * apps commit, and the rules it is checked against are core's at the pinned core commit. See
  * src/data/apps-snippet.mjs for why the text is committed and what the rules are. Throws on
  * drift, naming what to update; a read that fails for another reason fails as itself.
+ * *fingerprints* are the refusals' (REFUSAL_FINGERPRINTS unless a test names its own).
  */
-export async function checkBuildersSnippet(coreSource, appsSource) {
-  const [rules, snippet] = await Promise.all([
+export async function checkBuildersSnippet(coreSource, appsSource, fingerprints = REFUSAL_FINGERPRINTS) {
+  const [manifestRules, providerRules, capabilityRules, snippet] = await Promise.all([
     readIfPresent(coreSource, CORE_MANIFEST_PATH),
+    readIfPresent(coreSource, CORE_PROVIDER_CONFIG_PATH),
+    readIfPresent(coreSource, CORE_CAPABILITY_IDS_PATH),
     readIfPresent(appsSource, BUILDERS_SNIPPET.path)
   ]);
+  const absent = [
+    [manifestRules, CORE_MANIFEST_PATH, "CORE_MANIFEST_PATH", "manifest"],
+    [providerRules, CORE_PROVIDER_CONFIG_PATH, "CORE_PROVIDER_CONFIG_PATH", "provider"],
+    [capabilityRules, CORE_CAPABILITY_IDS_PATH, "CORE_CAPABILITY_IDS_PATH", "provider id and label"]
+  ]
+    .filter(([text]) => text == null)
+    .map(
+      ([, path, name, what]) =>
+        `The pinned core commit has no ${path}, where the builders band's ${what} rules are ` +
+        `read. Update ${name} in src/data/apps-snippet.mjs.`
+    );
   const problems = [
-    ...(rules == null
-      ? [
-          `The pinned core commit has no ${CORE_MANIFEST_PATH}, where the builders band's ` +
-            "manifest rules are read. Update CORE_MANIFEST_PATH in src/data/apps-snippet.mjs."
-        ]
-      : manifestRulesDrift(rules)),
+    ...(absent.length > 0
+      ? absent
+      : [
+          ...manifestRulesDrift(manifestRules, providerRules),
+          ...refusalsDrift(capabilityRules, (text) => createHash("sha256").update(text).digest("hex"), fingerprints)
+        ]),
     ...(snippet == null
       ? [
           `The pinned apps commit has no ${BUILDERS_SNIPPET.path}, the manifest the builders ` +
