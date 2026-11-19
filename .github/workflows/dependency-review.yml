@@ -2,17 +2,20 @@
 # over the API, failing on a dependency the pull request adds or moves to with a known
 # vulnerability (PersonalClaw/PersonalClaw#4585).
 #
-# `pull_request_target` runs this file as it is on main, so a pull request cannot edit what
-# reviews it, and a first-time contributor's pull request is reviewed without waiting for
-# approval. It never checks out or runs the pull request's code: the action reads the base and
-# head commits from the event and asks the dependency-graph API to compare them, with a
-# read-only token. There is no checkout here at all; do not add one.
+# It runs on `pull_request`, the pull request's own copy, as feedback: GitHub's default policy
+# stops `pull_request_target` runs in public repositories from 2026-12-02, and no workflow here
+# runs on that event (tests/dependency-review.test.mjs holds that). It never checks out or runs
+# the pull request's code: the action reads the base and head commits from the event and asks the
+# dependency-graph API to compare them, with a read-only token. There is no checkout here at all;
+# do not add one. A pull request that edits this file runs its own edited copy, so its green
+# review proves nothing: that diff is the one to read.
 #
-# Not a required check: main's three required checks stay as they are.
+# Not a required check: main's three required checks stay as they are, and a skip marker in a
+# pull request's head commit stops them too, so a marked pull request cannot merge.
 name: Dependency review
 
 on:
-  pull_request_target:
+  pull_request:
     types: [opened, synchronize, reopened]
 
 # One review per pull request: a new head cancels the review of the old one.

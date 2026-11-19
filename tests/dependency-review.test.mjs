@@ -1,6 +1,7 @@
 // .github/workflows/dependency-review.yml reviews a pull request's dependencies over the API
-// (PersonalClaw/PersonalClaw#4585). It runs only on pull_request_target, so main's copy runs;
-// it holds contents: read and nothing else, references no secret, has no checkout at all, and
+// (PersonalClaw/PersonalClaw#4585). It runs only on pull_request, as feedback, and no workflow
+// here runs on pull_request_target, which GitHub's default policy stops in public repositories
+// from 2026-12-02. It holds contents: read and nothing else, references no secret, has no checkout at all, and
 // its one action is the pinned dependency-review action, which reads the base and head from the
 // event. Each rule fails on a planted edit of the committed workflow.
 import assert from "node:assert/strict";
@@ -20,8 +21,8 @@ function problems(text) {
   const found = [];
   const on = data.on;
   const triggers = on && typeof on === "object" && !Array.isArray(on) ? Object.keys(on) : [];
-  if (triggers.length !== 1 || triggers[0] !== "pull_request_target") {
-    found.push(`runs on ${JSON.stringify(on)}, not only pull_request_target`);
+  if (triggers.length !== 1 || triggers[0] !== "pull_request") {
+    found.push(`runs on ${JSON.stringify(on)}, not only pull_request`);
   }
   if (JSON.stringify(data.permissions) !== JSON.stringify({ contents: "read" })) {
     found.push(`the workflow grants ${JSON.stringify(data.permissions)}`);
@@ -43,16 +44,16 @@ function problems(text) {
 
 const committed = fs.readFileSync(file, "utf8");
 
-test("the review runs from main, reads only, and checks nothing out", () => {
+test("the review runs on pull_request, reads only, and checks nothing out", () => {
   assert.deepEqual(problems(committed), []);
 });
 
 const plants = [
-  ["  pull_request_target:\n", "  pull_request:\n", "not only pull_request_target"],
+  ["  pull_request:\n", "  pull_request_target:\n", "not only pull_request"],
   [
     "    types: [opened, synchronize, reopened]\n",
     "    types: [opened, synchronize, reopened]\n  push:\n",
-    "not only pull_request_target",
+    "not only pull_request",
   ],
   [
     "    permissions:\n      contents: read\n",
@@ -80,3 +81,26 @@ for (const [from, to, says] of plants) {
     assert.ok(found.some((p) => p.includes(says)), JSON.stringify(found));
   });
 }
+
+function events(text) {
+  const on = parse(text)?.on;
+  if (typeof on === "string") return [on];
+  if (Array.isArray(on)) return on.map(String);
+  return on && typeof on === "object" ? Object.keys(on) : [];
+}
+
+test("no workflow runs on pull_request_target", () => {
+  const dir = path.join(root, ".github", "workflows");
+  const targeted = fs
+    .readdirSync(dir)
+    .filter((name) => /\.ya?ml$/.test(name))
+    .filter((name) => events(fs.readFileSync(path.join(dir, name), "utf8")).includes("pull_request_target"));
+  assert.deepEqual(targeted, []);
+});
+
+test("a workflow on pull_request_target is found in each spelling", () => {
+  for (const on of ["on:\n  pull_request_target:\n    types: [opened]\n", "on: [push, pull_request_target]\n", "on: pull_request_target\n"]) {
+    assert.ok(events(`name: Planted\n${on}jobs: {}\n`).includes("pull_request_target"), on);
+  }
+  assert.ok(!events("name: Planted\non:\n  pull_request:\n    types: [opened]\njobs: {}\n").includes("pull_request_target"));
+});
