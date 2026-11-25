@@ -1,7 +1,7 @@
 {
-  "image": "mcr.microsoft.com/playwright@sha256:bc72a8df40831ded821e3cbc79c318c21b44d6e51dff9fd89ace7a8249c5b462",
+  "image": "mcr.microsoft.com/playwright@sha256:766137e2d9caad4744187e53cdc89320ba6f2eb57cff097374020944b44dd0a9",
   "platform": "linux/amd64",
-  "playwright": "1.64.0",
-  "tag": "v1.64.0-noble",
-  "index": "sha256:06a9939e57531807f8d5fd76ce44b53165ffb7d7501d87ab10e285c20b1e971f"
+  "playwright": "1.65.1",
+  "tag": "v1.65.1-noble",
+  "index": "sha256:1507cbfc550a63a6b7396791ca4f00df17beb56342d2447b3f106c306f525579"
 }
