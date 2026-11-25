@@ -1,9 +1,9 @@
 {
   "$schema": "./screenshots.schema.json",
   "schemaVersion": 1,
-  "targetRelease": "0.3.9",
+  "targetRelease": "0.4.0",
   "capture": {
-    "instance": "A scratch home, never the install's own: seed core's demo home into it and run a gateway on a free loopback port (PERSONALCLAW_HOME=/tmp/pc-showcase personalclaw gateway --seed demo-home --seed-replace --port 10021 --no-open --json-ready), as core's docs/screenshots/CAPTURE.md describes. The seed carries projects, tasks, knowledge documents and markdown memory, and binds no model, so install a model app and bind chat (and embedding and speech-to-text, so no surface waits on a model) before any turn. Chat, the approval, the loop, the skill proposal, the artifacts and the memory records are the product of real turns on that model, a few short ones; nothing is staged. Then photograph each appView with scripts/capture-app-shots.mjs, which signs its browser in with the gateway's token.",
+    "instance": "A scratch home, never the install's own: seed core's demo home into it and run a gateway on a free loopback port (PERSONALCLAW_HOME=/tmp/pc-showcase personalclaw gateway --seed demo-home --seed-replace --port 10021 --no-open --json-ready), as core's docs/screenshots/CAPTURE.md describes. The seed carries projects, tasks, knowledge documents and markdown memory, and binds no model, so install a model app and bind chat (and embedding and speech-to-text, so no surface waits on a model) before any turn. Chat, the approval and the edits are the gateway's own turns. At 0.4.0 their model words are replayed by core's offline scripted provider (src/personalclaw/llm/scripted.py), bound for one boot on the throwaway home only, while every tool those turns call runs for real, so the tests fail and then pass; no frame may name the provider (scripts/capture-guard.mjs). Embedding is bound to the local Sentence Transformers app, from a model already on the machine. The goal loop is the demo home's finished one, and the proposals are filed by their producers' own code. Then photograph each appView with scripts/capture-app-shots.mjs, which signs its browser in with the gateway's token.",
     "theme": "dark",
     "aspectRatio": "8:5",
     "notes": "All shots come from the one home, so they read as one workspace. Capture against a RELEASED tag build, never an unmerged branch, and review every PNG in marketing/.captures/ before promoting it into src/assets/."
@@ -277,8 +277,8 @@
       "sources": [
         "tour"
       ],
-      "capturedAt": "0.3.9",
-      "durationSeconds": 65.42,
+      "capturedAt": "0.4.0",
+      "durationSeconds": 65.03,
       "posterAtSeconds": 2,
       "crf": 29,
       "width": 1280,
@@ -307,11 +307,12 @@
       "composition": "marketing/compositions/hero-loop/index.html",
       "sources": [
         "home-lanes",
-        "thread-turn",
+        "tour",
         "loops",
-        "approval-wait"
+        "approval-wait",
+        "approve-enter"
       ],
-      "capturedAt": "0.3.9",
+      "capturedAt": "0.4.0",
       "durationSeconds": 10,
       "posterAtSeconds": 0.6,
       "crf": 24,
@@ -329,7 +330,7 @@
         {
           "file": "src/components/SystemWindow.astro",
           "kind": "hero-loop",
-          "caption": "The System Window's Home tab: Home, a chat working, a goal loop's report, an approval and done"
+          "caption": "The System Window's Home tab: Home, a chat working, a goal loop, an approval waiting and then answered"
         }
       ],
       "status": "shipping"
@@ -341,7 +342,7 @@
       "sources": [
         "approve-enter"
       ],
-      "capturedAt": "0.3.9",
+      "capturedAt": "0.4.0",
       "durationSeconds": 4.1,
       "posterAtSeconds": 0.6,
       "crf": 24,
@@ -399,11 +400,11 @@
       "kind": "narrative",
       "composition": "marketing/compositions/release-clip/index.html",
       "sources": [
+        "chat",
         "needs-you",
-        "knowledge",
-        "projects"
+        "knowledge"
       ],
-      "capturedAt": "0.3.9",
+      "capturedAt": "0.4.0",
       "durationSeconds": 20,
       "posterAtSeconds": 1.5,
       "crf": 28,
@@ -427,23 +428,23 @@
       ],
       "use": "site",
       "brief": {
-        "release": "0.3.9",
-        "date": "2026-11-16",
+        "release": "0.4.0",
+        "date": "2026-11-24",
         "highlights": [
           {
-            "text": "Needs you is one list of what waits on your answer.",
+            "text": "The chat's agent orb draws a tool step as what its call does",
+            "source": "chat"
+          },
+          {
+            "text": "A chat's plan and its approval belong to that chat alone.",
             "source": "needs-you"
           },
           {
-            "text": "Library is one page of everything you keep.",
+            "text": "A reload of Needs you or the Library starts the page's reads",
             "source": "knowledge"
-          },
-          {
-            "text": "A project's page opens on a box to start a chat there.",
-            "source": "projects"
           }
         ],
-        "shareCopy": "PersonalClaw 0.3.9 puts what waits on your answer in one list you answer card by card, keeps everything you keep on one Library page, and opens each project's page on a box to start a chat there. Every change, with its source: https://personalclaw.dev/release"
+        "shareCopy": "PersonalClaw 0.4.0 draws each tool step as what its call does, keeps a chat's plan and its approval to that chat alone, and starts reading Needs you and the Library while the app learns who you are. Every change, with its source: https://personalclaw.dev/release"
       },
       "status": "shipping"
     },
@@ -452,11 +453,11 @@
       "kind": "narrative",
       "composition": "marketing/compositions/release-clip-vertical/index.html",
       "sources": [
+        "chat",
         "needs-you",
-        "knowledge",
-        "projects"
+        "knowledge"
       ],
-      "capturedAt": "0.3.9",
+      "capturedAt": "0.4.0",
       "durationSeconds": 20,
       "posterAtSeconds": 1.5,
       "crf": 26,
@@ -473,23 +474,23 @@
       "placements": [],
       "use": "social",
       "brief": {
-        "release": "0.3.9",
-        "date": "2026-11-16",
+        "release": "0.4.0",
+        "date": "2026-11-24",
         "highlights": [
           {
-            "text": "Needs you is one list of what waits on your answer.",
+            "text": "The chat's agent orb draws a tool step as what its call does",
+            "source": "chat"
+          },
+          {
+            "text": "A chat's plan and its approval belong to that chat alone.",
             "source": "needs-you"
           },
           {
-            "text": "Library is one page of everything you keep.",
+            "text": "A reload of Needs you or the Library starts the page's reads",
             "source": "knowledge"
-          },
-          {
-            "text": "A project's page opens on a box to start a chat there.",
-            "source": "projects"
           }
         ],
-        "shareCopy": "PersonalClaw 0.3.9 puts what waits on your answer in one list you answer card by card, keeps everything you keep on one Library page, and opens each project's page on a box to start a chat there. Every change, with its source: https://personalclaw.dev/release"
+        "shareCopy": "PersonalClaw 0.4.0 draws each tool step as what its call does, keeps a chat's plan and its approval to that chat alone, and starts reading Needs you and the Library while the app learns who you are. Every change, with its source: https://personalclaw.dev/release"
       },
       "status": "shipping"
     }
@@ -501,16 +502,17 @@
       "width": 1440,
       "height": 900,
       "scenario": "Home's Overview, its band counting what waits on you (an approval, a workflow's choice and the proposals to review); held still about 4 s.",
-      "status": "shipping"
+      "status": "shipping",
+      "loading": []
     },
     {
       "id": "thread-turn",
       "file": "marketing/.captures/clips/thread-turn.webm",
       "width": 1440,
       "height": 900,
-      "scenario": "One chat turn from the prompt sent to the reply finished: the turn's status row above the composer, its orb and its turning word while the agent thinks and reads a file, then the reply and its done mark; about 90 s on a local model.",
+      "scenario": "One chat turn from the prompt sent to the reply finished: the turn's status row above the composer, its orb and its turning word while the agent thinks and reads a file, then the reply and its done mark; about 90 s on a local model. Retired at 0.4.0: the release's captures replay their model turns with core's offline scripted provider, and a finished reply names the model that answered it, which no frame may show. The hero loop's thread is the tour's chat beat instead.",
       "loading": [[0.53, 1.09]],
-      "status": "shipping"
+      "status": "retired"
     },
     {
       "id": "loop-planning",
@@ -526,7 +528,8 @@
       "width": 1440,
       "height": 900,
       "scenario": "A pending approval card, and the turn's status row with its \"!\" badge and \"Needs your OK\", held still; about 4 s.",
-      "status": "shipping"
+      "status": "shipping",
+      "loading": []
     },
     {
       "id": "approve-enter",
@@ -534,7 +537,7 @@
       "width": 1440,
       "height": 900,
       "scenario": "On Needs you, Tab to the pending approval card, press Cmd Enter, and it is answered in place; about 6 s.",
-      "loading": [[0.48, 3.39]],
+      "loading": [],
       "status": "shipping"
     },
     {
@@ -552,7 +555,7 @@
       "width": 1440,
       "height": 810,
       "scenario": "Core's demo click-path at the release (docs/demo/CLICKPATH.md, docs/demo/capture_demo.mjs), played on the release's own screens: Home, Chat, Approval, a goal loop with its findings, the Library's search and back to Home, about 73 s, with each beat's start time recorded for the composition's data-media-start. Its artifact beat plays when the home holds an artifact the agent made.",
-      "loading": [[0.71, 0.82], [1.01, 1.21], [10.75, 10.94], [42.75, 43.15], [57.65, 58.15], [61.69, 61.78], [69.8, 70]],
+      "loading": [[0.3, 0.4], [10.39, 10.49], [42.35, 42.76], [57.28, 57.58], [61.2, 61.3]],
       "status": "shipping"
     }
   ]

@@ -20,7 +20,10 @@ export const DENY = Object.freeze([
   { what: "the account name", pattern: /golani/i },
   { what: "the model provider", pattern: /bedrock|us\.anthropic\.|aws[_ -]?(profile|region|access)/i },
   { what: "a key", pattern: /AKIA[0-9A-Z]{12,}|sk-[A-Za-z0-9_-]{16,}|-----BEGIN [A-Z ]*PRIVATE KEY/ },
-  { what: "a chat provider not answering", pattern: PROVIDER_DOWN }
+  { what: "a chat provider not answering", pattern: PROVIDER_DOWN },
+  // The offline scripted provider (core's llm/scripted.py) replays a captured conversation's
+  // model turns. It registers as "Scripted" / "scripted-1", and no frame may name it.
+  { what: "the replay provider", pattern: /\bscripted\b|scripted-1|SCRIPTED-E2E/i }
 ]);
 
 /** The text on screen, run in the page: inside the viewport, and inside every ancestor that clips it. */
