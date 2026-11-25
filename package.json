@@ -5,7 +5,7 @@
   "type": "module",
   "packageManager": "npm@10.9.9",
   "engines": {
-    "node": ">=22.19.0 <23"
+    "node": ">=22.23.4 <23"
   },
   "scripts": {
     "sync:sources": "node scripts/sync-sources.mjs",

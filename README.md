@@ -138,7 +138,7 @@ The v0.3.0 redesign ([#84](https://github.com/PersonalClaw/personalclaw.dev/issu
 
 ### Prerequisites
 
-- Node.js `22.23.3` (the exact CI runtime in `.node-version`; the locked dependencies need 22.19 or newer)
+- Node.js `22.23.5` (the exact CI runtime in `.node-version`; the locked dependencies need 22.23.4 or newer)
 - npm `10.9.9` (the `packageManager` in `package.json`, bundled with that Node release)
 - [mise](https://mise.jdx.dev/) recommended for automatic runtime selection
 
